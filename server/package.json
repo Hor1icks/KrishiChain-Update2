@@ -1,0 +1,20 @@
+{
+  "name": "krishichain-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KrishiChain API — Express + node-oracledb (Thick mode) against Oracle XE 11.2",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "check:db": "node src/scripts/checkDb.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "oracledb": "^6.9.0"
+  }
+}
