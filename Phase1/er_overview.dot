@@ -1,0 +1,141 @@
+/* KrishiChain -- ER Overview (Chen notation, structural)
+   Attributes are listed in ER_BLUEPRINT.md, not drawn here, so the
+   relationship structure stays readable across 23 entities.
+   Double border = weak entity.  Double diamond = identifying relationship. */
+
+digraph KrishiChain {
+  rankdir=TB;
+  splines=polyline;
+  nodesep=0.45;
+  ranksep=0.62;
+  bgcolor="white";
+  fontname="Helvetica";
+  node [fontname="Helvetica", fontsize=10];
+  edge [fontname="Helvetica", fontsize=8, color="#44524a", arrowhead=none];
+
+  /* ---------- node classes ---------- */
+  node [shape=box, style="filled,bold", fillcolor="#DCEFDC", color="#14532D", penwidth=1.4];
+    USERS; FARMER; BUYER; ADMIN; STORAGE_MANAGER; TRANSPORT_PERSONNEL;
+    CROP_CATEGORY; CROP; FARM; VIRTUAL_ARAT; HARVEST_BATCH; WAREHOUSE;
+    BID; SALE_ORDER; PAYMENT; VEHICLE; TRANSPORT_REQUEST;
+    DAILY_MARKET_PRICE; PHYSICAL_BAZAR; REVIEW; COMPLAINT;
+
+  /* weak entities: doubled border */
+  node [shape=box, peripheries=2, fillcolor="#FBE9C7", color="#B45309"];
+    STORAGE_UNIT [label="STORAGE_UNIT\n(weak)"];
+    BAZAR_DAILY_RECORD [label="BAZAR_DAILY_RECORD\n(weak)"];
+
+  /* relationship diamonds */
+  node [shape=diamond, peripheries=1, style=filled, fillcolor="#FFFFFF",
+        color="#2E7D32", fontsize=9, height=0.42, width=1.05];
+    r_cat [label="belongs to"];
+    r_owns [label="owns"];
+    r_prod [label="produces"];
+    r_app [label="appears in"];
+    r_list [label="lists"];
+    r_sup [label="supervises"];
+    r_mgr [label="manages"];
+    r_places [label="places"];
+    r_recv [label="receives"];
+    r_outbid [label="outbids"];
+    r_creates [label="creates"];
+    r_haspay [label="has"];
+    r_makes [label="makes"];
+    r_getspay [label="receives"];
+    r_gen [label="generates"];
+    r_price [label="priced at"];
+    r_maint [label="maintains"];
+    r_logs [label="logs"];
+    r_forcrop [label="for"];
+    r_rev [label="has"];
+    r_comp [label="has"];
+    r_handles [label="handles"];
+
+  /* ternary diamonds */
+  node [fillcolor="#E3F0FB", color="#1D4E89", penwidth=1.5, width=1.2];
+    t_stores [label="STORES\n(ternary)"];
+    t_assign [label="ASSIGNED_TO\n(ternary)"];
+
+  /* identifying (weak) relationships: doubled diamond */
+  node [shape=diamond, peripheries=2, fillcolor="#FBE9C7", color="#B45309", width=1.1];
+    w_contains [label="contains"];
+    w_records [label="records"];
+
+  /* specialization circle */
+  node [shape=circle, peripheries=1, fillcolor="#F3E8FF", color="#6B21A8",
+        width=0.34, fixedsize=true, label="d", fontsize=11];
+    isa;
+
+  /* aggregation marker */
+  node [shape=box, style="dashed", peripheries=1, fillcolor="#FFFFFF",
+        color="#6B21A8", fontsize=8, width=1.4, fixedsize=false,
+        label="AGGREGATION\n(Buyer-places-Bid-on-Batch)"];
+    agg;
+
+  /* ---------- specialization ---------- */
+  USERS -> isa [penwidth=2.6, label="total"];
+  isa -> FARMER;
+  isa -> BUYER;
+  isa -> ADMIN;
+  isa -> STORAGE_MANAGER;
+  isa -> TRANSPORT_PERSONNEL;
+
+  /* ---------- production ---------- */
+  CROP -> r_cat [label="N"];         r_cat -> CROP_CATEGORY [label="1"];
+  FARMER -> r_owns [label="1"];      r_owns -> FARM [label="N"];
+  FARM -> r_prod [label="1"];        r_prod -> HARVEST_BATCH [label="N", penwidth=2.4];
+  CROP -> r_app [label="1"];         r_app -> HARVEST_BATCH [label="N"];
+  VIRTUAL_ARAT -> r_list [label="1"]; r_list -> HARVEST_BATCH [label="N"];
+
+  /* recursive: ARAT hierarchy */
+  VIRTUAL_ARAT -> r_sup [label="1 parent"];
+  r_sup -> VIRTUAL_ARAT [label="N children"];
+
+  /* ---------- storage ---------- */
+  STORAGE_MANAGER -> r_mgr [label="1"]; r_mgr -> WAREHOUSE [label="N"];
+  WAREHOUSE -> w_contains [label="1", penwidth=2.4];
+  w_contains -> STORAGE_UNIT [label="N", penwidth=2.4];
+
+  HARVEST_BATCH -> t_stores [label="M"];
+  STORAGE_UNIT  -> t_stores [label="N"];
+  STORAGE_MANAGER -> t_stores [label="P"];
+
+  /* ---------- bidding + aggregation ---------- */
+  BUYER -> r_places [label="1"];        r_places -> BID [label="N"];
+  HARVEST_BATCH -> r_recv [label="1"];  r_recv -> BID [label="N", penwidth=2.4];
+  BID -> r_outbid [label="1"];          r_outbid -> BID [label="1"];
+
+  agg -> r_creates [style=dashed, color="#6B21A8"];
+  r_creates -> SALE_ORDER [label="1"];
+  BID -> agg [style=dashed, color="#6B21A8", label="winning"];
+
+  /* ---------- payment ---------- */
+  SALE_ORDER -> r_haspay [label="1"];  r_haspay -> PAYMENT [label="N"];
+  BUYER -> r_makes [label="1"];        r_makes -> PAYMENT [label="N"];
+  FARMER -> r_getspay [label="1"];     r_getspay -> PAYMENT [label="N"];
+
+  /* ---------- logistics ---------- */
+  SALE_ORDER -> r_gen [label="1"];     r_gen -> TRANSPORT_REQUEST [label="1"];
+  TRANSPORT_REQUEST -> t_assign [label="M"];
+  VEHICLE -> t_assign [label="N"];
+  TRANSPORT_PERSONNEL -> t_assign [label="P"];
+
+  /* ---------- price reference ---------- */
+  CROP -> r_price [label="1"];          r_price -> DAILY_MARKET_PRICE [label="N"];
+  VIRTUAL_ARAT -> r_maint [label="1"];  r_maint -> DAILY_MARKET_PRICE [label="N"];
+  ADMIN -> r_logs [label="1"];          r_logs -> DAILY_MARKET_PRICE [label="N"];
+
+  PHYSICAL_BAZAR -> w_records [label="1", penwidth=2.4];
+  w_records -> BAZAR_DAILY_RECORD [label="N", penwidth=2.4];
+  BAZAR_DAILY_RECORD -> r_forcrop [label="N"];
+  r_forcrop -> CROP [label="1"];
+
+  /* ---------- feedback (P2) ---------- */
+  SALE_ORDER -> r_rev [label="1"];   r_rev -> REVIEW [label="1"];
+  SALE_ORDER -> r_comp [label="1"];  r_comp -> COMPLAINT [label="N"];
+  ADMIN -> r_handles [label="1"];    r_handles -> COMPLAINT [label="N"];
+
+  /* layout hints */
+  { rank=same; FARMER; BUYER; ADMIN; STORAGE_MANAGER; TRANSPORT_PERSONNEL; }
+  { rank=same; REVIEW; COMPLAINT; }
+}
