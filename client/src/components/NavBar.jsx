@@ -1,16 +1,8 @@
 import { Link, useLocation } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import Brand from './Brand';
+import NotificationBell from './NotificationBell';
 
-/**
- * Role-aware navigation.
- *
- * PRD §11.3 wanted deferred modules visible but disabled so an examiner
- * could see the whole site map. Every one of them is now built, so there
- * are no `ready: false` entries left — the disabled-link rendering below
- * is kept because it costs nothing and is the right behaviour if anything
- * is ever staged again.
- */
 const NAV = {
   FARMER: [
     { to: '/farmer', label: 'Dashboard', ready: true, end: true },
@@ -35,6 +27,7 @@ const NAV = {
     { to: '/admin/prices', label: 'Daily Prices', ready: true },
     { to: '/admin/users', label: 'Manage Users', ready: true },
     { to: '/admin/complaints', label: 'Complaints', ready: true },
+    { to: '/admin/reports', label: 'Reports', ready: true },
   ],
   STORAGE_MANAGER: [
     { to: '/storage', label: 'Dashboard', ready: true, end: true },
@@ -80,6 +73,7 @@ export default function NavBar() {
         </ul>
 
         <div className="nav-user">
+          <NotificationBell />
           <span className="muted">
             {user.firstName} · {user.role}
           </span>

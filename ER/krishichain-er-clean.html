@@ -1,0 +1,670 @@
+<title>KrishiChain ER Diagram</title>
+<style>:root{
+  --ground:#F1F3EF; --surface:#FFFFFF; --surface-2:#F7F9F5;
+  --ink:#141D18; --ink-2:#3B4A42; --muted:#6C7B72;
+  --line:#D8DFD6; --line-2:#B7C4B6;
+  --green:#2F7D52; --green-ink:#1E5537; --green-soft:#E4F0E9;
+  --clay:#8A5A22; --clay-ink:#6B4416; --clay-soft:#F5EADB;
+  --blue-ink:#1F4E6B; --blue-soft:#E2EDF3;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#0D1310; --surface:#151C18; --surface-2:#1A231D;
+  --ink:#E8EFE9; --ink-2:#B7C5BB; --muted:#8B9B90;
+  --line:#27342C; --line-2:#3D5044;
+  --green:#63C48D; --green-ink:#8FD9AE; --green-soft:#16291F;
+  --clay:#D9A566; --clay-ink:#EBC08A; --clay-soft:#2B2217;
+  --blue-ink:#8FC3E0; --blue-soft:#152833;
+}}
+:root[data-theme="dark"]{
+  --ground:#0D1310; --surface:#151C18; --surface-2:#1A231D;
+  --ink:#E8EFE9; --ink-2:#B7C5BB; --muted:#8B9B90;
+  --line:#27342C; --line-2:#3D5044;
+  --green:#63C48D; --green-ink:#8FD9AE; --green-soft:#16291F;
+  --clay:#D9A566; --clay-ink:#EBC08A; --clay-soft:#2B2217;
+  --blue-ink:#8FC3E0; --blue-soft:#152833;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);line-height:1.55}
+h1,h2,h3{margin:0;letter-spacing:-.025em;text-wrap:balance}
+
+.top{padding:34px 28px 22px;max-width:1500px;margin:0 auto}
+.top h1{font-size:clamp(24px,3.4vw,34px);font-weight:800}
+.top p{margin:9px 0 0;color:var(--muted);font-family:var(--mono);font-size:12.5px;letter-spacing:.01em}
+
+.canvas{margin:0;padding:0 20px;overflow-x:auto}
+svg.er{display:block;width:100%;min-width:1500px;height:auto;background:var(--surface);
+  border:1px solid var(--line);border-radius:12px}
+.ent{fill:var(--surface-2);stroke:var(--ink);stroke-width:2}
+.ent.inner{fill:none;stroke-width:1.6}
+.rel{fill:var(--green-soft);stroke:var(--ink);stroke-width:2}
+.rel.inner{fill:none;stroke-width:1.6}
+.isa{fill:var(--green-soft);stroke:var(--ink);stroke-width:2}
+.agg{fill:none;stroke:var(--green);stroke-width:2.5;stroke-dasharray:12 8}
+.ln{fill:none;stroke:var(--ink);stroke-width:1.7}
+.ename{font-family:var(--mono);font-size:14px;font-weight:700;fill:var(--ink);text-anchor:middle}
+.rname{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--ink);text-anchor:middle}
+.isad{font-family:var(--mono);font-size:19px;font-weight:700;fill:var(--ink);text-anchor:middle}
+.card{font-family:var(--mono);font-size:15px;font-weight:700;fill:var(--clay-ink);text-anchor:middle}
+.note{font-family:var(--mono);font-size:11.5px;fill:var(--muted);text-anchor:middle}
+.aggcap{font-family:var(--mono);font-size:12px;fill:var(--green-ink);text-anchor:middle}
+
+.legend{max-width:1500px;margin:14px auto 0;padding:0 28px;display:flex;flex-wrap:wrap;gap:8px 22px}
+.legend span{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-2)}
+.legend i{width:30px;height:16px;flex:none;display:inline-block;border:2px solid var(--ink)}
+.legend .s-weak{box-shadow:inset 0 0 0 2px var(--surface),inset 0 0 0 4px var(--ink)}
+.legend .s-rel,.legend .s-idn{border:0;background:
+  linear-gradient(135deg,transparent 46%,var(--ink) 46% 54%,transparent 54%),
+  linear-gradient(45deg,transparent 46%,var(--ink) 46% 54%,transparent 54%)}
+.legend .s-agg{border:2px dashed var(--green)}
+.legend .s-dbl{border:0;height:10px;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink)}
+.legend .s-sgl{border:0;height:0;border-top:2px solid var(--ink)}
+
+.deep{max-width:1500px;margin:0 auto;padding:40px 28px 0}
+.deep h2.lead{font-size:26px;font-weight:800;margin:26px 0 10px;padding-top:26px;border-top:1px solid var(--line)}
+.deep h3.sub{font-size:17px;font-weight:700;margin:32px 0 8px;color:var(--ink)}
+.deep p{margin:0 0 11px;max-width:74ch;color:var(--ink-2);font-size:14.5px}
+.deep p.intro{color:var(--muted)}
+.deep p.foot{font-size:13.5px;color:var(--muted)}
+.deep .tbl.wide{margin:0 0 6px}
+.deep code{font-family:var(--mono);font-size:12.5px;background:var(--surface-2);
+  border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:var(--ink)}
+.deep strong{color:var(--ink);font-weight:700}
+.canvas.inset{padding:0;margin-top:6px}
+.canvas.inset svg.er{min-width:900px}
+
+.attrs{max-width:1500px;margin:0 auto;padding:34px 28px 70px}
+.attrs h2.lead{font-size:26px;font-weight:800;margin:14px 0 4px}
+.attrs h2{font-size:15px;font-family:var(--mono);letter-spacing:.13em;text-transform:uppercase;
+  color:var(--muted);margin:34px 0 12px;padding-top:14px;border-top:1px solid var(--line);font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(620px,1fr));gap:16px;align-items:start}
+.tbl{background:var(--surface);border:1px solid var(--line);border-radius:11px;overflow:hidden}
+.tbl.wide{margin-top:4px}
+.tbl header{padding:13px 17px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.tbl h3{font-family:var(--mono);font-size:14.5px;font-weight:700}
+.tbl header p{margin:4px 0 0;font-size:12.5px;color:var(--muted)}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--muted);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line-2);
+  background:var(--surface-2);white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid var(--line);color:var(--ink-2);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.cn{font-family:var(--mono);font-size:12.5px;color:var(--ink);font-weight:600;white-space:nowrap}
+td.ct{font-family:var(--mono);font-size:11.5px;color:var(--muted);white-space:nowrap}
+td.cr{font-size:11.5px;color:var(--muted);white-space:nowrap}
+td.ck{white-space:normal;min-width:96px}
+td.cd{font-family:var(--mono);font-size:11.5px;white-space:nowrap}
+td.cf{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.expr{font-family:var(--mono);font-size:10.5px;color:var(--green-ink);font-weight:500;margin-top:2px}
+.k{font-family:var(--mono);font-size:10px;padding:2px 6px;border-radius:4px;margin:0 3px 3px 0;
+  display:inline-block;font-weight:700;white-space:nowrap}
+.k.pk{background:var(--green-soft);color:var(--green-ink);border:1px solid var(--green)}
+.k.fk{background:var(--blue-soft);color:var(--blue-ink);border:1px solid var(--blue-ink)}
+.k.uq{background:var(--clay-soft);color:var(--clay-ink);border:1px solid var(--clay)}
+.k.dv{background:transparent;color:var(--muted);border:1px dashed var(--line-2)}
+.k.cm{background:transparent;color:var(--blue-ink);border:1px dashed var(--blue-ink)}
+.omit{margin:0;padding:7px 12px;border-top:1px solid var(--line);background:var(--surface-2);
+  font-size:11.5px;font-family:var(--mono);color:var(--muted)}
+.attrs p.lede{margin:0 0 22px;max-width:78ch;font-size:13.5px;color:var(--muted);
+  font-family:var(--sans);line-height:1.6}
+.k.cs{background:transparent;color:var(--clay-ink);border:1px solid var(--clay)}
+@media (max-width:760px){.grid{grid-template-columns:1fr}.attrs,.top{padding-left:16px;padding-right:16px}}
+</style>
+<header class="top">
+  <h1>KrishiChain — Entity–Relationship Diagram</h1>
+  <p>25 entities · 2 weak entities · 2 ternary relationships · 2 aggregations · 2 recursive relationships · total disjoint specialization</p>
+</header>
+<figure class="canvas"><svg viewBox="0 0 3180 2260" xmlns="http://www.w3.org/2000/svg" class="er">
+<rect class="agg" x="1046" y="250" width="268" height="750"/>
+<text class="aggcap" x="1180.0" y="1022">aggregation — this buyer’s bid on this batch, as one fact</text>
+<rect class="agg" x="1800" y="830" width="200" height="140"/>
+<text class="aggcap" x="1900.0" y="818">aggregation — the allocation as one fact</text>
+<path class="ln" d="M300.0 365.0 L300.0 442.0"/>
+<text class="card" x="286" y="397">1</text>
+<path class="ln" d="M303.0 508.0 L303.0 585.0"/>
+<path class="ln" d="M297.0 508.0 L297.0 585.0"/>
+<text class="card" x="314" y="553">N</text>
+<path class="ln" d="M408.0 654.4 L700.4 747.4"/>
+<text class="card" x="436" y="678">1</text>
+<path class="ln" d="M780.5 769.7 L1072.9 862.8"/>
+<path class="ln" d="M778.7 775.5 L1071.1 868.5"/>
+<text class="card" x="1044" y="842">N</text>
+<path class="ln" d="M360.0 1195.0 L420.0 1160.0 L950.0 1080.0 L950.0 1013.0"/>
+<text class="card" x="410" y="1166">1</text>
+<path class="ln" d="M987.2 963.9 L1078.4 932.2"/>
+<path class="ln" d="M989.2 969.5 L1080.4 937.8"/>
+<text class="card" x="1043" y="933">N</text>
+<path class="ln" d="M408.0 900.0 L676.0 900.0"/>
+<text class="card" x="442" y="914">1</text>
+<path class="ln" d="M804.0 897.0 L1072.0 897.0"/>
+<path class="ln" d="M804.0 903.0 L1072.0 903.0"/>
+<text class="card" x="1038" y="886">N</text>
+<path class="ln" d="M303.0 1265.0 L303.0 1342.0"/>
+<path class="ln" d="M297.0 1265.0 L297.0 1342.0"/>
+<text class="card" x="260" y="1297">N</text>
+<path class="ln" d="M300.0 1408.0 L300.0 1485.0"/>
+<text class="card" x="314" y="1453">1</text>
+<path class="ln" d="M1180.0 365.0 L1180.0 442.0"/>
+<text class="card" x="1166" y="397">1</text>
+<path class="ln" d="M1183.0 508.0 L1183.0 585.0"/>
+<path class="ln" d="M1177.0 508.0 L1177.0 585.0"/>
+<text class="card" x="1194" y="553">N</text>
+<path class="ln" d="M1183.0 655.0 L1183.0 727.0"/>
+<path class="ln" d="M1177.0 655.0 L1177.0 727.0"/>
+<text class="card" x="1166" y="685">N</text>
+<path class="ln" d="M1180.0 793.0 L1180.0 865.0"/>
+<text class="card" x="1194" y="835">1</text>
+<path class="ln" d="M1183.0 1138.0 L1183.0 1195.0"/>
+<path class="ln" d="M1177.0 1138.0 L1177.0 1195.0"/>
+<text class="card" x="1194" y="1171">1</text>
+<path class="ln" d="M2500.0 365.0 L2500.0 442.0"/>
+<text class="card" x="2486" y="397">1</text>
+<path class="ln" d="M2503.0 508.0 L2503.0 585.0"/>
+<path class="ln" d="M2497.0 508.0 L2497.0 585.0"/>
+<text class="card" x="2514" y="553">N</text>
+<path class="ln" d="M2500.0 655.0 L2500.0 727.0"/>
+<text class="card" x="2486" y="685">1</text>
+<path class="ln" d="M2503.0 793.0 L2503.0 865.0"/>
+<path class="ln" d="M2497.0 793.0 L2497.0 865.0"/>
+<text class="card" x="2514" y="835">N</text>
+<path class="ln" d="M1288.0 900.0 L1819.0 900.0"/>
+<text class="card" x="1322" y="914">M</text>
+<path class="ln" d="M2392.0 900.0 L1981.0 900.0"/>
+<text class="card" x="2358" y="886">N</text>
+<path class="ln" d="M2608.0 330.0 L2760.0 330.0 L2760.0 980.0 L2010.0 980.0 L1929.1 921.2"/>
+<text class="card" x="2642" y="344">P</text>
+<path class="ln" d="M1256.4 1195.0 L1861.9 917.5"/>
+<text class="card" x="1323" y="1176">1</text>
+<path class="ln" d="M1903.0 1098.0 L1903.0 1195.0"/>
+<path class="ln" d="M1897.0 1098.0 L1897.0 1195.0"/>
+<text class="card" x="1914" y="1161">N</text>
+<path class="ln" d="M1136.6 1265.0 L1025.0 1354.9"/>
+<text class="card" x="1125" y="1295">1</text>
+<path class="ln" d="M975.2 1396.7 L850.0 1487.4"/>
+<path class="ln" d="M971.6 1391.9 L846.5 1482.6"/>
+<text class="card" x="924" y="1480">N</text>
+<path class="ln" d="M1072.0 330.0 L1030.0 330.0 L828.8 456.8"/>
+<text class="card" x="1054" y="316">1</text>
+<path class="ln" d="M819.3 497.6 L902.5 618.3"/>
+<path class="ln" d="M903.0 620.0 L903.0 1400.0"/>
+<path class="ln" d="M901.5 1402.6 L831.5 1442.6"/>
+<path class="ln" d="M832.8 1441.1 L815.9 1486.1"/>
+<path class="ln" d="M814.3 501.0 L897.5 621.7"/>
+<path class="ln" d="M897.0 620.0 L897.0 1400.0"/>
+<path class="ln" d="M898.5 1397.4 L828.5 1437.4"/>
+<path class="ln" d="M827.2 1438.9 L810.3 1483.9"/>
+<text class="card" x="859" y="1461">N</text>
+<path class="ln" d="M357.9 365.0 L510.5 457.2"/>
+<text class="card" x="380" y="395">1</text>
+<path class="ln" d="M524.4 500.5 L432.4 621.8"/>
+<path class="ln" d="M433.0 620.0 L433.0 1470.0"/>
+<path class="ln" d="M430.2 1467.0 L700.2 1487.0"/>
+<path class="ln" d="M699.1 1492.9 L691.1 1490.5"/>
+<path class="ln" d="M519.6 496.9 L427.6 618.2"/>
+<path class="ln" d="M427.0 620.0 L427.0 1470.0"/>
+<path class="ln" d="M429.8 1473.0 L699.8 1493.0"/>
+<path class="ln" d="M700.9 1487.1 L692.9 1484.7"/>
+<text class="card" x="685" y="1476">N</text>
+<path class="ln" d="M1288.0 1230.0 L1636.0 1230.0"/>
+<text class="card" x="1322" y="1244">1</text>
+<path class="ln" d="M1703.0 1263.0 L1703.0 1485.0"/>
+<path class="ln" d="M1697.0 1263.0 L1697.0 1485.0"/>
+<text class="card" x="1714" y="1451">1</text>
+<path class="ln" d="M1808.0 1520.0 L2059.0 1520.0"/>
+<text class="card" x="1842" y="1534">M</text>
+<path class="ln" d="M2392.0 1790.0 L2360.0 1790.0 L2160.2 1544.8"/>
+<text class="card" x="2379" y="1776">N</text>
+<path class="ln" d="M3038.0 330.0 L3040.0 330.0 L3040.0 1400.0 L2140.0 1400.0 L2140.0 1487.0"/>
+<text class="card" x="3085" y="352">P</text>
+<path class="ln" d="M1180.0 1265.0 L1180.0 1487.0"/>
+<text class="card" x="1166" y="1299">1</text>
+<path class="ln" d="M1183.0 1553.0 L1183.0 1755.0"/>
+<path class="ln" d="M1177.0 1553.0 L1177.0 1755.0"/>
+<text class="card" x="1194" y="1721">1</text>
+<path class="ln" d="M1242.8 1265.0 L1409.3 1357.9"/>
+<text class="card" x="1266" y="1294">1</text>
+<path class="ln" d="M1458.2 1398.3 L1680.6 1753.4"/>
+<path class="ln" d="M1453.1 1401.5 L1675.5 1756.6"/>
+<text class="card" x="1672" y="1719">N</text>
+<path class="ln" d="M2030.0 365.0 L2030.0 1700.0 L2030.0 1757.0"/>
+<text class="card" x="1982" y="399">1</text>
+<path class="ln" d="M1966.0 1790.0 L1808.0 1790.0"/>
+<text class="card" x="1842" y="1804">N</text>
+<path class="ln" d="M408.0 1230.0 L466.0 1230.0"/>
+<text class="card" x="432" y="1244">1</text>
+<path class="ln" d="M594.0 1227.0 L652.0 1227.0"/>
+<path class="ln" d="M594.0 1233.0 L652.0 1233.0"/>
+<text class="card" x="628" y="1216">N</text>
+<path class="ln" d="M348.8 935.0 L503.2 1045.8"/>
+<text class="card" x="394" y="984">1</text>
+<path class="ln" d="M558.5 1081.8 L713.0 1192.6"/>
+<path class="ln" d="M555.0 1086.6 L709.5 1197.4"/>
+<text class="card" x="692" y="1164">N</text>
+<path class="ln" d="M2085.0 365.0 L2140.0 400.0 L2140.0 1440.0 L824.0 1440.0"/>
+<text class="card" x="2135" y="422">1</text>
+<path class="ln" d="M757.0 1407.0 L757.0 1265.0"/>
+<path class="ln" d="M763.0 1407.0 L763.0 1265.0"/>
+<text class="card" x="746" y="1299">N</text>
+<path class="ln" d="M1408.0 2130.0 L1516.0 2130.0"/>
+<text class="card" x="1442" y="2144">1</text>
+<path class="ln" d="M1644.0 2127.0 L1752.0 2127.0"/>
+<path class="ln" d="M1644.0 2133.0 L1752.0 2133.0"/>
+<text class="card" x="1718" y="2116">N</text>
+<path class="ln" d="M230.0 1265.0 L160.0 1300.0 L160.0 1970.0 L1400.0 1970.0 L1516.0 1970.0"/>
+<text class="card" x="186" y="1297">1</text>
+<path class="ln" d="M1611.8 1984.7 L1800.2 2092.4"/>
+<path class="ln" d="M1608.9 1990.0 L1797.3 2097.6"/>
+<text class="card" x="1776" y="2066">N</text>
+<path class="ln" d="M2030.0 365.0 L2030.0 430.0 L2320.0 430.0 L2320.0 2097.0"/>
+<text class="card" x="2042" y="414">1</text>
+<path class="ln" d="M2256.0 2133.0 L1968.0 2133.0"/>
+<path class="ln" d="M2256.0 2127.0 L1968.0 2127.0"/>
+<text class="card" x="2002" y="2144">N</text>
+<path class="ln" d="M1668.0 80.0 L3040.0 80.0 L3040.0 1230.0 L2994.0 1230.0"/>
+<text class="card" x="1702" y="120">1</text>
+<path class="ln" d="M2933.0 1263.0 L2933.0 2095.0"/>
+<path class="ln" d="M2927.0 1263.0 L2927.0 2095.0"/>
+<text class="card" x="2944" y="2061">N</text>
+<path class="ln" d="M1900.0 970.0 L1900.0 1032.0"/>
+<text class="card" x="1886" y="996">1</text>
+<path class="ln" d="M1560 111.0 L1560 160"/>
+<path class="ln" d="M1557 111.0 L1557 160"/>
+<polygon class="isa" points="1514,216 1560,160 1606,216"/>
+<text class="isad" x="1560" y="198">d</text>
+<text class="note" x="1678" y="194">total, disjoint</text>
+<path class="ln" d="M1560 216 L1560 264"/>
+<path class="ln" d="M300 264 L2930 264"/>
+<path class="ln" d="M300 264 L300 299.0"/>
+<path class="ln" d="M1180 264 L1180 299.0"/>
+<path class="ln" d="M2030 264 L2030 299.0"/>
+<path class="ln" d="M2500 264 L2500 299.0"/>
+<path class="ln" d="M2930 264 L2930 299.0"/>
+<path class="ln" d="M196.0 886 L126.0 886 L126.0 1065 L360 1065"/>
+<path class="ln" d="M196.0 914 L126.0 914 L126.0 1111 L310 1094"/>
+<text class="note" x="216" y="1061">parent (1)</text>
+<text class="note" x="216" y="1117">child (N)</text>
+<path class="ln" d="M1076.0 606 L1006.0 606 L1006.0 620 L1000 620"/>
+<path class="ln" d="M1076.0 634 L1006.0 634 L1006.0 666 L950 649"/>
+<text class="note" x="856" y="616">displacing (1)</text>
+<text class="note" x="856" y="672">outbid (1)</text>
+<rect class="ent" x="1456.0" y="49.0" width="208" height="62"/>
+<text class="ename" x="1560" y="86">USERS</text>
+<rect class="ent" x="196.0" y="299.0" width="208" height="62"/>
+<text class="ename" x="300" y="336">FARMER</text>
+<rect class="ent" x="1076.0" y="299.0" width="208" height="62"/>
+<text class="ename" x="1180" y="336">BUYER</text>
+<rect class="ent" x="1926.0" y="299.0" width="208" height="62"/>
+<text class="ename" x="2030" y="336">ADMIN_STAFF</text>
+<rect class="ent" x="2396.0" y="299.0" width="208" height="62"/>
+<text class="ename" x="2500" y="336">STORAGE_MANAGER</text>
+<rect class="ent" x="2826.0" y="299.0" width="208" height="62"/>
+<text class="ename" x="2930" y="321">TRANSPORT</text>
+<text class="ename" x="2930" y="343">PERSONNEL</text>
+<rect class="ent" x="196.0" y="589.0" width="208" height="62"/>
+<text class="ename" x="300" y="626">FARM</text>
+<rect class="ent" x="1076.0" y="589.0" width="208" height="62"/>
+<text class="ename" x="1180" y="626">BID</text>
+<rect class="ent" x="2396.0" y="589.0" width="208" height="62"/>
+<text class="ename" x="2500" y="626">WAREHOUSE</text>
+<rect class="ent" x="196.0" y="869.0" width="208" height="62"/>
+<text class="ename" x="300" y="906">VIRTUAL_ARAT</text>
+<rect class="ent" x="1076.0" y="869.0" width="208" height="62"/>
+<text class="ename" x="1180" y="906">HARVEST_BATCH</text>
+<rect class="ent" x="2396.0" y="869.0" width="208" height="62"/>
+<rect class="ent inner" x="2403.0" y="876.0" width="194" height="48"/>
+<text class="ename" x="2500" y="906">STORAGE_UNIT</text>
+<rect class="ent" x="196.0" y="1199.0" width="208" height="62"/>
+<text class="ename" x="300" y="1236">CROP</text>
+<rect class="ent" x="656.0" y="1199.0" width="208" height="62"/>
+<text class="ename" x="760" y="1221">DAILY</text>
+<text class="ename" x="760" y="1243">MARKET_PRICE</text>
+<rect class="ent" x="1076.0" y="1199.0" width="208" height="62"/>
+<text class="ename" x="1180" y="1236">SALE_ORDER</text>
+<rect class="ent" x="1796.0" y="1199.0" width="208" height="62"/>
+<text class="ename" x="1900" y="1236">STORAGE_PAYMENT</text>
+<rect class="ent" x="196.0" y="1489.0" width="208" height="62"/>
+<text class="ename" x="300" y="1526">CROP_CATEGORY</text>
+<rect class="ent" x="696.0" y="1489.0" width="208" height="62"/>
+<text class="ename" x="800" y="1526">PAYMENT</text>
+<rect class="ent" x="1596.0" y="1489.0" width="208" height="62"/>
+<text class="ename" x="1700" y="1526">TRANSPORT_REQUEST</text>
+<rect class="ent" x="1076.0" y="1759.0" width="208" height="62"/>
+<text class="ename" x="1180" y="1796">REVIEW</text>
+<rect class="ent" x="1596.0" y="1759.0" width="208" height="62"/>
+<text class="ename" x="1700" y="1796">COMPLAINT</text>
+<rect class="ent" x="2396.0" y="1759.0" width="208" height="62"/>
+<text class="ename" x="2500" y="1796">VEHICLE</text>
+<rect class="ent" x="1196.0" y="2099.0" width="208" height="62"/>
+<text class="ename" x="1300" y="2136">PHYSICAL_BAZAR</text>
+<rect class="ent" x="1756.0" y="2099.0" width="208" height="62"/>
+<rect class="ent inner" x="1763.0" y="2106.0" width="194" height="48"/>
+<text class="ename" x="1860" y="2121">BAZAR</text>
+<text class="ename" x="1860" y="2143">DAILY_RECORD</text>
+<rect class="ent" x="2826.0" y="2099.0" width="208" height="62"/>
+<text class="ename" x="2930" y="2136">NOTIFICATION</text>
+<polygon class="rel" points="240.0,475 300,446.0 360.0,475 300,504.0"/>
+<text class="rname" x="300" y="480">owns</text>
+<polygon class="rel" points="680.0,760 740,731.0 800.0,760 740,789.0"/>
+<text class="rname" x="740" y="765">produces</text>
+<polygon class="rel" points="680.0,900 740,871.0 800.0,900 740,929.0"/>
+<text class="rname" x="740" y="905">listed at</text>
+<polygon class="rel" points="890.0,980 950,951.0 1010.0,980 950,1009.0"/>
+<text class="rname" x="950" y="985">of crop</text>
+<polygon class="rel" points="240.0,1375 300,1346.0 360.0,1375 300,1404.0"/>
+<text class="rname" x="300" y="1380">belongs to</text>
+<polygon class="rel" points="240.0,1065 300,1036.0 360.0,1065 300,1094.0"/>
+<text class="rname" x="300" y="1070">supervises</text>
+<polygon class="rel" points="1120.0,475 1180,446.0 1240.0,475 1180,504.0"/>
+<text class="rname" x="1180" y="480">places</text>
+<polygon class="rel" points="1120.0,760 1180,731.0 1240.0,760 1180,789.0"/>
+<text class="rname" x="1180" y="765">on</text>
+<polygon class="rel" points="880.0,620 940,591.0 1000.0,620 940,649.0"/>
+<text class="rname" x="940" y="625">outbids</text>
+<polygon class="rel" points="1120.0,1105 1180,1076.0 1240.0,1105 1180,1134.0"/>
+<text class="rname" x="1180" y="1110">creates</text>
+<polygon class="rel" points="2440.0,475 2500,446.0 2560.0,475 2500,504.0"/>
+<text class="rname" x="2500" y="480">manages</text>
+<polygon class="rel" points="2440.0,760 2500,731.0 2560.0,760 2500,789.0"/>
+<polygon class="rel inner" points="2451.0,760 2500,740.0 2549.0,760 2500,780.0"/>
+<text class="rname" x="2500" y="765">contains</text>
+<polygon class="rel" points="1823.0,900 1900,871.0 1977.0,900 1900,929.0"/>
+<text class="rname" x="1900" y="905">STORES</text>
+<polygon class="rel" points="1840.0,1065 1900,1036.0 1960.0,1065 1900,1094.0"/>
+<text class="rname" x="1900" y="1070">settled by</text>
+<polygon class="rel" points="940.0,1375 1000,1346.0 1060.0,1375 1000,1404.0"/>
+<text class="rname" x="1000" y="1380">has</text>
+<polygon class="rel" points="740.0,475 800,446.0 860.0,475 800,504.0"/>
+<text class="rname" x="800" y="480">makes</text>
+<polygon class="rel" points="480.0,475 540,446.0 600.0,475 540,504.0"/>
+<text class="rname" x="540" y="480">receives</text>
+<polygon class="rel" points="1640.0,1230 1700,1201.0 1760.0,1230 1700,1259.0"/>
+<text class="rname" x="1700" y="1235">generates</text>
+<polygon class="rel" points="2063.0,1520 2140,1491.0 2217.0,1520 2140,1549.0"/>
+<text class="rname" x="2140" y="1525">ASSIGNED_TO</text>
+<polygon class="rel" points="1120.0,1520 1180,1491.0 1240.0,1520 1180,1549.0"/>
+<text class="rname" x="1180" y="1525">has</text>
+<polygon class="rel" points="1380.0,1375 1440,1346.0 1500.0,1375 1440,1404.0"/>
+<text class="rname" x="1440" y="1380">raised on</text>
+<polygon class="rel" points="1970.0,1790 2030,1761.0 2090.0,1790 2030,1819.0"/>
+<text class="rname" x="2030" y="1795">handles</text>
+<polygon class="rel" points="470.0,1230 530,1201.0 590.0,1230 530,1259.0"/>
+<text class="rname" x="530" y="1235">priced at</text>
+<polygon class="rel" points="470.0,1065 530,1036.0 590.0,1065 530,1094.0"/>
+<text class="rname" x="530" y="1070">maintains</text>
+<polygon class="rel" points="700.0,1440 760,1411.0 820.0,1440 760,1469.0"/>
+<text class="rname" x="760" y="1445">logs</text>
+<polygon class="rel" points="1520.0,2130 1580,2101.0 1640.0,2130 1580,2159.0"/>
+<polygon class="rel inner" points="1531.0,2130 1580,2110.0 1629.0,2130 1580,2150.0"/>
+<text class="rname" x="1580" y="2135">records</text>
+<polygon class="rel" points="1520.0,1970 1580,1941.0 1640.0,1970 1580,1999.0"/>
+<polygon class="rel inner" points="1531.0,1970 1580,1950.0 1629.0,1970 1580,1990.0"/>
+<text class="rname" x="1580" y="1975">for</text>
+<polygon class="rel" points="2260.0,2130 2320,2101.0 2380.0,2130 2320,2159.0"/>
+<text class="rname" x="2320" y="2135">logs</text>
+<polygon class="rel" points="2870.0,1230 2930,1201.0 2990.0,1230 2930,1259.0"/>
+<text class="rname" x="2930" y="1235">notifies</text>
+</svg></figure>
+<div class="legend">
+  <span><i class="s-ent"></i>strong entity</span>
+  <span><i class="s-weak"></i>weak entity</span>
+  <span><i class="s-rel"></i>relationship</span>
+  <span><i class="s-idn"></i>identifying relationship</span>
+  <span><i class="s-agg"></i>aggregation</span>
+  <span><i class="s-dbl"></i>total participation</span>
+  <span><i class="s-sgl"></i>partial participation</span>
+</div>
+
+<section class="deep">
+  <h2 class="lead">Close-up — the storage allocation</h2>
+  <p class="intro">The main diagram wraps the aggregation box around the <code>STORES</code>
+  diamond alone, because its participants sit in four different bands up there. Drawn locally,
+  the box can enclose the relationship <em>and</em> everything that takes part in it, which is
+  how the construct is normally shown — and it makes room for the two participants the main
+  diagram leaves to the attribute table.</p>
+  <figure class="canvas inset"><svg viewBox="0 0 1580 1100" xmlns="http://www.w3.org/2000/svg" class="er">
+<rect class="agg" x="184" y="89" width="1212" height="652"/>
+<text class="aggcap" x="790.0" y="77">aggregation — the allocation as one addressable fact: this quantity, in this unit, authorized by this manager, for this sale</text>
+<path class="ln" d="M394.4 200.0 L755.3 396.1"/>
+<text class="card" x="422" y="243">M</text>
+<path class="ln" d="M790.0 200.0 L790.0 382.0"/>
+<text class="card" x="776" y="234">N</text>
+<path class="ln" d="M1185.6 200.0 L824.7 396.1"/>
+<text class="card" x="1139" y="218">P</text>
+<path class="ln" d="M394.4 630.0 L755.3 433.9"/>
+<text class="card" x="435" y="618">1</text>
+<path class="ln" d="M790.0 630.0 L790.0 448.0"/>
+<text class="card" x="804" y="596">1</text>
+<path class="ln" d="M1185.6 630.0 L824.7 433.9"/>
+<text class="card" x="1152" y="593">1</text>
+<path class="ln" d="M1063.0 913.0 L1063.0 1000.0"/>
+<path class="ln" d="M1057.0 913.0 L1057.0 1000.0"/>
+<text class="card" x="1074" y="966">N</text>
+<path class="ln" d="M1060.0 741.0 L1060.0 847.0"/>
+<text class="card" x="1046" y="775">1</text>
+<text class="note" x="560" y="600">leg 2 only</text>
+<text class="note" x="980" y="726">exactly one of these two</text>
+<rect class="ent" x="226.0" y="134.0" width="208" height="62"/>
+<text class="ename" x="330" y="171">HARVEST_BATCH</text>
+<rect class="ent" x="686.0" y="134.0" width="208" height="62"/>
+<rect class="ent inner" x="693.0" y="141.0" width="194" height="48"/>
+<text class="ename" x="790" y="171">STORAGE_UNIT</text>
+<rect class="ent" x="1146.0" y="134.0" width="208" height="62"/>
+<text class="ename" x="1250" y="171">STORAGE_MANAGER</text>
+<rect class="ent" x="226.0" y="634.0" width="208" height="62"/>
+<text class="ename" x="330" y="671">SALE_ORDER</text>
+<rect class="ent" x="686.0" y="634.0" width="208" height="62"/>
+<text class="ename" x="790" y="671">FARMER</text>
+<rect class="ent" x="1146.0" y="634.0" width="208" height="62"/>
+<text class="ename" x="1250" y="671">BUYER</text>
+<rect class="ent" x="956.0" y="1004.0" width="208" height="62"/>
+<text class="ename" x="1060" y="1041">STORAGE_PAYMENT</text>
+<polygon class="rel" points="713.0,415 790,386.0 867.0,415 790,444.0"/>
+<text class="rname" x="790" y="420">STORES</text>
+<polygon class="rel" points="1000.0,880 1060,851.0 1120.0,880 1060,909.0"/>
+<text class="rname" x="1060" y="885">settled by</text>
+</svg></figure>
+  <div class="legend">
+  <span><i class="s-ent"></i>strong entity</span>
+  <span><i class="s-weak"></i>weak entity</span>
+  <span><i class="s-rel"></i>relationship</span>
+  <span><i class="s-idn"></i>identifying relationship</span>
+  <span><i class="s-agg"></i>aggregation</span>
+  <span><i class="s-dbl"></i>total participation</span>
+  <span><i class="s-sgl"></i>partial participation</span>
+</div>
+
+  <h3 class="sub">Why the sale order, and not the batch</h3>
+  <p>Abdul lists 2000&nbsp;kg of Aman rice. Anisur wins 1200&nbsp;kg; the remaining 800&nbsp;kg
+  stays biddable and is later won by someone else. Two sale orders now exist against one batch.</p>
+  <p>When Anisur asks a Dhaka warehouse to hold his rice, the allocation has to be capped at
+  <strong>1200&nbsp;kg, not 2000</strong> — otherwise he could store stock he never bought, and
+  the second buyer's share would vanish. The batch cannot answer &ldquo;how much may this person
+  store?&rdquo;; only the sale order can. Every downstream record works the same way:
+  <code>SALE_ORDER</code> is what <code>TRANSPORT_REQUEST</code>, <code>PAYMENT</code>,
+  <code>REVIEW</code> and the leg-2 <code>STORES</code> row are all keyed by, so one batch splits
+  into two fully independent journeys.</p>
+  <p><code>BatchID</code> nonetheless stays required on every allocation, because of
+  <strong>leg 1</strong>: a farmer may put the harvest into cold storage while the auction is
+  still open, when no sale order exists yet. So an allocation always knows its batch and knows
+  its sale order only once there has been a sale. That is exactly what
+  <code>SaleOrderID IS NULL</code> discriminates.</p>
+
+  <h3 class="sub">The six roles in one allocation</h3>
+  <div class="tbl wide"><div class="tw"><table><thead><tr><th>Participant</th><th>Role</th>
+  <th>Card.</th><th>Part.</th><th>Realised as</th><th>Null</th><th>Present when</th></tr></thead>
+  <tbody><tr><td class="cn">HARVEST_BATCH</td><td>which harvest is in the unit</td><td class="cd">M</td><td class="cr">partial</td><td class="cf">STORES.BatchID</td><td class="cr">required</td><td>always — leg 1 and leg 2</td></tr>
+<tr><td class="cn">STORAGE_UNIT</td><td>which unit holds it</td><td class="cd">N</td><td class="cr">partial</td><td class="cf">STORES.WarehouseID + UnitNo</td><td class="cr">required</td><td>always — composite FK to the weak entity</td></tr>
+<tr><td class="cn">STORAGE_MANAGER</td><td>who authorized the allocation</td><td class="cd">P</td><td class="cr">partial</td><td class="cf">STORES.ManagerID</td><td class="cr">required</td><td>always — the accountability link</td></tr>
+<tr><td class="cn">SALE_ORDER</td><td>whose slice of the batch this is</td><td class="cd">1</td><td class="cr">partial</td><td class="cf">STORES.SaleOrderID</td><td class="cr">optional</td><td>leg 2 only — NULL before a sale exists</td></tr>
+<tr><td class="cn">FARMER</td><td>the customer, pre-sale</td><td class="cd">1</td><td class="cr">partial</td><td class="cf">STORES.RequestedByFarmerID</td><td class="cr">optional</td><td>leg 1 — farmer stores their own harvest</td></tr>
+<tr><td class="cn">BUYER</td><td>the customer, post-sale</td><td class="cd">1</td><td class="cr">partial</td><td class="cf">STORES.RequestedByBuyerID</td><td class="cr">optional</td><td>leg 2 — buyer stores what they bought</td></tr></tbody></table></div></div>
+  <p class="foot">The last two are mutually exclusive, enforced by
+  <code>CK_STORES_CUSTOMER</code>: exactly one of <code>RequestedByFarmerID</code> and
+  <code>RequestedByBuyerID</code> is set on every row. Participation is partial everywhere —
+  a batch need never be stored, a unit may sit empty, a manager may authorize nothing.</p>
+
+  <h3 class="sub">Why this has to be an aggregation</h3>
+  <p>A storage fee is owed for <em>the allocation</em> — this quantity, in this unit, authorized
+  by this manager, at the rate the two sides agreed. It is not owed for the batch, which may be
+  split across two units; nor for the unit, which holds many batches; nor for the manager.
+  <code>STORAGE_PAYMENT.AllocationID</code> therefore references
+  <code>STORES.AllocationID</code>: the <em>relationship instance</em>, not any participant.</p>
+  <p>The clinching evidence is in the schema. <code>STORES.StorageFee</code> is a virtual column
+  computed as <code>QuantityStored&nbsp;×&nbsp;StorageFeePerKgSnapshot</code> — both attributes of
+  the relationship itself. The amount owed cannot be derived from any participant, so the thing
+  being paid for is the relationship.</p>
+  <p>Chen notation will not let a diamond attach to another diamond. The only legal way to say
+  &ldquo;a payment settles this relationship&rdquo; is to box the relationship, treat the box as
+  an entity, and hang <code>settled by</code> off the box. That is the dashed rectangle above.</p>
+</section>
+
+<main class="attrs">
+  <h2 class="lead">Attributes</h2>
+  <p class="lede">Conceptual attributes only. Every key, foreign key, candidate-key member and
+  derived column is shown; workflow status flags, audit timestamps, credentials and transaction
+  references are left out and counted under each table. Composite attributes appear as one
+  attribute with its parts, not as separate rows. The schema itself is unchanged.</p>
+  <h2>Identity and specialization</h2><div class="grid"><section class="tbl"><header><h3>USERS</h3><p>Superclass of the total, disjoint specialization.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">UserID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span></td></tr>
+<tr><td class="cn">Name<div class="expr">FirstName, MiddleName, LastName</div></td><td class="ct">composite</td><td class="cr">—</td><td class="ck"><span class="k cm">composite</span></td></tr>
+<tr><td class="cn">Email</td><td class="ct">VARCHAR2(100 CHAR)</td><td class="cr">required</td><td class="ck"><span class="k uq">UNIQUE</span></td></tr>
+<tr><td class="cn">Gender</td><td class="ct">CHAR(1)</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">DateOfBirth</td><td class="ct">DATE</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">Address<div class="expr">HouseNo, Road, Village, Upazila, District, PostalCode</div></td><td class="ct">composite</td><td class="cr">—</td><td class="ck"><span class="k cm">composite</span></td></tr>
+<tr><td class="cn">Role</td><td class="ct">VARCHAR2(20 CHAR)</td><td class="cr">required</td><td class="ck"></td></tr></tbody></table></div><p class="omit">+3 operational columns in the DDL, not shown</p></section><section class="tbl"><header><h3>FARMER</h3><p>Subclass — PK is also FK to USERS.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">FarmerID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span> <span class="k fk">FK&nbsp;→&nbsp;USERS</span></td></tr>
+<tr><td class="cn">NID</td><td class="ct">VARCHAR2(20 CHAR)</td><td class="cr">required</td><td class="ck"><span class="k uq">UNIQUE</span></td></tr>
+<tr><td class="cn">BankAccountNo</td><td class="ct">VARCHAR2(30 CHAR)</td><td class="cr">optional</td><td class="ck"></td></tr>
+<tr><td class="cn">ExperienceYears</td><td class="ct">NUMBER(3)</td><td class="cr">optional</td><td class="ck"></td></tr></tbody></table></div><p class="omit">+1 operational column in the DDL, not shown</p></section><section class="tbl"><header><h3>BUYER</h3><p>Subclass — PK is also FK to USERS.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">BuyerID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span> <span class="k fk">FK&nbsp;→&nbsp;USERS</span></td></tr>
+<tr><td class="cn">BusinessName</td><td class="ct">VARCHAR2(150 CHAR)</td><td class="cr">optional</td><td class="ck"></td></tr>
+<tr><td class="cn">BuyerType</td><td class="ct">VARCHAR2(20 CHAR)</td><td class="cr">optional</td><td class="ck"></td></tr>
+<tr><td class="cn">TradeLicenseNo</td><td class="ct">VARCHAR2(30 CHAR)</td><td class="cr">optional</td><td class="ck"><span class="k uq">UNIQUE</span></td></tr></tbody></table></div></section><section class="tbl"><header><h3>ADMIN_STAFF</h3><p>Subclass — PK is also FK to USERS.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">AdminID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span> <span class="k fk">FK&nbsp;→&nbsp;USERS</span></td></tr>
+<tr><td class="cn">EmployeeID</td><td class="ct">VARCHAR2(20 CHAR)</td><td class="cr">required</td><td class="ck"><span class="k uq">UNIQUE</span></td></tr>
+<tr><td class="cn">Designation</td><td class="ct">VARCHAR2(50 CHAR)</td><td class="cr">optional</td><td class="ck"></td></tr></tbody></table></div></section><section class="tbl"><header><h3>STORAGE_MANAGER</h3><p>Subclass — PK is also FK to USERS.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">ManagerID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span> <span class="k fk">FK&nbsp;→&nbsp;USERS</span></td></tr>
+<tr><td class="cn">EmployeeID</td><td class="ct">VARCHAR2(20 CHAR)</td><td class="cr">required</td><td class="ck"><span class="k uq">UNIQUE</span></td></tr></tbody></table></div></section><section class="tbl"><header><h3>TRANSPORT_PERSONNEL</h3><p>Subclass — PK is also FK to USERS.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">PersonnelID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span> <span class="k fk">FK&nbsp;→&nbsp;USERS</span></td></tr>
+<tr><td class="cn">LicenseNo</td><td class="ct">VARCHAR2(30 CHAR)</td><td class="cr">required</td><td class="ck"><span class="k uq">UNIQUE</span></td></tr>
+<tr><td class="cn">ExperienceYears</td><td class="ct">NUMBER(3)</td><td class="cr">optional</td><td class="ck"></td></tr></tbody></table></div></section></div><h2>Production and listing</h2><div class="grid"><section class="tbl"><header><h3>CROP_CATEGORY</h3><p>Strong entity.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">CategoryID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span></td></tr>
+<tr><td class="cn">CategoryName</td><td class="ct">VARCHAR2(80 CHAR)</td><td class="cr">required</td><td class="ck"><span class="k uq">UNIQUE</span></td></tr></tbody></table></div><p class="omit">+1 operational column in the DDL, not shown</p></section><section class="tbl"><header><h3>CROP</h3><p>Strong entity.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">CropID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span></td></tr>
+<tr><td class="cn">CropName</td><td class="ct">VARCHAR2(100 CHAR)</td><td class="cr">required</td><td class="ck"><span class="k uq">UNIQUE</span></td></tr>
+<tr><td class="cn">CategoryID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;CROP_CATEGORY</span></td></tr>
+<tr><td class="cn">Unit</td><td class="ct">VARCHAR2(20 CHAR)</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">BasePrice</td><td class="ct">NUMBER(12,2)</td><td class="cr">required</td><td class="ck"></td></tr></tbody></table></div><p class="omit">+2 operational columns in the DDL, not shown</p></section><section class="tbl"><header><h3>FARM</h3><p>Strong entity.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">FarmID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span></td></tr>
+<tr><td class="cn">FarmerID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;FARMER</span></td></tr>
+<tr><td class="cn">FarmName</td><td class="ct">VARCHAR2(100 CHAR)</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">Area</td><td class="ct">NUMBER(10,2)</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">Location</td><td class="ct">VARCHAR2(150 CHAR)</td><td class="cr">optional</td><td class="ck"></td></tr>
+<tr><td class="cn">District</td><td class="ct">VARCHAR2(100 CHAR)</td><td class="cr">required</td><td class="ck"></td></tr></tbody></table></div><p class="omit">+3 operational columns in the DDL, not shown</p></section><section class="tbl"><header><h3>VIRTUAL_ARAT</h3><p>Strong entity with the recursive supervises relationship.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">AratID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span></td></tr>
+<tr><td class="cn">AratName</td><td class="ct">VARCHAR2(100 CHAR)</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">Region</td><td class="ct">VARCHAR2(80 CHAR)</td><td class="cr">optional</td><td class="ck"></td></tr>
+<tr><td class="cn">District</td><td class="ct">VARCHAR2(100 CHAR)</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">ParentAratID</td><td class="ct">NUMBER(10)</td><td class="cr">optional</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;VIRTUAL_ARAT</span></td></tr></tbody></table></div><p class="omit">+2 operational columns in the DDL, not shown</p></section><section class="tbl"><header><h3>HARVEST_BATCH</h3><p>Strong entity. Absorbed the removed AUCTION entity.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">BatchID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span></td></tr>
+<tr><td class="cn">FarmID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;FARM</span></td></tr>
+<tr><td class="cn">CropID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;CROP</span></td></tr>
+<tr><td class="cn">AratID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;VIRTUAL_ARAT</span></td></tr>
+<tr><td class="cn">HarvestDate</td><td class="ct">DATE</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">TotalQuantity</td><td class="ct">NUMBER(12,3)</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">ReservedQuantity</td><td class="ct">NUMBER(12,3)</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">SoldQuantity</td><td class="ct">NUMBER(12,3)</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">AvailableQuantity<div class="expr">= TotalQuantity - ReservedQuantity - SoldQuantity</div></td><td class="ct">NUMBER(12,3)</td><td class="cr">optional</td><td class="ck"><span class="k dv">derived</span></td></tr>
+<tr><td class="cn">MinimumPrice</td><td class="ct">NUMBER(12,2)</td><td class="cr">optional</td><td class="ck"></td></tr>
+<tr><td class="cn">BiddingStartTime</td><td class="ct">TIMESTAMP</td><td class="cr">optional</td><td class="ck"></td></tr>
+<tr><td class="cn">BiddingEndTime</td><td class="ct">TIMESTAMP</td><td class="cr">optional</td><td class="ck"></td></tr>
+<tr><td class="cn">MinimumBidQuantity</td><td class="ct">NUMBER(12,3)</td><td class="cr">required</td><td class="ck"></td></tr></tbody></table></div><p class="omit">+3 operational columns in the DDL, not shown</p></section></div><h2>Storage</h2><div class="grid"><section class="tbl"><header><h3>WAREHOUSE</h3><p>Strong entity.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">WarehouseID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span></td></tr>
+<tr><td class="cn">WarehouseName</td><td class="ct">VARCHAR2(100 CHAR)</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">District</td><td class="ct">VARCHAR2(100 CHAR)</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">Capacity</td><td class="ct">NUMBER(12,3)</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">ManagerID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;STORAGE_MANAGER</span></td></tr>
+<tr><td class="cn">StorageFeePerKgRate</td><td class="ct">NUMBER(10,2)</td><td class="cr">optional</td><td class="ck"></td></tr></tbody></table></div><p class="omit">+1 operational column in the DDL, not shown</p></section><section class="tbl"><header><h3>STORAGE_UNIT</h3><p>Weak entity — partial key UnitNo, identified by WAREHOUSE.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">WarehouseID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span> <span class="k fk">FK&nbsp;→&nbsp;WAREHOUSE</span> <span class="k cs">cascade</span></td></tr>
+<tr><td class="cn">UnitNo</td><td class="ct">NUMBER(5)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span></td></tr>
+<tr><td class="cn">Capacity</td><td class="ct">NUMBER(12,3)</td><td class="cr">required</td><td class="ck"></td></tr></tbody></table></div><p class="omit">+1 operational column in the DDL, not shown</p></section><section class="tbl"><header><h3>STORAGE_PAYMENT</h3><p>Strong entity — points at the STORES allocation, not at any of its participants.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">StoragePaymentID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span></td></tr>
+<tr><td class="cn">AllocationID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;STORES</span></td></tr>
+<tr><td class="cn">Amount</td><td class="ct">NUMBER(12,2)</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">PaymentMethod</td><td class="ct">VARCHAR2(20 CHAR)</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">PaymentDate</td><td class="ct">DATE</td><td class="cr">required</td><td class="ck"></td></tr></tbody></table></div><p class="omit">+2 operational columns in the DDL, not shown</p></section></div><h2>Bidding, sale and payment</h2><div class="grid"><section class="tbl"><header><h3>BID</h3><p>Strong entity with the recursive outbids relationship.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">BidID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span></td></tr>
+<tr><td class="cn">BatchID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;HARVEST_BATCH</span></td></tr>
+<tr><td class="cn">BuyerID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;BUYER</span></td></tr>
+<tr><td class="cn">BidPricePerKg</td><td class="ct">NUMBER(12,2)</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">RequestedQuantity</td><td class="ct">NUMBER(12,3)</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">BidTime</td><td class="ct">TIMESTAMP</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">PreviousBidID</td><td class="ct">NUMBER(10)</td><td class="cr">optional</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;BID</span></td></tr></tbody></table></div><p class="omit">+1 operational column in the DDL, not shown</p></section><section class="tbl"><header><h3>SALE_ORDER</h3><p>Strong entity — the aggregation result, and the scope for everything downstream.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">SaleOrderID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span></td></tr>
+<tr><td class="cn">BidID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;BID</span> <span class="k uq">UNIQUE</span></td></tr>
+<tr><td class="cn">AcceptedQuantity</td><td class="ct">NUMBER(12,3)</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">AcceptedPricePerKg</td><td class="ct">NUMBER(12,2)</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">TotalAmount<div class="expr">= AcceptedQuantity * AcceptedPricePerKg</div></td><td class="ct">NUMBER(14,2)</td><td class="cr">optional</td><td class="ck"><span class="k dv">derived</span></td></tr>
+<tr><td class="cn">OrderDate</td><td class="ct">DATE</td><td class="cr">required</td><td class="ck"></td></tr></tbody></table></div><p class="omit">+3 operational columns in the DDL, not shown</p></section><section class="tbl"><header><h3>PAYMENT</h3><p>Strong entity.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">PaymentID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span></td></tr>
+<tr><td class="cn">SaleOrderID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;SALE_ORDER</span></td></tr>
+<tr><td class="cn">BuyerID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;BUYER</span></td></tr>
+<tr><td class="cn">FarmerID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;FARMER</span></td></tr>
+<tr><td class="cn">Amount</td><td class="ct">NUMBER(12,2)</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">PaymentMethod</td><td class="ct">VARCHAR2(20 CHAR)</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">PaymentDate</td><td class="ct">DATE</td><td class="cr">required</td><td class="ck"></td></tr></tbody></table></div><p class="omit">+2 operational columns in the DDL, not shown</p></section></div><h2>Logistics</h2><div class="grid"><section class="tbl"><header><h3>VEHICLE</h3><p>Strong entity.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">VehicleID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span></td></tr>
+<tr><td class="cn">VehicleNo</td><td class="ct">VARCHAR2(20 CHAR)</td><td class="cr">required</td><td class="ck"><span class="k uq">UNIQUE</span></td></tr>
+<tr><td class="cn">VehicleType</td><td class="ct">VARCHAR2(30 CHAR)</td><td class="cr">optional</td><td class="ck"></td></tr>
+<tr><td class="cn">Capacity</td><td class="ct">NUMBER(12,3)</td><td class="cr">required</td><td class="ck"></td></tr></tbody></table></div><p class="omit">+1 operational column in the DDL, not shown</p></section><section class="tbl"><header><h3>TRANSPORT_REQUEST</h3><p>Strong entity.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">TransportID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span></td></tr>
+<tr><td class="cn">SaleOrderID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;SALE_ORDER</span> <span class="k uq">UNIQUE</span></td></tr>
+<tr><td class="cn">PickupLocation</td><td class="ct">VARCHAR2(200 CHAR)</td><td class="cr">optional</td><td class="ck"></td></tr>
+<tr><td class="cn">DeliveryLocation</td><td class="ct">VARCHAR2(200 CHAR)</td><td class="cr">optional</td><td class="ck"></td></tr></tbody></table></div><p class="omit">+3 operational columns in the DDL, not shown</p></section></div><h2>Price reference</h2><div class="grid"><section class="tbl"><header><h3>DAILY_MARKET_PRICE</h3><p>Strong entity — composite key, not a weak entity.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">CropID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span> <span class="k fk">FK&nbsp;→&nbsp;CROP</span></td></tr>
+<tr><td class="cn">AratID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span> <span class="k fk">FK&nbsp;→&nbsp;VIRTUAL_ARAT</span></td></tr>
+<tr><td class="cn">PriceDate</td><td class="ct">DATE</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span></td></tr>
+<tr><td class="cn">PricePerKg</td><td class="ct">NUMBER(12,2)</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">LoggedBy</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;ADMIN_STAFF</span></td></tr></tbody></table></div><p class="omit">+2 operational columns in the DDL, not shown</p></section><section class="tbl"><header><h3>PHYSICAL_BAZAR</h3><p>Strong entity.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">BazarID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span></td></tr>
+<tr><td class="cn">BazarName</td><td class="ct">VARCHAR2(100 CHAR)</td><td class="cr">required</td><td class="ck"><span class="k uq">UNIQUE</span></td></tr>
+<tr><td class="cn">District</td><td class="ct">VARCHAR2(100 CHAR)</td><td class="cr">required</td><td class="ck"><span class="k uq">UNIQUE</span></td></tr></tbody></table></div><p class="omit">+2 operational columns in the DDL, not shown</p></section><section class="tbl"><header><h3>BAZAR_DAILY_RECORD</h3><p>Weak entity — partial key RecordDate, identified by PHYSICAL_BAZAR and CROP.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">BazarID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span> <span class="k fk">FK&nbsp;→&nbsp;PHYSICAL_BAZAR</span> <span class="k cs">cascade</span></td></tr>
+<tr><td class="cn">RecordDate</td><td class="ct">DATE</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span></td></tr>
+<tr><td class="cn">CropID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span> <span class="k fk">FK&nbsp;→&nbsp;CROP</span></td></tr>
+<tr><td class="cn">PricePerKg</td><td class="ct">NUMBER(12,2)</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">LoggedBy</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;ADMIN_STAFF</span></td></tr>
+<tr><td class="cn">TransactionVolume</td><td class="ct">NUMBER(12,3)</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">Revenue</td><td class="ct">NUMBER(14,2)</td><td class="cr">required</td><td class="ck"></td></tr></tbody></table></div></section></div><h2>Feedback and notification</h2><div class="grid"><section class="tbl"><header><h3>REVIEW</h3><p>Strong entity.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">ReviewID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span></td></tr>
+<tr><td class="cn">SaleOrderID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;SALE_ORDER</span> <span class="k uq">UNIQUE</span></td></tr>
+<tr><td class="cn">Rating</td><td class="ct">NUMBER(1)</td><td class="cr">required</td><td class="ck"></td></tr></tbody></table></div><p class="omit">+2 operational columns in the DDL, not shown</p></section><section class="tbl"><header><h3>COMPLAINT</h3><p>Strong entity.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">ComplaintID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span></td></tr>
+<tr><td class="cn">SaleOrderID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;SALE_ORDER</span></td></tr>
+<tr><td class="cn">ComplaintType</td><td class="ct">VARCHAR2(50 CHAR)</td><td class="cr">optional</td><td class="ck"></td></tr>
+<tr><td class="cn">HandledByAdminID</td><td class="ct">NUMBER(10)</td><td class="cr">optional</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;ADMIN_STAFF</span></td></tr></tbody></table></div><p class="omit">+3 operational columns in the DDL, not shown</p></section><section class="tbl"><header><h3>NOTIFICATION</h3><p>Strong entity.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">NotificationID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span></td></tr>
+<tr><td class="cn">UserID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;USERS</span></td></tr>
+<tr><td class="cn">Type</td><td class="ct">VARCHAR2(30 CHAR)</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">CreatedAt</td><td class="ct">TIMESTAMP</td><td class="cr">required</td><td class="ck"></td></tr></tbody></table></div><p class="omit">+5 operational columns in the DDL, not shown</p></section></div><h2>Relationships that carry their own attributes</h2><div class="grid"><section class="tbl"><header><h3>STORES</h3><p>Ternary core — HARVEST_BATCH × STORAGE_UNIT × STORAGE_MANAGER — plus an optional SALE_ORDER scope and a farmer-or-buyer customer. Aggregated so STORAGE_PAYMENT can reference it.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">AllocationID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span></td></tr>
+<tr><td class="cn">BatchID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;HARVEST_BATCH</span> <span class="k uq">UNIQUE</span></td></tr>
+<tr><td class="cn">WarehouseID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;STORAGE_UNIT</span> <span class="k uq">UNIQUE</span></td></tr>
+<tr><td class="cn">UnitNo</td><td class="ct">NUMBER(5)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;STORAGE_UNIT</span> <span class="k uq">UNIQUE</span></td></tr>
+<tr><td class="cn">ManagerID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;STORAGE_MANAGER</span></td></tr>
+<tr><td class="cn">QuantityStored</td><td class="ct">NUMBER(12,3)</td><td class="cr">required</td><td class="ck"></td></tr>
+<tr><td class="cn">DateIn</td><td class="ct">DATE</td><td class="cr">optional</td><td class="ck"><span class="k uq">UNIQUE</span></td></tr>
+<tr><td class="cn">DateOut</td><td class="ct">DATE</td><td class="cr">optional</td><td class="ck"></td></tr>
+<tr><td class="cn">RequestedByFarmerID</td><td class="ct">NUMBER(10)</td><td class="cr">optional</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;FARMER</span></td></tr>
+<tr><td class="cn">RequestedByBuyerID</td><td class="ct">NUMBER(10)</td><td class="cr">optional</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;BUYER</span></td></tr>
+<tr><td class="cn">SaleOrderID</td><td class="ct">NUMBER(10)</td><td class="cr">optional</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;SALE_ORDER</span></td></tr>
+<tr><td class="cn">StorageFeePerKgSnapshot</td><td class="ct">NUMBER(10,2)</td><td class="cr">optional</td><td class="ck"></td></tr>
+<tr><td class="cn">StorageFee<div class="expr">= QuantityStored * StorageFeePerKgSnapshot</div></td><td class="ct">NUMBER(12,2)</td><td class="cr">optional</td><td class="ck"><span class="k dv">derived</span></td></tr></tbody></table></div><p class="omit">+7 operational columns in the DDL, not shown</p></section><section class="tbl"><header><h3>ASSIGNED_TO</h3><p>Ternary relationship — TRANSPORT_REQUEST × VEHICLE × TRANSPORT_PERSONNEL.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">AssignmentID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span></td></tr>
+<tr><td class="cn">TransportID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;TRANSPORT_REQUEST</span> <span class="k uq">UNIQUE</span></td></tr>
+<tr><td class="cn">VehicleID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;VEHICLE</span> <span class="k uq">UNIQUE</span></td></tr>
+<tr><td class="cn">PersonnelID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k fk">FK&nbsp;→&nbsp;TRANSPORT_PERSONNEL</span> <span class="k uq">UNIQUE</span></td></tr></tbody></table></div><p class="omit">+2 operational columns in the DDL, not shown</p></section><section class="tbl"><header><h3>USER_PHONE</h3><p>Multivalued attribute of USERS, realised as its own relation.</p></header><div class="tw"><table><thead><tr><th>Attribute</th><th>Type</th><th>Null</th><th>Keys</th></tr></thead><tbody><tr><td class="cn">UserID</td><td class="ct">NUMBER(10)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span> <span class="k fk">FK&nbsp;→&nbsp;USERS</span> <span class="k cs">cascade</span></td></tr>
+<tr><td class="cn">PhoneNo</td><td class="ct">VARCHAR2(20 CHAR)</td><td class="cr">required</td><td class="ck"><span class="k pk">PK</span> <span class="k uq">UNIQUE</span></td></tr></tbody></table></div></section></div><h2>Relationships with no attributes of their own</h2><section class="tbl wide"><div class="tw"><table><thead><tr><th>Relationship</th><th>From</th><th>To</th><th>Cardinality</th><th>Realised as</th></tr></thead><tbody><tr><td class="cn">owns</td><td>FARMER</td><td>FARM</td><td class="cd">1 : N</td><td class="cf">FARM.FarmerID</td></tr>
+<tr><td class="cn">produces</td><td>FARM</td><td>HARVEST_BATCH</td><td class="cd">1 : N</td><td class="cf">HARVEST_BATCH.FarmID</td></tr>
+<tr><td class="cn">of crop</td><td>CROP</td><td>HARVEST_BATCH</td><td class="cd">1 : N</td><td class="cf">HARVEST_BATCH.CropID</td></tr>
+<tr><td class="cn">listed at</td><td>VIRTUAL_ARAT</td><td>HARVEST_BATCH</td><td class="cd">1 : N</td><td class="cf">HARVEST_BATCH.AratID</td></tr>
+<tr><td class="cn">belongs to</td><td>CROP</td><td>CROP_CATEGORY</td><td class="cd">N : 1</td><td class="cf">CROP.CategoryID</td></tr>
+<tr><td class="cn">supervises</td><td>VIRTUAL_ARAT</td><td>VIRTUAL_ARAT</td><td class="cd">1 : N  (recursive)</td><td class="cf">VIRTUAL_ARAT.ParentAratID</td></tr>
+<tr><td class="cn">places</td><td>BUYER</td><td>BID</td><td class="cd">1 : N</td><td class="cf">BID.BuyerID</td></tr>
+<tr><td class="cn">on</td><td>BID</td><td>HARVEST_BATCH</td><td class="cd">N : 1</td><td class="cf">BID.BatchID</td></tr>
+<tr><td class="cn">outbids</td><td>BID</td><td>BID</td><td class="cd">1 : 1  (recursive)</td><td class="cf">BID.PreviousBidID</td></tr>
+<tr><td class="cn">creates</td><td>(BUYER–BID–HARVEST_BATCH)</td><td>SALE_ORDER</td><td class="cd">1 : 1  (aggregation)</td><td class="cf">SALE_ORDER.BidID + UQ</td></tr>
+<tr><td class="cn">manages</td><td>STORAGE_MANAGER</td><td>WAREHOUSE</td><td class="cd">1 : N</td><td class="cf">WAREHOUSE.ManagerID</td></tr>
+<tr><td class="cn">contains</td><td>WAREHOUSE</td><td>STORAGE_UNIT</td><td class="cd">1 : N  (identifying)</td><td class="cf">STORAGE_UNIT.WarehouseID</td></tr>
+<tr><td class="cn">settled by</td><td>(STORES)</td><td>STORAGE_PAYMENT</td><td class="cd">1 : N  (aggregation)</td><td class="cf">STORAGE_PAYMENT.AllocationID</td></tr>
+<tr><td class="cn">has</td><td>SALE_ORDER</td><td>PAYMENT</td><td class="cd">1 : N</td><td class="cf">PAYMENT.SaleOrderID</td></tr>
+<tr><td class="cn">makes</td><td>BUYER</td><td>PAYMENT</td><td class="cd">1 : N</td><td class="cf">PAYMENT.BuyerID</td></tr>
+<tr><td class="cn">receives</td><td>FARMER</td><td>PAYMENT</td><td class="cd">1 : N</td><td class="cf">PAYMENT.FarmerID</td></tr>
+<tr><td class="cn">generates</td><td>SALE_ORDER</td><td>TRANSPORT_REQUEST</td><td class="cd">1 : 1</td><td class="cf">TRANSPORT_REQUEST.SaleOrderID + UQ</td></tr>
+<tr><td class="cn">has</td><td>SALE_ORDER</td><td>REVIEW</td><td class="cd">1 : 1</td><td class="cf">REVIEW.SaleOrderID + UQ</td></tr>
+<tr><td class="cn">raised on</td><td>SALE_ORDER</td><td>COMPLAINT</td><td class="cd">1 : N</td><td class="cf">COMPLAINT.SaleOrderID</td></tr>
+<tr><td class="cn">handles</td><td>ADMIN_STAFF</td><td>COMPLAINT</td><td class="cd">1 : N  (partial)</td><td class="cf">COMPLAINT.HandledByAdminID</td></tr>
+<tr><td class="cn">priced at</td><td>CROP</td><td>DAILY_MARKET_PRICE</td><td class="cd">1 : N</td><td class="cf">DAILY_MARKET_PRICE.CropID</td></tr>
+<tr><td class="cn">maintains</td><td>VIRTUAL_ARAT</td><td>DAILY_MARKET_PRICE</td><td class="cd">1 : N</td><td class="cf">DAILY_MARKET_PRICE.AratID</td></tr>
+<tr><td class="cn">logs</td><td>ADMIN_STAFF</td><td>DAILY_MARKET_PRICE</td><td class="cd">1 : N</td><td class="cf">DAILY_MARKET_PRICE.LoggedBy</td></tr>
+<tr><td class="cn">records</td><td>PHYSICAL_BAZAR</td><td>BAZAR_DAILY_RECORD</td><td class="cd">1 : N  (identifying)</td><td class="cf">BAZAR_DAILY_RECORD.BazarID</td></tr>
+<tr><td class="cn">for</td><td>CROP</td><td>BAZAR_DAILY_RECORD</td><td class="cd">1 : N  (identifying)</td><td class="cf">BAZAR_DAILY_RECORD.CropID</td></tr>
+<tr><td class="cn">logs</td><td>ADMIN_STAFF</td><td>BAZAR_DAILY_RECORD</td><td class="cd">1 : N</td><td class="cf">BAZAR_DAILY_RECORD.LoggedBy</td></tr>
+<tr><td class="cn">notifies</td><td>USERS</td><td>NOTIFICATION</td><td class="cd">1 : N</td><td class="cf">NOTIFICATION.UserID</td></tr>
+<tr><td class="cn">ISA</td><td>USERS</td><td>5 subclasses</td><td class="cd">total, disjoint</td><td class="cf">subclass PK = FK to USERS</td></tr></tbody></table></div></section>
+</main>

@@ -42,6 +42,27 @@ router.post('/prices', async (req, res, next) => {
   }
 });
 
+/**
+ * The Reporting Module. Every report is a PL/SQL procedure in
+ * pkg_krishi_reports returning a ref cursor — this route only names one
+ * and passes the filters through.
+ */
+router.get('/reports', async (_req, res, next) => {
+  try {
+    res.json({ reports: admin.listReports() });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/reports/:name', async (req, res, next) => {
+  try {
+    res.json(await admin.runReport(req.params.name, req.query));
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get('/complaints', async (req, res, next) => {
   try {
     res.json(await admin.listComplaints({ status: req.query.status }));

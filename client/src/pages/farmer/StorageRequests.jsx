@@ -1,6 +1,5 @@
 import StorageConsentPage from '../../components/StorageConsentPage';
 
-/** Leg 1 — the farmer's own local storage, before the batch sells. */
 export default function StorageRequests() {
   return (
     <StorageConsentPage

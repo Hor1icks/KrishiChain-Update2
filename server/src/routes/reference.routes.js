@@ -11,9 +11,17 @@
 
 const express = require('express');
 const { query } = require('../config/db');
+const storage = require('../services/storage.service');
 const { authenticate } = require('../middleware/authenticate');
+const { DISTRICTS } = require('../utils/districts');
 
 const router = express.Router();
+// Districts are needed by the registration form, which by definition has
+// no token yet, so this one sits above the authenticate middleware.
+router.get('/districts', (_req, res) => {
+  res.json(DISTRICTS);
+});
+
 router.use(authenticate);
 
 router.get('/crops', async (_req, res, next) => {
@@ -58,6 +66,28 @@ router.get('/arats', async (_req, res, next) => {
         ORDER BY rn`
     );
     res.json(result.rows);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * Warehouses a customer can ask for space in. Lives here rather than in
+ * storage.routes.js because that router is manager-only, and the whole
+ * point of these two is that a farmer or buyer can browse somebody
+ * else's warehouse before requesting an allocation against it.
+ */
+router.get('/warehouses', async (_req, res, next) => {
+  try {
+    res.json(await storage.listAllWarehousesPublic());
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/warehouses/:warehouseId/units', async (req, res, next) => {
+  try {
+    res.json(await storage.listAllUnitsPublic(Number(req.params.warehouseId)));
   } catch (err) {
     next(err);
   }

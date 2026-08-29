@@ -2,16 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../api/client';
 import { date, number, taka } from '../../utils/format';
 
-/**
- * The transport module's single page: the job board, this driver's trips,
- * and the two actions that carry PRD §9.10 transactions #5 and #6.
- *
- * Claiming and delivering are kept on one screen deliberately — they are
- * the same trip at two points in its life, and splitting them across
- * pages would hide the fact that one row moves all the way through.
- */
-
-/** What "advance" does next, so the button can say it rather than "Next". */
 const NEXT_STEP = { ASSIGNED: 'Mark picked up', PICKED_UP: 'Mark in transit' };
 
 export default function Assignments() {
@@ -163,7 +153,17 @@ export default function Assignments() {
                 <td>#{r.transportId}</td>
                 <td>#{r.saleOrderId}</td>
                 <td>{r.cropName}</td>
-                <td className="num">{number(r.quantity)} kg</td>
+                <td className="num">
+                  {number(r.quantity)} kg
+                  {r.assignedCapacity > 0 && (
+                    <>
+                      <br />
+                      <span className="muted">
+                        {number(r.assignedCapacity)} kg already on it
+                      </span>
+                    </>
+                  )}
+                </td>
                 <td className="small">{r.pickupLocation || '—'}</td>
                 <td className="small">{r.deliveryLocation || '—'}</td>
                 <td className="num">{taka(r.totalAmount)}</td>
@@ -188,7 +188,6 @@ export default function Assignments() {
         </table>
       )}
 
-      {/* Transaction #5 — one act decides all three legs of the ternary. */}
       {claiming && (
         <form onSubmit={claim} className="boxed confirm">
           <h3>Claim trip #{claiming.transportId}</h3>
@@ -210,9 +209,9 @@ export default function Assignments() {
           </label>
 
           <p className="note">
-            BR-18: the vehicle has to be able to carry {number(claiming.quantity)} kg. Claiming
-            records the assignment, marks the vehicle assigned and moves the trip on — all at
-            once, or not at all.
+            This request needs {number(claiming.quantity)} kg of capacity and already has{' '}
+            {number(claiming.assignedCapacity || 0)} kg. Add more of your vehicles until it is
+            covered.
           </p>
 
           <div className="actions">
@@ -256,7 +255,17 @@ export default function Assignments() {
                 <td>#{t.saleOrderId}</td>
                 <td>{t.cropName}</td>
                 <td className="num">{number(t.quantity)} kg</td>
-                <td className="small">{t.vehicleNo}</td>
+                <td className="small">
+                  {t.vehicleNo}
+                  {t.vehicleCount > 1 && (
+                    <>
+                      <br />
+                      <span className="muted">
+                        + {t.vehicleCount - 1} more · {number(t.fleetCapacity)} kg total
+                      </span>
+                    </>
+                  )}
+                </td>
                 <td className="small">
                   {t.farmerName} → {t.buyerName}
                 </td>
@@ -300,7 +309,7 @@ export default function Assignments() {
         </table>
       )}
 
-      {/* Transaction #6 — the last of the six. */}
+      {}
       {delivering && (
         <form onSubmit={deliver} className="boxed confirm">
           <h3>Deliver trip #{delivering.transportId}?</h3>
@@ -335,8 +344,8 @@ export default function Assignments() {
 
           <p className="note">
             Marks the trip delivered, completes the sale order
-            {collectsCash && ', records the payment'} and hands the vehicle back — all at once, or
-            not at all. The database blocks any payment before delivery (BR-20).
+            {collectsCash && ', records the payment'} and hands the vehicles back, all at once or
+            not at all.
           </p>
 
           <div className="actions">

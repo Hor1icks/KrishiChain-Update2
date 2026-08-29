@@ -541,10 +541,148 @@ every phase:
 
 ---
 
+## Storage negotiation and the transport delivery gate (2026-08-13)
+
+Three changes shipped together because they all touch the storage accept path.
+Schema in `database/07_bid_storage_transport_notifications.sql`.
+
+**Negotiation is a single counter-offer round.** `STORES.ProposedBy` records
+which side opened an allocation ('MANAGER' or 'CUSTOMER'), and that decides who
+may answer it — `assertIsResponder()` derives the responder rather than trusting
+the caller. Whoever answers may ACCEPT, REJECT, or COUNTER once; a COUNTER sets
+`AllocationStatus='COUNTERED'` plus `CounterRatePerKg`/`CounteredBy`, and only
+the *original proposer* may then accept or reject it. There is deliberately no
+re-counter: `respondToCounter()` refuses anyone but the proposer, so no sequence
+of API calls can bounce a negotiation back and forth forever.
+
+`'COUNTERED'` had to be added to every "this space is spoken for" status list —
+`unitLoad()`, `LEG1_BASE_SQL`, `LEG2_BASE_SQL`, `propose()`'s subqueries and
+`V_UNIT_UTILIZATION`. An allocation mid-negotiation still reserves its unit
+space; without this a second manager could double-book the same unit while the
+first negotiation was open.
+
+**Acceptance happens in exactly one function.** `finalizeAcceptance()` is
+reached from three paths (plain accept, accepted counter, manager accepting a
+customer request) and is the only place that writes `ACTIVE`/`DateIn`, promotes
+a leg-1 batch `CREATED`→`STORED`, and unlocks leg-2 transport. It also writes
+the agreed rate into `StorageFeePerKgSnapshot`, which re-derives the virtual
+`StorageFee` — that is how a countered rate becomes the real fee.
+
+**THE TRANSPORT DELIVERY GATE — this changes the demo flow.** Awarding a bid
+still raises a `TRANSPORT_REQUEST` immediately, but at that moment nobody knows
+where the load is going. `SALE_ORDER.DeliveryPreference` starts `'PENDING'` and
+the request is **not offered to drivers** until it leaves that state, by exactly
+two routes:
+
+1. the buyer picks direct delivery (`buyer.service.js setDeliveryDirect()`), or
+2. a leg-2 storage allocation reaches ACTIVE (`finalizeAcceptance()`).
+
+Both also write the real `TRANSPORT_REQUEST.DeliveryLocation` — the buyer's
+address or the warehouse's. Enforced in `listOpenRequests()`'s WHERE clause and
+re-checked inside `claim()`, because those two calls are not atomic with each
+other (a different reason from BR-18's recheck, which exists because the vehicle
+isn't known until claim time).
+
+**Consequence for the narration script:** "Award Winning Bid" no longer produces
+a claimable trip on its own. The script needs an explicit step between award and
+transport-claim — buyer chooses direct delivery, or accepts a storage proposal.
+The seeded data is unaffected: all 5 seeded sale orders are backfilled to
+`'DIRECT'`, so the seeded transport rows stay claimable exactly as before.
+
+Fault-injection verified (2026-08-13): a temporary
+`CHECK (DeliveryPreference <> 'VIA_STORAGE') ENABLE NOVALIDATE` armed against
+`SALE_ORDER`, then a leg-2 accept — the `STORES` row stayed `PENDING_ACCEPT`
+with `DateIn` null, the unit's status was untouched, and the order stayed
+`PENDING`. Dropped, retried, succeeded.
+
+---
+
+## PL/SQL layer (2026-08-13)
+
+`database/08_plsql_layer.sql` — the stored procedures, functions and
+packages the project proposal (§4) commits to. Run after `04_views.sql`;
+every object is `CREATE OR REPLACE`, so it is safe to re-run, and a
+re-seed does not invalidate it (wiping rows does not drop packages).
+
+**What is in it**
+
+- `pkg_krishi_metrics` — five functions returning derived scalars:
+  `fn_order_outstanding`, `fn_unit_free_space`, `fn_batch_unstored`,
+  `fn_storage_days`, `fn_farmer_revenue`.
+- `pkg_krishi_reports` — the six reports from the proposal's Reporting
+  Module (harvest, storage, sales, payment, market price, user activity),
+  each an `OUT SYS_REFCURSOR` procedure.
+- `prc_expire_stale_batches` — housekeeping DML: retires an auction whose
+  window closed with no bid and nothing sold. Explicit cursor +
+  `WHERE CURRENT OF`, `FOR UPDATE` so a bid landing mid-run cannot be
+  lost, and the caller owns the COMMIT (composable with `withTransaction()`).
+
+**What is deliberately NOT in it — read before adding to this file.**
+The six PRD §9.10 transactions stay in the Express service layer. Each
+needs the authenticated user's identity and role to decide what is
+allowed, which the database has no concept of, and each is fault-injection
+verified in that form. Re-expressing them as procedures would create two
+sources of truth for the same business rules — exactly what the "which
+layer enforces which rule" table above rules out. Where a **view** already
+owns a derivation, the functions read the view (`fn_unit_free_space`
+reads `V_UNIT_UTILIZATION`) rather than re-deriving it, for the same
+reason.
+
+**Wired into the app, not decorative.** `GET /api/admin/reports` lists
+them; `GET /api/admin/reports/:name` runs one. `callCursor()` in
+`server/src/config/db.js` is the only way to call them — it drains the
+ref cursor **in batches** and closes it explicitly. Both matter: a single
+capped `getRows(n)` silently returns the first n rows (this actually bit
+during development — the market-price report quietly reported 200 rows
+instead of 372), and an unclosed ref cursor holds a server-side cursor
+open until `OPEN_CURSORS` is exhausted.
+
+**Bind-name trap, again:** the activity report's row cap binds as
+`:maxRows`, not `:limit` — `LIMIT` is reserved and fails at parse time
+with `ORA-01745`, naming neither the column nor the offending word. Same
+class of bug as `:comment`.
+
+---
+
+## ER diagram corrections (2026-08-16)
+
+`ER/krishichain-er-solution.html` was regenerated against the live schema.
+Backup of the previous version sits beside it as `.bak`.
+
+**Two real defects fixed:**
+
+- **REVIEW hung off PAYMENT.** The `has` connector started at PAYMENT's
+  bottom edge; a review is written against the *order*
+  (`REVIEW.SaleOrderID`, UNIQUE → 1:1), never against a payment. Re-parented
+  to SALE_ORDER.
+- **`raised on` never reached its diamond** — the COMPLAINT connector stopped
+  at (1790, 2062) while the diamond spans x 1638–1762. Pre-existing, unrelated
+  to the above; now joined.
+
+**One notation fix:** `settled by` ran diamond-to-diamond off the STORES
+ternary, which Chen notation does not permit — a relationship cannot
+participate in another relationship. STORES is now wrapped in a dashed
+**aggregation box** and `settled by` leaves the box, matching the treatment
+the BID/SALE_ORDER aggregation already had. This is the diagram catching up
+with the physical model: STORES has its own surrogate key (`AllocationID`),
+which is exactly what makes it referenceable as one fact.
+
+**Brought up to date with Phases A–C:** NOTIFICATION entity + `notifies`
+added to both diagrams (it was missing entirely), plus `STORES.ProposedBy`,
+`CounterRatePerKg`, `CounteredBy`, `HARVEST_BATCH.MinimumBidQuantity` and
+`SALE_ORDER.DeliveryPreference`.
+
+There are now **two aggregations**, and the intro, mapping notes and
+assumptions all say so.
+
+---
+
 ## Open items
 
 - Decide whether `SALE_ORDER.PaymentTerms` should be surfaced on the ER/schema
   diagrams for the report, or documented as a physical-only addition.
+- **The narration script now needs a delivery-choice step** between award and
+  transport claim (see the transport delivery gate above).
 - **BR-09 is now enforced** in `farmer.service.js` `createBatch()` (2026-08-06).
 - **BR-11 is now fully enforced** in `buyer.service.js` `placeBid()` (2026-08-06),
   both halves, plus the floor re-checked at award time.
@@ -555,3 +693,70 @@ every phase:
   batch `MinimumPrice` pairing before editing any price in
   `03_insert_data.sql`.**
 - Narration script (PRD §11.3) is the last thing outstanding before the dry run.
+
+---
+
+## Post-Update-1 assessment fixes (database/09, database/10)
+
+Both migration files are re-runnable and have been applied to the live schema.
+The whole chain `00_reset` → `01` → `02` → `03` → `04` → `08` → `05` rebuilds
+from an empty schema with **zero errors**.
+
+### D-9  STORAGE_PAYMENT merged into PAYMENT (discriminator)
+
+The evaluator questioned one PAYMENT touching both a farmer and a storage
+allocation. He offered two fixes: specialize PAYMENT, or make FarmerID
+nullable. We took the discriminator form of the first:
+
+    PaymentType IN ('SALE','STORAGE')
+    SALE     -> SaleOrderID + BuyerID + FarmerID set, AllocationID null
+    STORAGE  -> AllocationID set, the other three null
+
+`CK_PAYMENT_TYPE_SHAPE` enforces the shape, so the nullable columns cannot be
+filled in nonsensically. Verified: a STORAGE row carrying a SaleOrderID, a SALE
+row missing FarmerID, and an unknown PaymentType are all rejected (ORA-02290);
+a well-formed STORAGE row is accepted.
+
+**Why a discriminator here but subclass tables for USERS.** The USERS subtypes
+each carry several attributes of their own and earn a table. These two differ
+by one or two columns, so a discriminator is proportionate. Be ready to say
+this - the inconsistency is the obvious follow-up question.
+
+The second aggregation survives: `PAYMENT.AllocationID` still references the
+STORES allocation as a whole.
+
+### D-10  USERS.Address is an abstract data type
+
+The six flat address columns became one `Address t_address` object column with
+`full_text()` and `short_text()` member functions. The type knows how to format
+itself, so `V_USER_PROFILE.FullAddress` is now `u.Address.full_text()` rather
+than the same NVL2 chain repeated in every query that needs it.
+
+Two gotchas, both hit during implementation:
+- Attribute access needs a table alias. `u.Address.District` works,
+  `Address.District` does not.
+- `NVL2` is a SQL function and is unavailable inside PL/SQL (PLS-00201), so the
+  member bodies use CASE.
+
+node-oracledb 6.9 Thick mode round-trips the type against XE 11.2 correctly -
+reads come back as a DbObject, writes bind via `getDbObjectClass()`. This was
+proven with a throwaway spike before any migration was written.
+
+### D-11  ON DELETE rules
+
+20 CASCADE, 3 SET NULL, 18 left restricting. The 18 are deliberate: reference
+data (CROP, VIRTUAL_ARAT) and accountability links (the manager who authorised
+an allocation, the payer on a payment). Deleting a crop that has sales history
+raises ORA-02292 on FK_BATCH_CROP, which is the correct outcome and a good
+thing to demonstrate.
+
+### Answers the viva got wrong (no code change needed)
+
+- **SALE_ORDER -> TRANSPORT_REQUEST is 1:1, not 1:M.** One order raises one
+  transport request; the multiplicity is further down, one request to many
+  VEHICLES through ASSIGNED_TO. `UQ_TRANSPORT_ORDER` is therefore correct.
+- **The FK direction was already right.** SaleOrderID sits on
+  TRANSPORT_REQUEST, the many side. It was answered backwards on the day.
+- **There is no GENERATES table** and never was.
+- **Auto-increment**: Oracle 11g has no IDENTITY column. The 18 sequences
+  paired with BEFORE INSERT triggers *are* the 11g equivalent. Nothing to add.

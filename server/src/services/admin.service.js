@@ -11,8 +11,92 @@
  * would make the whole audit trail meaningless.
  */
 
-const { query, withTransaction } = require('../config/db');
+const { query, callCursor, withTransaction } = require('../config/db');
 const ApiError = require('../utils/ApiError');
+
+/**
+ * The six reports are not written here — they live in the database, in
+ * pkg_krishi_reports (database/08_plsql_layer.sql), and this file just
+ * calls them. Each is one large multi-table query whose shape belongs
+ * with the schema rather than restated in JavaScript, and keeping them
+ * server-side means SQL Developer and the API return byte-identical
+ * results during the demo.
+ *
+ * Every report takes optional filters; a NULL means "no filter", so any
+ * of them can be called bare.
+ */
+const REPORTS = {
+  harvest: {
+    plsql: `BEGIN pkg_krishi_reports.harvest_report(:dateFrom, :dateTo, :cursor); END;`,
+    binds: (f) => ({ dateFrom: f.dateFrom || null, dateTo: f.dateTo || null }),
+  },
+  storage: {
+    plsql: `BEGIN pkg_krishi_reports.storage_report(:warehouseId, :cursor); END;`,
+    binds: (f) => ({ warehouseId: f.warehouseId ? Number(f.warehouseId) : null }),
+  },
+  sales: {
+    plsql: `BEGIN pkg_krishi_reports.sales_report(:dateFrom, :dateTo, :cursor); END;`,
+    binds: (f) => ({ dateFrom: f.dateFrom || null, dateTo: f.dateTo || null }),
+  },
+  payment: {
+    plsql: `BEGIN pkg_krishi_reports.payment_report(:dateFrom, :dateTo, :cursor); END;`,
+    binds: (f) => ({ dateFrom: f.dateFrom || null, dateTo: f.dateTo || null }),
+  },
+  'market-price': {
+    plsql: `BEGIN pkg_krishi_reports.market_price_report(:cropId, :days, :cursor); END;`,
+    binds: (f) => ({
+      cropId: f.cropId ? Number(f.cropId) : null,
+      days: f.days ? Number(f.days) : 30,
+    }),
+  },
+  activity: {
+    plsql: `BEGIN pkg_krishi_reports.user_activity_report(:userId, :maxRows, :cursor); END;`,
+    binds: (f) => ({
+      userId: f.userId ? Number(f.userId) : null,
+      // Not ":limit" — LIMIT is a reserved word and a reserved bind name
+      // fails at parse time with ORA-01745, naming neither the column nor
+      // the offending word. Same class of trap as ":comment".
+      maxRows: f.maxRows ? Number(f.maxRows) : 100,
+    }),
+  },
+};
+
+/** Dates arrive as 'YYYY-MM-DD' strings; Oracle wants real DATEs. */
+function toDate(value) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    throw ApiError.badRequest(`"${value}" is not a valid date (use YYYY-MM-DD).`);
+  }
+  return parsed;
+}
+
+async function runReport(name, filters = {}) {
+  const report = REPORTS[name];
+  if (!report) {
+    throw ApiError.notFound(
+      `No such report. Available: ${Object.keys(REPORTS).join(', ')}.`
+    );
+  }
+  const binds = report.binds(filters);
+  if ('dateFrom' in binds) binds.dateFrom = toDate(binds.dateFrom);
+  if ('dateTo' in binds) binds.dateTo = toDate(binds.dateTo);
+
+  const { rows, truncated } = await callCursor(report.plsql, binds);
+  return {
+    report: name,
+    filters: binds,
+    rowCount: rows.length,
+    // Surfaced, not hidden: a report the caller believes is complete but
+    // is not would quietly produce wrong totals.
+    truncated,
+    rows,
+  };
+}
+
+function listReports() {
+  return Object.keys(REPORTS);
+}
 
 /** Stat cards + the four reports J-07 asks for. */
 async function getDashboard() {
@@ -94,7 +178,8 @@ async function listUsers(filters = {}) {
   const result = await query(
     `SELECT u.UserID AS "userId",
             u.FirstName || ' ' || NVL(u.MiddleName || ' ', '') || u.LastName AS "name",
-            u.Email AS "email", u.Gender AS "gender", u.District AS "district",
+            u.Email AS "email", u.Gender AS "gender",
+            u.Address.District AS "district",
             u.RegistrationDate AS "registrationDate",
             CASE WHEN f.FarmerID   IS NOT NULL THEN 'FARMER'
                  WHEN b.BuyerID    IS NOT NULL THEN 'BUYER'
@@ -279,4 +364,6 @@ module.exports = {
   logDailyPrice,
   listComplaints,
   updateComplaint,
+  listReports,
+  runReport,
 };

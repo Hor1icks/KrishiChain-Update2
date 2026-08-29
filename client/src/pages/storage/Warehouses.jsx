@@ -56,9 +56,6 @@ export default function Warehouses() {
         method: 'POST',
         body: { capacity: Number(capacity) },
       });
-      // The unit number came from the database, not from this form —
-      // worth showing, because that is the weak entity's partial key
-      // being generated per warehouse.
       setNotice(
         `Unit ${res.unitNo} created in warehouse ${res.warehouseId}. ` +
           `The number was assigned by trg_storage_unit_no, not by you.`
@@ -72,14 +69,7 @@ export default function Warehouses() {
     }
   }
 
-  /**
-   * MAINTENANCE is the one unit status refreshUnitStatus() will not
-   * recompute, because it is a decision about the unit rather than a
-   * function of how full it is. Coming back into service hands it to
-   * that derivation, so the row re-reads EMPTY/PARTIAL/FULL from the
-   * allocations actually in it.
-   */
-  async function toggleMaintenance(warehouseId, unit) {
+    async function toggleMaintenance(warehouseId, unit) {
     const inMaintenance = unit.unitStatus !== 'MAINTENANCE';
     setError('');
     setNotice('');
@@ -163,7 +153,7 @@ export default function Warehouses() {
             <section key={w.warehouseId} className="boxed">
               <div className="row">
                 <div>
-                  <h2 style={{ marginTop: 0 }}>
+                  <h2>
                     #{w.warehouseId} {w.warehouseName}
                   </h2>
                   <p className="muted">

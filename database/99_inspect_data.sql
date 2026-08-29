@@ -79,7 +79,7 @@ COLUMN phones    FORMAT 999
 SELECT u.UserID AS id,
        u.FirstName || ' ' || u.LastName AS full_name,
        u.Role AS role,
-       u.District AS district,
+       u.Address.District AS district,
        (SELECT COUNT(*) FROM USER_PHONE p WHERE p.UserID = u.UserID) AS phones
 FROM   USERS u
 ORDER  BY u.UserID;

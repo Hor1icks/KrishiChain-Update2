@@ -3,11 +3,6 @@ import { Link } from 'react-router';
 import { api } from '../../api/client';
 import { date, taka } from '../../utils/format';
 
-/**
- * One review per order — UQ_REVIEW_ORDER enforces that in the database,
- * so an order already reviewed simply drops out of the "waiting" list
- * rather than being offered and then refused.
- */
 export default function Reviews() {
   const [reviews, setReviews] = useState(null);
   const [orders, setOrders] = useState([]);
@@ -59,7 +54,6 @@ export default function Reviews() {
   if (error && !reviews) return <p className="error">{error}</p>;
   if (!reviews) return <p className="muted">Loading…</p>;
 
-  // Only delivered orders are worth reviewing, and only once.
   const awaiting = orders.filter((o) => !o.reviewId && o.deliveryStatus === 'DELIVERED');
 
   return (

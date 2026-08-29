@@ -1,0 +1,4089 @@
+{
+ "FARMER": {
+  "/auth/me": {
+   "userId": 1,
+   "firstName": "Abdul",
+   "middleName": null,
+   "lastName": "Karim",
+   "email": "abdul.karim@krishichain.bd",
+   "gender": "M",
+   "dateOfBirth": "1978-04-11T18:00:00.000Z",
+   "age": 48,
+   "district": "Bogura",
+   "upazila": "Kahaloo",
+   "village": "Kahaloo",
+   "registrationDate": "2025-06-23T18:00:00.000Z",
+   "status": "ACTIVE",
+   "role": "FARMER",
+   "phones": [
+    "01711000001",
+    "01911000001"
+   ]
+  },
+  "/reference/crops": [
+   {
+    "cropId": 1,
+    "cropName": "Aman Rice",
+    "categoryName": "Cereal",
+    "unit": "kg",
+    "basePrice": 32,
+    "shelfLifeDays": 365
+   },
+   {
+    "cropId": 5,
+    "cropName": "Mustard Seed",
+    "categoryName": "Oilseed",
+    "unit": "kg",
+    "basePrice": 68,
+    "shelfLifeDays": 240
+   },
+   {
+    "cropId": 3,
+    "cropName": "Lentil",
+    "categoryName": "Pulse",
+    "unit": "kg",
+    "basePrice": 95,
+    "shelfLifeDays": 300
+   },
+   {
+    "cropId": 4,
+    "cropName": "Onion",
+    "categoryName": "Spice",
+    "unit": "kg",
+    "basePrice": 45,
+    "shelfLifeDays": 90
+   },
+   {
+    "cropId": 2,
+    "cropName": "Potato",
+    "categoryName": "Tuber",
+    "unit": "kg",
+    "basePrice": 18,
+    "shelfLifeDays": 120
+   }
+  ],
+  "/reference/arats": [
+   {
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "district": "Dhaka",
+    "tier": 1,
+    "label": "KrishiChain Central Arat"
+   },
+   {
+    "aratId": 3,
+    "aratName": "Central Regional Arat",
+    "district": "Dhaka",
+    "tier": 2,
+    "label": "   Central Regional Arat"
+   },
+   {
+    "aratId": 5,
+    "aratName": "Munshiganj Zonal Arat",
+    "district": "Munshiganj",
+    "tier": 3,
+    "label": "      Munshiganj Zonal Arat"
+   },
+   {
+    "aratId": 2,
+    "aratName": "North Bengal Regional Arat",
+    "district": "Rangpur",
+    "tier": 2,
+    "label": "   North Bengal Regional Arat"
+   },
+   {
+    "aratId": 4,
+    "aratName": "Bogura Zonal Arat",
+    "district": "Bogura",
+    "tier": 3,
+    "label": "      Bogura Zonal Arat"
+   }
+  ],
+  "/reference/warehouses": [
+   {
+    "warehouseId": 1,
+    "warehouseName": "Bogura Cold Storage",
+    "address": "Sherpur Road, Bogura Sadar",
+    "district": "Bogura",
+    "storageFeePerKgRate": 7.5,
+    "freeSpace": 157700,
+    "unitCount": 3
+   },
+   {
+    "warehouseId": 5,
+    "warehouseName": "Faridpur Grain Store",
+    "address": "Mujib Road, Faridpur Sadar",
+    "district": "Faridpur",
+    "storageFeePerKgRate": 5,
+    "freeSpace": 47500,
+    "unitCount": 2
+   },
+   {
+    "warehouseId": 3,
+    "warehouseName": "Munshiganj Potato Cold Store",
+    "address": "Bazar Road, Munshiganj Sadar",
+    "district": "Munshiganj",
+    "storageFeePerKgRate": 8,
+    "freeSpace": 177000,
+    "unitCount": 2
+   },
+   {
+    "warehouseId": 4,
+    "warehouseName": "Pabna Central Warehouse",
+    "address": "Rupkatha Road, Pabna Sadar",
+    "district": "Pabna",
+    "storageFeePerKgRate": 5.5,
+    "freeSpace": 66500,
+    "unitCount": 2
+   },
+   {
+    "warehouseId": 2,
+    "warehouseName": "Rangpur Agro Warehouse",
+    "address": "Jail Road, Rangpur Sadar",
+    "district": "Rangpur",
+    "storageFeePerKgRate": 6,
+    "freeSpace": 80000,
+    "unitCount": 2
+   }
+  ],
+  "/farmer/dashboard": {
+   "summary": {
+    "farmerId": 1,
+    "farmerName": "Abdul Karim",
+    "district": "Bogura",
+    "farmCount": 1,
+    "batchesListed": 5,
+    "batchesSold": 2,
+    "quantitySoldKg": 6500,
+    "totalRevenue": 199000,
+    "avgPricePerKg": 29,
+    "amountReceived": 144000,
+    "amountOutstanding": 55000
+   },
+   "batchesByStatus": [
+    {
+     "status": "BIDDING_OPEN",
+     "count": 4
+    },
+    {
+     "status": "SOLD",
+     "count": 1
+    }
+   ],
+   "openAuctions": [
+    {
+     "batchId": 6,
+     "cropName": "Potato",
+     "bidCount": 2,
+     "highestBid": 22,
+     "minimumPrice": 20,
+     "hoursRemaining": 78.7
+    },
+    {
+     "batchId": 19,
+     "cropName": "Aman Rice",
+     "bidCount": 4,
+     "highestBid": 38.25,
+     "minimumPrice": 34,
+     "hoursRemaining": 126
+    },
+    {
+     "batchId": 20,
+     "cropName": "Mustard Seed",
+     "bidCount": 1,
+     "highestBid": 74,
+     "minimumPrice": 72,
+     "hoursRemaining": 126
+    },
+    {
+     "batchId": 21,
+     "cropName": "Onion",
+     "bidCount": 1,
+     "highestBid": 48,
+     "minimumPrice": 47,
+     "hoursRemaining": 126
+    }
+   ]
+  },
+  "/farmer/farms": [
+   {
+    "farmId": 1,
+    "farmName": "Karim Krishi Khamar",
+    "area": 12.5,
+    "soilType": "Loam",
+    "irrigationType": "Deep Tubewell",
+    "location": "Kahaloo, Bogura",
+    "district": "Bogura",
+    "status": "ACTIVE",
+    "batchCount": 5
+   }
+  ],
+  "/farmer/batches": [
+   {
+    "batchId": 21,
+    "cropName": "Onion",
+    "farmName": "Karim Krishi Khamar",
+    "aratName": "Bogura Zonal Arat",
+    "harvestDate": "2026-08-15T17:15:13.000Z",
+    "totalQuantity": 3000,
+    "soldQuantity": 0,
+    "availableQuantity": 3000,
+    "qualityGrade": "B",
+    "minimumPrice": 47,
+    "minimumBidQuantity": 400,
+    "currentHighestBid": 48,
+    "biddingEndTime": "2026-08-23T17:15:13.866Z",
+    "status": "BIDDING_OPEN"
+   },
+   {
+    "batchId": 20,
+    "cropName": "Mustard Seed",
+    "farmName": "Karim Krishi Khamar",
+    "aratName": "Bogura Zonal Arat",
+    "harvestDate": "2026-08-15T17:15:13.000Z",
+    "totalQuantity": 900,
+    "soldQuantity": 0,
+    "availableQuantity": 900,
+    "qualityGrade": "A",
+    "minimumPrice": 72,
+    "minimumBidQuantity": 150,
+    "currentHighestBid": 74,
+    "biddingEndTime": "2026-08-23T17:15:13.866Z",
+    "status": "BIDDING_OPEN"
+   },
+   {
+    "batchId": 19,
+    "cropName": "Aman Rice",
+    "farmName": "Karim Krishi Khamar",
+    "aratName": "Bogura Zonal Arat",
+    "harvestDate": "2026-08-15T17:15:13.000Z",
+    "totalQuantity": 2200,
+    "soldQuantity": 0,
+    "availableQuantity": 2200,
+    "qualityGrade": "A",
+    "minimumPrice": 34,
+    "minimumBidQuantity": 300,
+    "currentHighestBid": 38.25,
+    "biddingEndTime": "2026-08-23T17:15:13.866Z",
+    "status": "BIDDING_OPEN"
+   },
+   {
+    "batchId": 6,
+    "cropName": "Potato",
+    "farmName": "Karim Krishi Khamar",
+    "aratName": "Bogura Zonal Arat",
+    "harvestDate": "2026-08-07T18:00:00.000Z",
+    "totalQuantity": 4000,
+    "soldQuantity": 2500,
+    "availableQuantity": 1500,
+    "qualityGrade": "A",
+    "minimumPrice": 20,
+    "minimumBidQuantity": 400,
+    "currentHighestBid": 22,
+    "biddingEndTime": "2026-08-21T18:00:00.000Z",
+    "status": "BIDDING_OPEN"
+   },
+   {
+    "batchId": 1,
+    "cropName": "Aman Rice",
+    "farmName": "Karim Krishi Khamar",
+    "aratName": "Bogura Zonal Arat",
+    "harvestDate": "2026-06-18T18:00:00.000Z",
+    "totalQuantity": 5000,
+    "soldQuantity": 4000,
+    "availableQuantity": 1000,
+    "qualityGrade": "A",
+    "minimumPrice": 34,
+    "minimumBidQuantity": 500,
+    "currentHighestBid": 36,
+    "biddingEndTime": "2026-06-26T18:00:00.000Z",
+    "status": "SOLD"
+   }
+  ],
+  "/farmer/orders": [
+   {
+    "saleOrderId": 24,
+    "orderDate": "2026-08-18T11:15:13.000Z",
+    "acceptedQuantity": 2500,
+    "acceptedPricePerKg": 22,
+    "totalAmount": 55000,
+    "status": "CONFIRMED",
+    "paymentTerms": "ON_DELIVERY",
+    "batchId": 6,
+    "cropName": "Potato",
+    "buyerName": "Anisur Bazar Supply",
+    "transportId": 24,
+    "deliveryStatus": "PENDING",
+    "deliveryDate": null,
+    "amountReceived": 0
+   },
+   {
+    "saleOrderId": 1,
+    "orderDate": "2026-06-26T18:00:00.000Z",
+    "acceptedQuantity": 4000,
+    "acceptedPricePerKg": 36,
+    "totalAmount": 144000,
+    "status": "COMPLETED",
+    "paymentTerms": "ON_DELIVERY",
+    "batchId": 1,
+    "cropName": "Aman Rice",
+    "buyerName": "Anisur Bazar Supply",
+    "transportId": 1,
+    "deliveryStatus": "DELIVERED",
+    "deliveryDate": "2026-07-03T18:00:00.000Z",
+    "amountReceived": 144000
+   }
+  ],
+  "/farmer/payments": [
+   {
+    "paymentId": 1,
+    "saleOrderId": 1,
+    "amount": 144000,
+    "paymentMethod": "BANK_TRANSFER",
+    "paymentDate": "2026-07-04T18:00:00.000Z",
+    "transactionReference": "TRX-BNK-20240001",
+    "paymentStatus": "COMPLETED",
+    "cropName": "Aman Rice",
+    "orderTotal": 144000,
+    "buyerName": "Anisur Bazar Supply"
+   }
+  ],
+  "/farmer/storage": [
+   {
+    "allocationId": 28,
+    "batchId": 20,
+    "cropName": "Mustard Seed",
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 3,
+    "quantityStored": 600,
+    "dateIn": null,
+    "dateOut": null,
+    "allocationStatus": "PENDING_ACCEPT",
+    "minimumStorageDays": 45,
+    "minimumReleaseDate": null,
+    "storageFee": 4500,
+    "releaseRequestedBy": null
+   },
+   {
+    "allocationId": 26,
+    "batchId": 21,
+    "cropName": "Onion",
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 1,
+    "quantityStored": 1500,
+    "dateIn": null,
+    "dateOut": null,
+    "allocationStatus": "PENDING_ACCEPT",
+    "minimumStorageDays": 30,
+    "minimumReleaseDate": null,
+    "storageFee": 11250,
+    "releaseRequestedBy": null
+   },
+   {
+    "allocationId": 6,
+    "batchId": 6,
+    "cropName": "Potato",
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 2,
+    "quantityStored": 4000,
+    "dateIn": "2026-08-08T18:00:00.000Z",
+    "dateOut": null,
+    "allocationStatus": "ACTIVE",
+    "minimumStorageDays": 30,
+    "minimumReleaseDate": "2026-09-07T18:00:00.000Z",
+    "storageFee": 30000,
+    "releaseRequestedBy": null
+   },
+   {
+    "allocationId": 1,
+    "batchId": 1,
+    "cropName": "Aman Rice",
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 1,
+    "quantityStored": 5000,
+    "dateIn": "2026-06-19T18:00:00.000Z",
+    "dateOut": "2026-07-03T18:00:00.000Z",
+    "allocationStatus": "COMPLETED",
+    "minimumStorageDays": 10,
+    "minimumReleaseDate": "2026-06-29T18:00:00.000Z",
+    "storageFee": 37500,
+    "releaseRequestedBy": null
+   }
+  ],
+  "/farmer/storage/proposals": [
+   {
+    "allocationId": 26,
+    "batchId": 21,
+    "cropName": "Onion",
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 1,
+    "quantityStored": 1500,
+    "minimumStorageDays": 30,
+    "ratePerKg": 7.5,
+    "counterRatePerKg": null,
+    "counteredBy": null,
+    "proposedBy": "MANAGER",
+    "estimatedFee": 11250,
+    "allocationStatus": "PENDING_ACCEPT",
+    "awaiting": "PROPOSAL"
+   }
+  ],
+  "/farmer/storage/fees": [
+   {
+    "allocationId": 6,
+    "batchId": 6,
+    "cropName": "Potato",
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 2,
+    "quantityStored": 4000,
+    "ratePerKg": 7.5,
+    "totalFee": 30000,
+    "allocationStatus": "ACTIVE",
+    "dateIn": "2026-08-08T18:00:00.000Z",
+    "minimumReleaseDate": "2026-09-07T18:00:00.000Z",
+    "paidSoFar": 0
+   },
+   {
+    "allocationId": 1,
+    "batchId": 1,
+    "cropName": "Aman Rice",
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 1,
+    "quantityStored": 5000,
+    "ratePerKg": 7.5,
+    "totalFee": 37500,
+    "allocationStatus": "COMPLETED",
+    "dateIn": "2026-06-19T18:00:00.000Z",
+    "minimumReleaseDate": "2026-06-29T18:00:00.000Z",
+    "paidSoFar": 37500
+   }
+  ],
+  "/farmer/batches/21": {
+   "batchId": 21,
+   "cropName": "Onion",
+   "categoryName": "Spice",
+   "cropBasePrice": 45,
+   "unit": "kg",
+   "farmId": 1,
+   "farmName": "Karim Krishi Khamar",
+   "farmDistrict": "Bogura",
+   "aratId": 4,
+   "aratName": "Bogura Zonal Arat",
+   "harvestDate": "2026-08-15T17:15:13.000Z",
+   "totalQuantity": 3000,
+   "reservedQuantity": 0,
+   "soldQuantity": 0,
+   "availableQuantity": 3000,
+   "qualityGrade": "B",
+   "moisturePercentage": null,
+   "minimumPrice": 47,
+   "minimumBidQuantity": 400,
+   "biddingStartTime": "2026-08-17T17:15:13.866Z",
+   "biddingEndTime": "2026-08-23T17:15:13.866Z",
+   "currentHighestBid": 48,
+   "status": "BIDDING_OPEN",
+   "bidCount": 1,
+   "bidderCount": 1,
+   "avgBid": 48,
+   "pctAboveMinimum": 2.13,
+   "hoursRemaining": 126,
+   "biddingState": "OPEN NOW"
+  },
+  "/farmer/batches/20": {
+   "batchId": 20,
+   "cropName": "Mustard Seed",
+   "categoryName": "Oilseed",
+   "cropBasePrice": 68,
+   "unit": "kg",
+   "farmId": 1,
+   "farmName": "Karim Krishi Khamar",
+   "farmDistrict": "Bogura",
+   "aratId": 4,
+   "aratName": "Bogura Zonal Arat",
+   "harvestDate": "2026-08-15T17:15:13.000Z",
+   "totalQuantity": 900,
+   "reservedQuantity": 0,
+   "soldQuantity": 0,
+   "availableQuantity": 900,
+   "qualityGrade": "A",
+   "moisturePercentage": null,
+   "minimumPrice": 72,
+   "minimumBidQuantity": 150,
+   "biddingStartTime": "2026-08-17T17:15:13.866Z",
+   "biddingEndTime": "2026-08-23T17:15:13.866Z",
+   "currentHighestBid": 74,
+   "status": "BIDDING_OPEN",
+   "bidCount": 1,
+   "bidderCount": 1,
+   "avgBid": 74,
+   "pctAboveMinimum": 2.78,
+   "hoursRemaining": 126,
+   "biddingState": "OPEN NOW"
+  },
+  "/farmer/batches/19": {
+   "batchId": 19,
+   "cropName": "Aman Rice",
+   "categoryName": "Cereal",
+   "cropBasePrice": 32,
+   "unit": "kg",
+   "farmId": 1,
+   "farmName": "Karim Krishi Khamar",
+   "farmDistrict": "Bogura",
+   "aratId": 4,
+   "aratName": "Bogura Zonal Arat",
+   "harvestDate": "2026-08-15T17:15:13.000Z",
+   "totalQuantity": 2200,
+   "reservedQuantity": 0,
+   "soldQuantity": 0,
+   "availableQuantity": 2200,
+   "qualityGrade": "A",
+   "moisturePercentage": null,
+   "minimumPrice": 34,
+   "minimumBidQuantity": 300,
+   "biddingStartTime": "2026-08-17T17:15:13.866Z",
+   "biddingEndTime": "2026-08-23T17:15:13.866Z",
+   "currentHighestBid": 38.25,
+   "status": "BIDDING_OPEN",
+   "bidCount": 4,
+   "bidderCount": 3,
+   "avgBid": 36.69,
+   "pctAboveMinimum": 12.5,
+   "hoursRemaining": 126,
+   "biddingState": "OPEN NOW"
+  },
+  "/farmer/batches/6": {
+   "batchId": 6,
+   "cropName": "Potato",
+   "categoryName": "Tuber",
+   "cropBasePrice": 18,
+   "unit": "kg",
+   "farmId": 1,
+   "farmName": "Karim Krishi Khamar",
+   "farmDistrict": "Bogura",
+   "aratId": 4,
+   "aratName": "Bogura Zonal Arat",
+   "harvestDate": "2026-08-07T18:00:00.000Z",
+   "totalQuantity": 4000,
+   "reservedQuantity": 0,
+   "soldQuantity": 2500,
+   "availableQuantity": 1500,
+   "qualityGrade": "A",
+   "moisturePercentage": 76.1,
+   "minimumPrice": 20,
+   "minimumBidQuantity": 400,
+   "biddingStartTime": "2026-08-14T18:00:00.000Z",
+   "biddingEndTime": "2026-08-21T18:00:00.000Z",
+   "currentHighestBid": 22,
+   "status": "BIDDING_OPEN",
+   "bidCount": 2,
+   "bidderCount": 2,
+   "avgBid": 21.25,
+   "pctAboveMinimum": 10,
+   "hoursRemaining": 78.7,
+   "biddingState": "OPEN NOW"
+  },
+  "/farmer/batches/1": {
+   "batchId": 1,
+   "cropName": "Aman Rice",
+   "categoryName": "Cereal",
+   "cropBasePrice": 32,
+   "unit": "kg",
+   "farmId": 1,
+   "farmName": "Karim Krishi Khamar",
+   "farmDistrict": "Bogura",
+   "aratId": 4,
+   "aratName": "Bogura Zonal Arat",
+   "harvestDate": "2026-06-18T18:00:00.000Z",
+   "totalQuantity": 5000,
+   "reservedQuantity": 0,
+   "soldQuantity": 4000,
+   "availableQuantity": 1000,
+   "qualityGrade": "A",
+   "moisturePercentage": 13.5,
+   "minimumPrice": 34,
+   "minimumBidQuantity": 500,
+   "biddingStartTime": "2026-06-20T18:00:00.000Z",
+   "biddingEndTime": "2026-06-26T18:00:00.000Z",
+   "currentHighestBid": 36,
+   "status": "SOLD",
+   "bidCount": 3,
+   "bidderCount": 3,
+   "avgBid": 35.25,
+   "pctAboveMinimum": 5.88,
+   "hoursRemaining": 0,
+   "biddingState": "CLOSED - SOLD"
+  },
+  "/farmer/batches/21/bids": [
+   {
+    "bidId": 42,
+    "buyerId": 8,
+    "buyerName": "Sultana Parvin",
+    "businessName": "Parvin Fresh Mart",
+    "buyerType": "RETAILER",
+    "bidPricePerKg": 48,
+    "requestedQuantity": 500,
+    "bidValue": 24000,
+    "bidTime": "2026-08-18T11:15:13.951Z",
+    "status": "ACTIVE",
+    "previousBidId": null
+   }
+  ],
+  "/farmer/batches/20/bids": [
+   {
+    "bidId": 41,
+    "buyerId": 9,
+    "buyerName": "Kamrul Hasan",
+    "businessName": "Hasan Food Processing",
+    "buyerType": "PROCESSOR",
+    "bidPricePerKg": 74,
+    "requestedQuantity": 200,
+    "bidValue": 14800,
+    "bidTime": "2026-08-18T11:15:13.946Z",
+    "status": "ACTIVE",
+    "previousBidId": null
+   }
+  ],
+  "/farmer/batches/19/bids": [
+   {
+    "bidId": 40,
+    "buyerId": 10,
+    "buyerName": "Anisur Rahman",
+    "businessName": "Anisur Bazar Supply",
+    "buyerType": "WHOLESALER",
+    "bidPricePerKg": 38.25,
+    "requestedQuantity": 400,
+    "bidValue": 15300,
+    "bidTime": "2026-08-18T11:15:13.940Z",
+    "status": "ACTIVE",
+    "previousBidId": 39
+   },
+   {
+    "bidId": 39,
+    "buyerId": 6,
+    "buyerName": "Tanvir Hossain",
+    "businessName": "Hossain Traders",
+    "buyerType": "WHOLESALER",
+    "bidPricePerKg": 37.5,
+    "requestedQuantity": 500,
+    "bidValue": 18750,
+    "bidTime": "2026-08-18T11:15:13.935Z",
+    "status": "OUTBID",
+    "previousBidId": 38
+   },
+   {
+    "bidId": 38,
+    "buyerId": 7,
+    "buyerName": "Mizanur Rahman",
+    "businessName": "Bengal Agro Exports",
+    "buyerType": "EXPORTER",
+    "bidPricePerKg": 36,
+    "requestedQuantity": 600,
+    "bidValue": 21600,
+    "bidTime": "2026-08-18T11:15:13.930Z",
+    "status": "OUTBID",
+    "previousBidId": 37
+   },
+   {
+    "bidId": 37,
+    "buyerId": 6,
+    "buyerName": "Tanvir Hossain",
+    "businessName": "Hossain Traders",
+    "buyerType": "WHOLESALER",
+    "bidPricePerKg": 35,
+    "requestedQuantity": 500,
+    "bidValue": 17500,
+    "bidTime": "2026-08-18T11:15:13.922Z",
+    "status": "OUTBID",
+    "previousBidId": null
+   }
+  ],
+  "/farmer/batches/6/bids": [
+   {
+    "bidId": 13,
+    "buyerId": 10,
+    "buyerName": "Anisur Rahman",
+    "businessName": "Anisur Bazar Supply",
+    "buyerType": "WHOLESALER",
+    "bidPricePerKg": 22,
+    "requestedQuantity": 2500,
+    "bidValue": 55000,
+    "bidTime": "2026-08-17T06:00:00.000Z",
+    "status": "WON",
+    "previousBidId": 12
+   },
+   {
+    "bidId": 12,
+    "buyerId": 6,
+    "buyerName": "Tanvir Hossain",
+    "businessName": "Hossain Traders",
+    "buyerType": "WHOLESALER",
+    "bidPricePerKg": 20.5,
+    "requestedQuantity": 2500,
+    "bidValue": 51250,
+    "bidTime": "2026-08-16T04:00:00.000Z",
+    "status": "OUTBID",
+    "previousBidId": null
+   }
+  ],
+  "/farmer/batches/1/bids": [
+   {
+    "bidId": 3,
+    "buyerId": 10,
+    "buyerName": "Anisur Rahman",
+    "businessName": "Anisur Bazar Supply",
+    "buyerType": "WHOLESALER",
+    "bidPricePerKg": 36,
+    "requestedQuantity": 4000,
+    "bidValue": 144000,
+    "bidTime": "2026-06-26T05:00:00.000Z",
+    "status": "WON",
+    "previousBidId": 2
+   },
+   {
+    "bidId": 2,
+    "buyerId": 7,
+    "buyerName": "Mizanur Rahman",
+    "businessName": "Bengal Agro Exports",
+    "buyerType": "EXPORTER",
+    "bidPricePerKg": 35.25,
+    "requestedQuantity": 4000,
+    "bidValue": 141000,
+    "bidTime": "2026-06-23T08:00:00.000Z",
+    "status": "OUTBID",
+    "previousBidId": 1
+   },
+   {
+    "bidId": 1,
+    "buyerId": 6,
+    "buyerName": "Tanvir Hossain",
+    "businessName": "Hossain Traders",
+    "buyerType": "WHOLESALER",
+    "bidPricePerKg": 34.5,
+    "requestedQuantity": 4000,
+    "bidValue": 138000,
+    "bidTime": "2026-06-22T04:00:00.000Z",
+    "status": "OUTBID",
+    "previousBidId": null
+   }
+  ],
+  "/reference/warehouses/1/units": [
+   {
+    "warehouseId": 1,
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 1,
+    "capacity": 60000,
+    "freeSpace": 58500,
+    "unitStatus": "PARTIAL"
+   },
+   {
+    "warehouseId": 1,
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 2,
+    "capacity": 60000,
+    "freeSpace": 56000,
+    "unitStatus": "PARTIAL"
+   },
+   {
+    "warehouseId": 1,
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 3,
+    "capacity": 45000,
+    "freeSpace": 43200,
+    "unitStatus": "PARTIAL"
+   }
+  ],
+  "/reference/warehouses/5/units": [
+   {
+    "warehouseId": 5,
+    "warehouseName": "Faridpur Grain Store",
+    "unitNo": 1,
+    "capacity": 25000,
+    "freeSpace": 22500,
+    "unitStatus": "PARTIAL"
+   }
+  ],
+  "/reference/warehouses/3/units": [
+   {
+    "warehouseId": 3,
+    "warehouseName": "Munshiganj Potato Cold Store",
+    "unitNo": 1,
+    "capacity": 90000,
+    "freeSpace": 90000,
+    "unitStatus": "EMPTY"
+   },
+   {
+    "warehouseId": 3,
+    "warehouseName": "Munshiganj Potato Cold Store",
+    "unitNo": 2,
+    "capacity": 90000,
+    "freeSpace": 87000,
+    "unitStatus": "PARTIAL"
+   }
+  ],
+  "/reference/warehouses/4/units": [
+   {
+    "warehouseId": 4,
+    "warehouseName": "Pabna Central Warehouse",
+    "unitNo": 1,
+    "capacity": 35000,
+    "freeSpace": 31500,
+    "unitStatus": "PARTIAL"
+   },
+   {
+    "warehouseId": 4,
+    "warehouseName": "Pabna Central Warehouse",
+    "unitNo": 2,
+    "capacity": 35000,
+    "freeSpace": 35000,
+    "unitStatus": "EMPTY"
+   }
+  ],
+  "/reference/warehouses/2/units": [
+   {
+    "warehouseId": 2,
+    "warehouseName": "Rangpur Agro Warehouse",
+    "unitNo": 1,
+    "capacity": 40000,
+    "freeSpace": 40000,
+    "unitStatus": "EMPTY"
+   },
+   {
+    "warehouseId": 2,
+    "warehouseName": "Rangpur Agro Warehouse",
+    "unitNo": 2,
+    "capacity": 40000,
+    "freeSpace": 40000,
+    "unitStatus": "EMPTY"
+   }
+  ]
+ },
+ "BUYER": {
+  "/auth/me": {
+   "userId": 6,
+   "firstName": "Tanvir",
+   "middleName": null,
+   "lastName": "Hossain",
+   "email": "tanvir.hossain@krishichain.bd",
+   "gender": "M",
+   "dateOfBirth": "1983-02-13T18:00:00.000Z",
+   "age": 43,
+   "district": "Dhaka",
+   "upazila": "Tejgaon",
+   "village": null,
+   "registrationDate": "2025-08-02T18:00:00.000Z",
+   "status": "ACTIVE",
+   "role": "BUYER",
+   "phones": [
+    "01612000006",
+    "01712000006"
+   ]
+  },
+  "/reference/crops": [
+   {
+    "cropId": 1,
+    "cropName": "Aman Rice",
+    "categoryName": "Cereal",
+    "unit": "kg",
+    "basePrice": 32,
+    "shelfLifeDays": 365
+   },
+   {
+    "cropId": 5,
+    "cropName": "Mustard Seed",
+    "categoryName": "Oilseed",
+    "unit": "kg",
+    "basePrice": 68,
+    "shelfLifeDays": 240
+   },
+   {
+    "cropId": 3,
+    "cropName": "Lentil",
+    "categoryName": "Pulse",
+    "unit": "kg",
+    "basePrice": 95,
+    "shelfLifeDays": 300
+   },
+   {
+    "cropId": 4,
+    "cropName": "Onion",
+    "categoryName": "Spice",
+    "unit": "kg",
+    "basePrice": 45,
+    "shelfLifeDays": 90
+   },
+   {
+    "cropId": 2,
+    "cropName": "Potato",
+    "categoryName": "Tuber",
+    "unit": "kg",
+    "basePrice": 18,
+    "shelfLifeDays": 120
+   }
+  ],
+  "/reference/arats": [
+   {
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "district": "Dhaka",
+    "tier": 1,
+    "label": "KrishiChain Central Arat"
+   },
+   {
+    "aratId": 3,
+    "aratName": "Central Regional Arat",
+    "district": "Dhaka",
+    "tier": 2,
+    "label": "   Central Regional Arat"
+   },
+   {
+    "aratId": 5,
+    "aratName": "Munshiganj Zonal Arat",
+    "district": "Munshiganj",
+    "tier": 3,
+    "label": "      Munshiganj Zonal Arat"
+   },
+   {
+    "aratId": 2,
+    "aratName": "North Bengal Regional Arat",
+    "district": "Rangpur",
+    "tier": 2,
+    "label": "   North Bengal Regional Arat"
+   },
+   {
+    "aratId": 4,
+    "aratName": "Bogura Zonal Arat",
+    "district": "Bogura",
+    "tier": 3,
+    "label": "      Bogura Zonal Arat"
+   }
+  ],
+  "/reference/warehouses": [
+   {
+    "warehouseId": 1,
+    "warehouseName": "Bogura Cold Storage",
+    "address": "Sherpur Road, Bogura Sadar",
+    "district": "Bogura",
+    "storageFeePerKgRate": 7.5,
+    "freeSpace": 157700,
+    "unitCount": 3
+   },
+   {
+    "warehouseId": 5,
+    "warehouseName": "Faridpur Grain Store",
+    "address": "Mujib Road, Faridpur Sadar",
+    "district": "Faridpur",
+    "storageFeePerKgRate": 5,
+    "freeSpace": 47500,
+    "unitCount": 2
+   },
+   {
+    "warehouseId": 3,
+    "warehouseName": "Munshiganj Potato Cold Store",
+    "address": "Bazar Road, Munshiganj Sadar",
+    "district": "Munshiganj",
+    "storageFeePerKgRate": 8,
+    "freeSpace": 177000,
+    "unitCount": 2
+   },
+   {
+    "warehouseId": 4,
+    "warehouseName": "Pabna Central Warehouse",
+    "address": "Rupkatha Road, Pabna Sadar",
+    "district": "Pabna",
+    "storageFeePerKgRate": 5.5,
+    "freeSpace": 66500,
+    "unitCount": 2
+   },
+   {
+    "warehouseId": 2,
+    "warehouseName": "Rangpur Agro Warehouse",
+    "address": "Jail Road, Rangpur Sadar",
+    "district": "Rangpur",
+    "storageFeePerKgRate": 6,
+    "freeSpace": 80000,
+    "unitCount": 2
+   }
+  ],
+  "/buyer/dashboard": {
+   "bidsByStatus": [
+    {
+     "status": "OUTBID",
+     "count": 4,
+     "value": 225500
+    },
+    {
+     "status": "WON",
+     "count": 1,
+     "value": 153750
+    }
+   ],
+   "orders": {
+    "orderCount": 1,
+    "totalCommitted": 153750,
+    "totalPaid": 153750
+   },
+   "leading": []
+  },
+  "/buyer/batches": [
+   {
+    "batchId": 6,
+    "cropName": "Potato",
+    "categoryName": "Tuber",
+    "unit": "kg",
+    "basePrice": 18,
+    "farmerName": "Abdul Karim",
+    "farmName": "Karim Krishi Khamar",
+    "farmDistrict": "Bogura",
+    "aratName": "Bogura Zonal Arat",
+    "harvestDate": "2026-08-07T18:00:00.000Z",
+    "soldQuantity": 2500,
+    "availableQuantity": 1500,
+    "qualityGrade": "A",
+    "moisturePercentage": 76.1,
+    "minimumPrice": 20,
+    "minimumBidQuantity": 400,
+    "currentHighestBid": 22,
+    "biddingEndTime": "2026-08-21T18:00:00.000Z",
+    "bidCount": 2,
+    "bidderCount": 2,
+    "hoursRemaining": 78.7,
+    "myBidStatus": null
+   },
+   {
+    "batchId": 7,
+    "cropName": "Onion",
+    "categoryName": "Spice",
+    "unit": "kg",
+    "basePrice": 45,
+    "farmerName": "Jamal Sarkar",
+    "farmName": "Jamal Potato Farm",
+    "farmDistrict": "Munshiganj",
+    "aratName": "Munshiganj Zonal Arat",
+    "harvestDate": "2026-08-10T18:00:00.000Z",
+    "soldQuantity": 0,
+    "availableQuantity": 3000,
+    "qualityGrade": "B",
+    "moisturePercentage": 13.1,
+    "minimumPrice": 48,
+    "minimumBidQuantity": 300,
+    "currentHighestBid": 51.5,
+    "biddingEndTime": "2026-08-22T18:00:00.000Z",
+    "bidCount": 2,
+    "bidderCount": 2,
+    "hoursRemaining": 102.7,
+    "myBidStatus": null
+   },
+   {
+    "batchId": 19,
+    "cropName": "Aman Rice",
+    "categoryName": "Cereal",
+    "unit": "kg",
+    "basePrice": 32,
+    "farmerName": "Abdul Karim",
+    "farmName": "Karim Krishi Khamar",
+    "farmDistrict": "Bogura",
+    "aratName": "Bogura Zonal Arat",
+    "harvestDate": "2026-08-15T17:15:13.000Z",
+    "soldQuantity": 0,
+    "availableQuantity": 2200,
+    "qualityGrade": "A",
+    "moisturePercentage": null,
+    "minimumPrice": 34,
+    "minimumBidQuantity": 300,
+    "currentHighestBid": 38.25,
+    "biddingEndTime": "2026-08-23T17:15:13.866Z",
+    "bidCount": 4,
+    "bidderCount": 3,
+    "hoursRemaining": 126,
+    "myBidStatus": null
+   },
+   {
+    "batchId": 20,
+    "cropName": "Mustard Seed",
+    "categoryName": "Oilseed",
+    "unit": "kg",
+    "basePrice": 68,
+    "farmerName": "Abdul Karim",
+    "farmName": "Karim Krishi Khamar",
+    "farmDistrict": "Bogura",
+    "aratName": "Bogura Zonal Arat",
+    "harvestDate": "2026-08-15T17:15:13.000Z",
+    "soldQuantity": 0,
+    "availableQuantity": 900,
+    "qualityGrade": "A",
+    "moisturePercentage": null,
+    "minimumPrice": 72,
+    "minimumBidQuantity": 150,
+    "currentHighestBid": 74,
+    "biddingEndTime": "2026-08-23T17:15:13.866Z",
+    "bidCount": 1,
+    "bidderCount": 1,
+    "hoursRemaining": 126,
+    "myBidStatus": null
+   },
+   {
+    "batchId": 21,
+    "cropName": "Onion",
+    "categoryName": "Spice",
+    "unit": "kg",
+    "basePrice": 45,
+    "farmerName": "Abdul Karim",
+    "farmName": "Karim Krishi Khamar",
+    "farmDistrict": "Bogura",
+    "aratName": "Bogura Zonal Arat",
+    "harvestDate": "2026-08-15T17:15:13.000Z",
+    "soldQuantity": 0,
+    "availableQuantity": 3000,
+    "qualityGrade": "B",
+    "moisturePercentage": null,
+    "minimumPrice": 47,
+    "minimumBidQuantity": 400,
+    "currentHighestBid": 48,
+    "biddingEndTime": "2026-08-23T17:15:13.866Z",
+    "bidCount": 1,
+    "bidderCount": 1,
+    "hoursRemaining": 126,
+    "myBidStatus": null
+   }
+  ],
+  "/buyer/bids": [
+   {
+    "bidId": 39,
+    "batchId": 19,
+    "cropName": "Aman Rice",
+    "farmerName": "Abdul Karim",
+    "aratName": "Bogura Zonal Arat",
+    "bidPricePerKg": 37.5,
+    "requestedQuantity": 500,
+    "bidValue": 18750,
+    "bidTime": "2026-08-18T11:15:13.935Z",
+    "status": "OUTBID",
+    "minimumPrice": 34,
+    "batchStatus": "BIDDING_OPEN",
+    "standingBid": 38.25,
+    "saleOrderId": null,
+    "orderTotal": null,
+    "paymentTerms": null,
+    "deliveryStatus": null,
+    "rn": 1,
+    "bidCount": 2
+   },
+   {
+    "bidId": 12,
+    "batchId": 6,
+    "cropName": "Potato",
+    "farmerName": "Abdul Karim",
+    "aratName": "Bogura Zonal Arat",
+    "bidPricePerKg": 20.5,
+    "requestedQuantity": 2500,
+    "bidValue": 51250,
+    "bidTime": "2026-08-16T04:00:00.000Z",
+    "status": "OUTBID",
+    "minimumPrice": 20,
+    "batchStatus": "BIDDING_OPEN",
+    "standingBid": 22,
+    "saleOrderId": null,
+    "orderTotal": null,
+    "paymentTerms": null,
+    "deliveryStatus": null,
+    "rn": 1,
+    "bidCount": 1
+   },
+   {
+    "bidId": 5,
+    "batchId": 2,
+    "cropName": "Lentil",
+    "farmerName": "Rahima Begum",
+    "aratName": "North Bengal Regional Arat",
+    "bidPricePerKg": 102.5,
+    "requestedQuantity": 1500,
+    "bidValue": 153750,
+    "bidTime": "2026-07-01T10:00:00.000Z",
+    "status": "WON",
+    "minimumPrice": 98,
+    "batchStatus": "SOLD",
+    "standingBid": 102.5,
+    "saleOrderId": 2,
+    "orderTotal": 153750,
+    "paymentTerms": "ADVANCE",
+    "deliveryStatus": "DELIVERED",
+    "rn": 1,
+    "bidCount": 1
+   },
+   {
+    "bidId": 1,
+    "batchId": 1,
+    "cropName": "Aman Rice",
+    "farmerName": "Abdul Karim",
+    "aratName": "Bogura Zonal Arat",
+    "bidPricePerKg": 34.5,
+    "requestedQuantity": 4000,
+    "bidValue": 138000,
+    "bidTime": "2026-06-22T04:00:00.000Z",
+    "status": "OUTBID",
+    "minimumPrice": 34,
+    "batchStatus": "SOLD",
+    "standingBid": 36,
+    "saleOrderId": null,
+    "orderTotal": null,
+    "paymentTerms": null,
+    "deliveryStatus": null,
+    "rn": 1,
+    "bidCount": 1
+   }
+  ],
+  "/buyer/orders": [
+   {
+    "saleOrderId": 2,
+    "orderDate": "2026-07-01T18:00:00.000Z",
+    "acceptedQuantity": 1500,
+    "acceptedPricePerKg": 102.5,
+    "totalAmount": 153750,
+    "status": "COMPLETED",
+    "paymentTerms": "ADVANCE",
+    "deliveryPreference": "DIRECT",
+    "batchId": 2,
+    "cropName": "Lentil",
+    "farmerName": "Rahima Begum",
+    "deliveryStatus": "DELIVERED",
+    "deliveryDate": "2026-07-08T18:00:00.000Z",
+    "pickupLocation": "Rangpur Agro Warehouse, Jail Road, Rangpur",
+    "deliveryLocation": "Bengal Agro Exports, Agrabad, Chattogram",
+    "amountPaid": 153750,
+    "reviewId": 2
+   }
+  ],
+  "/buyer/payments": [
+   {
+    "paymentId": 2,
+    "saleOrderId": 2,
+    "amount": 153750,
+    "paymentMethod": "BANK_TRANSFER",
+    "paymentDate": "2026-07-02T18:00:00.000Z",
+    "transactionReference": "TRX-BNK-20240002",
+    "paymentStatus": "COMPLETED",
+    "cropName": "Lentil",
+    "orderTotal": 153750,
+    "farmerName": "Rahima Begum"
+   }
+  ],
+  "/buyer/reviews": [
+   {
+    "reviewId": 2,
+    "saleOrderId": 2,
+    "rating": 4,
+    "reviewComment": "Good lentil quality. Advance payment terms worked well, though loading at Rangpur was slow.",
+    "reviewDate": "2026-07-10T18:00:00.000Z",
+    "cropName": "Lentil",
+    "orderTotal": 153750,
+    "farmerName": "Rahima Begum"
+   }
+  ],
+  "/buyer/storage": [
+   {
+    "allocationId": 27,
+    "batchId": 2,
+    "saleOrderId": 2,
+    "cropName": "Lentil",
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 3,
+    "quantityStored": 1200,
+    "dateIn": "2026-08-17T18:00:00.000Z",
+    "dateOut": null,
+    "allocationStatus": "ACTIVE",
+    "minimumStorageDays": 20,
+    "minimumReleaseDate": "2026-09-06T18:00:00.000Z",
+    "storageFee": 9000,
+    "releaseRequestedBy": null,
+    "proposedBy": "MANAGER",
+    "counterRatePerKg": null,
+    "counteredBy": null,
+    "ratePerKg": 7.5
+   }
+  ],
+  "/buyer/storage/proposals": [],
+  "/buyer/storage/fees": [
+   {
+    "allocationId": 27,
+    "batchId": 2,
+    "cropName": "Lentil",
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 3,
+    "quantityStored": 1200,
+    "ratePerKg": 7.5,
+    "totalFee": 9000,
+    "allocationStatus": "ACTIVE",
+    "dateIn": "2026-08-17T18:00:00.000Z",
+    "minimumReleaseDate": "2026-09-06T18:00:00.000Z",
+    "paidSoFar": 0
+   }
+  ],
+  "/buyer/batches/6": {
+   "batchId": 6,
+   "cropName": "Potato",
+   "categoryName": "Tuber",
+   "unit": "kg",
+   "basePrice": 18,
+   "farmerName": "Abdul Karim",
+   "farmName": "Karim Krishi Khamar",
+   "farmDistrict": "Bogura",
+   "aratName": "Bogura Zonal Arat",
+   "aratDistrict": "Bogura",
+   "harvestDate": "2026-08-07T18:00:00.000Z",
+   "totalQuantity": 4000,
+   "soldQuantity": 2500,
+   "availableQuantity": 1500,
+   "qualityGrade": "A",
+   "moisturePercentage": 76.1,
+   "minimumPrice": 20,
+   "minimumBidQuantity": 400,
+   "currentHighestBid": 22,
+   "biddingStartTime": "2026-08-14T18:00:00.000Z",
+   "biddingEndTime": "2026-08-21T18:00:00.000Z",
+   "status": "BIDDING_OPEN",
+   "bidCount": 2,
+   "bidderCount": 2,
+   "avgBid": 21.25,
+   "hoursRemaining": 78.7,
+   "biddingState": "OPEN NOW",
+   "myActiveBidId": null,
+   "bidHistory": [
+    {
+     "bidId": 13,
+     "bidPricePerKg": 22,
+     "requestedQuantity": 2500,
+     "bidTime": "2026-08-17T06:00:00.000Z",
+     "status": "WON",
+     "previousBidId": 12,
+     "buyerName": "Anisur Rahman",
+     "isMine": 0
+    },
+    {
+     "bidId": 12,
+     "bidPricePerKg": 20.5,
+     "requestedQuantity": 2500,
+     "bidTime": "2026-08-16T04:00:00.000Z",
+     "status": "OUTBID",
+     "previousBidId": null,
+     "buyerName": "Tanvir Hossain",
+     "isMine": 1
+    }
+   ]
+  },
+  "/buyer/batches/7": {
+   "batchId": 7,
+   "cropName": "Onion",
+   "categoryName": "Spice",
+   "unit": "kg",
+   "basePrice": 45,
+   "farmerName": "Jamal Sarkar",
+   "farmName": "Jamal Potato Farm",
+   "farmDistrict": "Munshiganj",
+   "aratName": "Munshiganj Zonal Arat",
+   "aratDistrict": "Munshiganj",
+   "harvestDate": "2026-08-10T18:00:00.000Z",
+   "totalQuantity": 3000,
+   "soldQuantity": 0,
+   "availableQuantity": 3000,
+   "qualityGrade": "B",
+   "moisturePercentage": 13.1,
+   "minimumPrice": 48,
+   "minimumBidQuantity": 300,
+   "currentHighestBid": 51.5,
+   "biddingStartTime": "2026-08-15T18:00:00.000Z",
+   "biddingEndTime": "2026-08-22T18:00:00.000Z",
+   "status": "BIDDING_OPEN",
+   "bidCount": 2,
+   "bidderCount": 2,
+   "avgBid": 50.25,
+   "hoursRemaining": 102.7,
+   "biddingState": "OPEN NOW",
+   "myActiveBidId": null,
+   "bidHistory": [
+    {
+     "bidId": 15,
+     "bidPricePerKg": 51.5,
+     "requestedQuantity": 2000,
+     "bidTime": "2026-08-17T12:00:00.000Z",
+     "status": "ACTIVE",
+     "previousBidId": 14,
+     "buyerName": "Sultana Parvin",
+     "isMine": 0
+    },
+    {
+     "bidId": 14,
+     "bidPricePerKg": 49,
+     "requestedQuantity": 1800,
+     "bidTime": "2026-08-17T03:00:00.000Z",
+     "status": "OUTBID",
+     "previousBidId": null,
+     "buyerName": "Mizanur Rahman",
+     "isMine": 0
+    }
+   ]
+  },
+  "/buyer/batches/19": {
+   "batchId": 19,
+   "cropName": "Aman Rice",
+   "categoryName": "Cereal",
+   "unit": "kg",
+   "basePrice": 32,
+   "farmerName": "Abdul Karim",
+   "farmName": "Karim Krishi Khamar",
+   "farmDistrict": "Bogura",
+   "aratName": "Bogura Zonal Arat",
+   "aratDistrict": "Bogura",
+   "harvestDate": "2026-08-15T17:15:13.000Z",
+   "totalQuantity": 2200,
+   "soldQuantity": 0,
+   "availableQuantity": 2200,
+   "qualityGrade": "A",
+   "moisturePercentage": null,
+   "minimumPrice": 34,
+   "minimumBidQuantity": 300,
+   "currentHighestBid": 38.25,
+   "biddingStartTime": "2026-08-17T17:15:13.866Z",
+   "biddingEndTime": "2026-08-23T17:15:13.866Z",
+   "status": "BIDDING_OPEN",
+   "bidCount": 4,
+   "bidderCount": 3,
+   "avgBid": 36.69,
+   "hoursRemaining": 126,
+   "biddingState": "OPEN NOW",
+   "myActiveBidId": null,
+   "bidHistory": [
+    {
+     "bidId": 40,
+     "bidPricePerKg": 38.25,
+     "requestedQuantity": 400,
+     "bidTime": "2026-08-18T11:15:13.940Z",
+     "status": "ACTIVE",
+     "previousBidId": 39,
+     "buyerName": "Anisur Rahman",
+     "isMine": 0
+    },
+    {
+     "bidId": 39,
+     "bidPricePerKg": 37.5,
+     "requestedQuantity": 500,
+     "bidTime": "2026-08-18T11:15:13.935Z",
+     "status": "OUTBID",
+     "previousBidId": 38,
+     "buyerName": "Tanvir Hossain",
+     "isMine": 1
+    },
+    {
+     "bidId": 38,
+     "bidPricePerKg": 36,
+     "requestedQuantity": 600,
+     "bidTime": "2026-08-18T11:15:13.930Z",
+     "status": "OUTBID",
+     "previousBidId": 37,
+     "buyerName": "Mizanur Rahman",
+     "isMine": 0
+    },
+    {
+     "bidId": 37,
+     "bidPricePerKg": 35,
+     "requestedQuantity": 500,
+     "bidTime": "2026-08-18T11:15:13.922Z",
+     "status": "OUTBID",
+     "previousBidId": null,
+     "buyerName": "Tanvir Hossain",
+     "isMine": 1
+    }
+   ]
+  },
+  "/buyer/batches/20": {
+   "batchId": 20,
+   "cropName": "Mustard Seed",
+   "categoryName": "Oilseed",
+   "unit": "kg",
+   "basePrice": 68,
+   "farmerName": "Abdul Karim",
+   "farmName": "Karim Krishi Khamar",
+   "farmDistrict": "Bogura",
+   "aratName": "Bogura Zonal Arat",
+   "aratDistrict": "Bogura",
+   "harvestDate": "2026-08-15T17:15:13.000Z",
+   "totalQuantity": 900,
+   "soldQuantity": 0,
+   "availableQuantity": 900,
+   "qualityGrade": "A",
+   "moisturePercentage": null,
+   "minimumPrice": 72,
+   "minimumBidQuantity": 150,
+   "currentHighestBid": 74,
+   "biddingStartTime": "2026-08-17T17:15:13.866Z",
+   "biddingEndTime": "2026-08-23T17:15:13.866Z",
+   "status": "BIDDING_OPEN",
+   "bidCount": 1,
+   "bidderCount": 1,
+   "avgBid": 74,
+   "hoursRemaining": 126,
+   "biddingState": "OPEN NOW",
+   "myActiveBidId": null,
+   "bidHistory": [
+    {
+     "bidId": 41,
+     "bidPricePerKg": 74,
+     "requestedQuantity": 200,
+     "bidTime": "2026-08-18T11:15:13.946Z",
+     "status": "ACTIVE",
+     "previousBidId": null,
+     "buyerName": "Kamrul Hasan",
+     "isMine": 0
+    }
+   ]
+  },
+  "/buyer/batches/21": {
+   "batchId": 21,
+   "cropName": "Onion",
+   "categoryName": "Spice",
+   "unit": "kg",
+   "basePrice": 45,
+   "farmerName": "Abdul Karim",
+   "farmName": "Karim Krishi Khamar",
+   "farmDistrict": "Bogura",
+   "aratName": "Bogura Zonal Arat",
+   "aratDistrict": "Bogura",
+   "harvestDate": "2026-08-15T17:15:13.000Z",
+   "totalQuantity": 3000,
+   "soldQuantity": 0,
+   "availableQuantity": 3000,
+   "qualityGrade": "B",
+   "moisturePercentage": null,
+   "minimumPrice": 47,
+   "minimumBidQuantity": 400,
+   "currentHighestBid": 48,
+   "biddingStartTime": "2026-08-17T17:15:13.866Z",
+   "biddingEndTime": "2026-08-23T17:15:13.866Z",
+   "status": "BIDDING_OPEN",
+   "bidCount": 1,
+   "bidderCount": 1,
+   "avgBid": 48,
+   "hoursRemaining": 126,
+   "biddingState": "OPEN NOW",
+   "myActiveBidId": null,
+   "bidHistory": [
+    {
+     "bidId": 42,
+     "bidPricePerKg": 48,
+     "requestedQuantity": 500,
+     "bidTime": "2026-08-18T11:15:13.951Z",
+     "status": "ACTIVE",
+     "previousBidId": null,
+     "buyerName": "Sultana Parvin",
+     "isMine": 0
+    }
+   ]
+  },
+  "/reference/warehouses/1/units": [
+   {
+    "warehouseId": 1,
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 1,
+    "capacity": 60000,
+    "freeSpace": 58500,
+    "unitStatus": "PARTIAL"
+   },
+   {
+    "warehouseId": 1,
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 2,
+    "capacity": 60000,
+    "freeSpace": 56000,
+    "unitStatus": "PARTIAL"
+   },
+   {
+    "warehouseId": 1,
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 3,
+    "capacity": 45000,
+    "freeSpace": 43200,
+    "unitStatus": "PARTIAL"
+   }
+  ],
+  "/reference/warehouses/5/units": [
+   {
+    "warehouseId": 5,
+    "warehouseName": "Faridpur Grain Store",
+    "unitNo": 1,
+    "capacity": 25000,
+    "freeSpace": 22500,
+    "unitStatus": "PARTIAL"
+   }
+  ],
+  "/reference/warehouses/3/units": [
+   {
+    "warehouseId": 3,
+    "warehouseName": "Munshiganj Potato Cold Store",
+    "unitNo": 1,
+    "capacity": 90000,
+    "freeSpace": 90000,
+    "unitStatus": "EMPTY"
+   },
+   {
+    "warehouseId": 3,
+    "warehouseName": "Munshiganj Potato Cold Store",
+    "unitNo": 2,
+    "capacity": 90000,
+    "freeSpace": 87000,
+    "unitStatus": "PARTIAL"
+   }
+  ],
+  "/reference/warehouses/4/units": [
+   {
+    "warehouseId": 4,
+    "warehouseName": "Pabna Central Warehouse",
+    "unitNo": 1,
+    "capacity": 35000,
+    "freeSpace": 31500,
+    "unitStatus": "PARTIAL"
+   },
+   {
+    "warehouseId": 4,
+    "warehouseName": "Pabna Central Warehouse",
+    "unitNo": 2,
+    "capacity": 35000,
+    "freeSpace": 35000,
+    "unitStatus": "EMPTY"
+   }
+  ],
+  "/reference/warehouses/2/units": [
+   {
+    "warehouseId": 2,
+    "warehouseName": "Rangpur Agro Warehouse",
+    "unitNo": 1,
+    "capacity": 40000,
+    "freeSpace": 40000,
+    "unitStatus": "EMPTY"
+   },
+   {
+    "warehouseId": 2,
+    "warehouseName": "Rangpur Agro Warehouse",
+    "unitNo": 2,
+    "capacity": 40000,
+    "freeSpace": 40000,
+    "unitStatus": "EMPTY"
+   }
+  ]
+ },
+ "STORAGE_MANAGER": {
+  "/auth/me": {
+   "userId": 16,
+   "firstName": "Ashraful",
+   "middleName": null,
+   "lastName": "Alam",
+   "email": "ashraful.alam@krishichain.bd",
+   "gender": "M",
+   "dateOfBirth": "1982-09-13T18:00:00.000Z",
+   "age": 43,
+   "district": "Bogura",
+   "upazila": "Bogura Sadar",
+   "village": null,
+   "registrationDate": "2025-06-03T18:00:00.000Z",
+   "status": "ACTIVE",
+   "role": "STORAGE_MANAGER",
+   "phones": [
+    "01714000016"
+   ]
+  },
+  "/reference/crops": [
+   {
+    "cropId": 1,
+    "cropName": "Aman Rice",
+    "categoryName": "Cereal",
+    "unit": "kg",
+    "basePrice": 32,
+    "shelfLifeDays": 365
+   },
+   {
+    "cropId": 5,
+    "cropName": "Mustard Seed",
+    "categoryName": "Oilseed",
+    "unit": "kg",
+    "basePrice": 68,
+    "shelfLifeDays": 240
+   },
+   {
+    "cropId": 3,
+    "cropName": "Lentil",
+    "categoryName": "Pulse",
+    "unit": "kg",
+    "basePrice": 95,
+    "shelfLifeDays": 300
+   },
+   {
+    "cropId": 4,
+    "cropName": "Onion",
+    "categoryName": "Spice",
+    "unit": "kg",
+    "basePrice": 45,
+    "shelfLifeDays": 90
+   },
+   {
+    "cropId": 2,
+    "cropName": "Potato",
+    "categoryName": "Tuber",
+    "unit": "kg",
+    "basePrice": 18,
+    "shelfLifeDays": 120
+   }
+  ],
+  "/reference/arats": [
+   {
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "district": "Dhaka",
+    "tier": 1,
+    "label": "KrishiChain Central Arat"
+   },
+   {
+    "aratId": 3,
+    "aratName": "Central Regional Arat",
+    "district": "Dhaka",
+    "tier": 2,
+    "label": "   Central Regional Arat"
+   },
+   {
+    "aratId": 5,
+    "aratName": "Munshiganj Zonal Arat",
+    "district": "Munshiganj",
+    "tier": 3,
+    "label": "      Munshiganj Zonal Arat"
+   },
+   {
+    "aratId": 2,
+    "aratName": "North Bengal Regional Arat",
+    "district": "Rangpur",
+    "tier": 2,
+    "label": "   North Bengal Regional Arat"
+   },
+   {
+    "aratId": 4,
+    "aratName": "Bogura Zonal Arat",
+    "district": "Bogura",
+    "tier": 3,
+    "label": "      Bogura Zonal Arat"
+   }
+  ],
+  "/reference/warehouses": [
+   {
+    "warehouseId": 1,
+    "warehouseName": "Bogura Cold Storage",
+    "address": "Sherpur Road, Bogura Sadar",
+    "district": "Bogura",
+    "storageFeePerKgRate": 7.5,
+    "freeSpace": 157700,
+    "unitCount": 3
+   },
+   {
+    "warehouseId": 5,
+    "warehouseName": "Faridpur Grain Store",
+    "address": "Mujib Road, Faridpur Sadar",
+    "district": "Faridpur",
+    "storageFeePerKgRate": 5,
+    "freeSpace": 47500,
+    "unitCount": 2
+   },
+   {
+    "warehouseId": 3,
+    "warehouseName": "Munshiganj Potato Cold Store",
+    "address": "Bazar Road, Munshiganj Sadar",
+    "district": "Munshiganj",
+    "storageFeePerKgRate": 8,
+    "freeSpace": 177000,
+    "unitCount": 2
+   },
+   {
+    "warehouseId": 4,
+    "warehouseName": "Pabna Central Warehouse",
+    "address": "Rupkatha Road, Pabna Sadar",
+    "district": "Pabna",
+    "storageFeePerKgRate": 5.5,
+    "freeSpace": 66500,
+    "unitCount": 2
+   },
+   {
+    "warehouseId": 2,
+    "warehouseName": "Rangpur Agro Warehouse",
+    "address": "Jail Road, Rangpur Sadar",
+    "district": "Rangpur",
+    "storageFeePerKgRate": 6,
+    "freeSpace": 80000,
+    "unitCount": 2
+   }
+  ],
+  "/storage/dashboard": {
+   "summary": {
+    "warehouseCount": 1,
+    "unitCount": 3,
+    "totalCapacity": 165000,
+    "totalLoad": 7300,
+    "totalFree": 157700
+   },
+   "byAlert": [
+    {
+     "alertLevel": "OK",
+     "count": 3
+    }
+   ],
+   "needsAttention": [],
+   "batchesAwaitingLeg1Storage": 4,
+   "saleOrdersAwaitingLeg2Storage": 5,
+   "releaseApprovalsNeeded": 0
+  },
+  "/storage/warehouses": [
+   {
+    "warehouseId": 1,
+    "warehouseName": "Bogura Cold Storage",
+    "address": "Sherpur Road, Bogura Sadar",
+    "district": "Bogura",
+    "declaredCapacity": 500000,
+    "storageFeePerKgRate": 7.5,
+    "unitCount": 3,
+    "unitCapacity": 165000,
+    "currentLoad": 7300,
+    "freeSpace": 157700
+   }
+  ],
+  "/storage/units": [
+   {
+    "warehouseId": 1,
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 1,
+    "capacity": 60000,
+    "currentLoad": 1500,
+    "freeSpace": 58500,
+    "utilizationPct": 2.5,
+    "alertLevel": "OK",
+    "unitStatus": "PARTIAL",
+    "batchesHeld": 1
+   },
+   {
+    "warehouseId": 1,
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 2,
+    "capacity": 60000,
+    "currentLoad": 4000,
+    "freeSpace": 56000,
+    "utilizationPct": 6.7,
+    "alertLevel": "OK",
+    "unitStatus": "PARTIAL",
+    "batchesHeld": 1
+   },
+   {
+    "warehouseId": 1,
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 3,
+    "capacity": 45000,
+    "currentLoad": 1800,
+    "freeSpace": 43200,
+    "utilizationPct": 4,
+    "alertLevel": "OK",
+    "unitStatus": "PARTIAL",
+    "batchesHeld": 2
+   }
+  ],
+  "/storage/allocations": [
+   {
+    "allocationId": 28,
+    "batchId": 20,
+    "cropName": "Mustard Seed",
+    "warehouseId": 1,
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 3,
+    "quantityStored": 600,
+    "dateIn": null,
+    "dateOut": null,
+    "allocationStatus": "PENDING_ACCEPT",
+    "minimumStorageDays": 45,
+    "minimumReleaseDate": null,
+    "storageFeePerKgRate": 7.5,
+    "storageFee": 4500,
+    "releaseRequestedBy": null,
+    "saleOrderId": null,
+    "proposedBy": "CUSTOMER",
+    "counterRatePerKg": null,
+    "counteredBy": null,
+    "customerType": "FARMER",
+    "customerName": "Abdul Karim",
+    "feePaid": 0
+   },
+   {
+    "allocationId": 27,
+    "batchId": 2,
+    "cropName": "Lentil",
+    "warehouseId": 1,
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 3,
+    "quantityStored": 1200,
+    "dateIn": "2026-08-17T18:00:00.000Z",
+    "dateOut": null,
+    "allocationStatus": "ACTIVE",
+    "minimumStorageDays": 20,
+    "minimumReleaseDate": "2026-09-06T18:00:00.000Z",
+    "storageFeePerKgRate": 7.5,
+    "storageFee": 9000,
+    "releaseRequestedBy": null,
+    "saleOrderId": 2,
+    "proposedBy": "MANAGER",
+    "counterRatePerKg": null,
+    "counteredBy": null,
+    "customerType": "BUYER",
+    "customerName": "Tanvir Hossain",
+    "feePaid": 0
+   },
+   {
+    "allocationId": 26,
+    "batchId": 21,
+    "cropName": "Onion",
+    "warehouseId": 1,
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 1,
+    "quantityStored": 1500,
+    "dateIn": null,
+    "dateOut": null,
+    "allocationStatus": "PENDING_ACCEPT",
+    "minimumStorageDays": 30,
+    "minimumReleaseDate": null,
+    "storageFeePerKgRate": 7.5,
+    "storageFee": 11250,
+    "releaseRequestedBy": null,
+    "saleOrderId": null,
+    "proposedBy": "MANAGER",
+    "counterRatePerKg": null,
+    "counteredBy": null,
+    "customerType": "FARMER",
+    "customerName": "Abdul Karim",
+    "feePaid": 0
+   },
+   {
+    "allocationId": 6,
+    "batchId": 6,
+    "cropName": "Potato",
+    "warehouseId": 1,
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 2,
+    "quantityStored": 4000,
+    "dateIn": "2026-08-08T18:00:00.000Z",
+    "dateOut": null,
+    "allocationStatus": "ACTIVE",
+    "minimumStorageDays": 30,
+    "minimumReleaseDate": "2026-09-07T18:00:00.000Z",
+    "storageFeePerKgRate": 7.5,
+    "storageFee": 30000,
+    "releaseRequestedBy": null,
+    "saleOrderId": null,
+    "proposedBy": "MANAGER",
+    "counterRatePerKg": null,
+    "counteredBy": null,
+    "customerType": "FARMER",
+    "customerName": "Abdul Karim",
+    "feePaid": 0
+   },
+   {
+    "allocationId": 1,
+    "batchId": 1,
+    "cropName": "Aman Rice",
+    "warehouseId": 1,
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 1,
+    "quantityStored": 5000,
+    "dateIn": "2026-06-19T18:00:00.000Z",
+    "dateOut": "2026-07-03T18:00:00.000Z",
+    "allocationStatus": "COMPLETED",
+    "minimumStorageDays": 10,
+    "minimumReleaseDate": "2026-06-29T18:00:00.000Z",
+    "storageFeePerKgRate": 7.5,
+    "storageFee": 37500,
+    "releaseRequestedBy": null,
+    "saleOrderId": null,
+    "proposedBy": "MANAGER",
+    "counterRatePerKg": null,
+    "counteredBy": null,
+    "customerType": "FARMER",
+    "customerName": "Abdul Karim",
+    "feePaid": 37500
+   }
+  ],
+  "/storage/awaiting/leg1": [
+   {
+    "batchId": 8,
+    "cropName": "Aman Rice",
+    "farmName": "Rahima Agro Field",
+    "farmerName": "Rahima Begum",
+    "farmDistrict": "Rangpur",
+    "harvestDate": "2026-08-12T18:00:00.000Z",
+    "qualityGrade": "A",
+    "totalQuantity": 1800,
+    "soldQuantity": 0,
+    "batchStatus": "LISTED",
+    "storedQuantity": 0,
+    "unstoredQuantity": 1800
+   },
+   {
+    "batchId": 19,
+    "cropName": "Aman Rice",
+    "farmName": "Karim Krishi Khamar",
+    "farmerName": "Abdul Karim",
+    "farmDistrict": "Bogura",
+    "harvestDate": "2026-08-15T17:15:13.000Z",
+    "qualityGrade": "A",
+    "totalQuantity": 2200,
+    "soldQuantity": 0,
+    "batchStatus": "BIDDING_OPEN",
+    "storedQuantity": 0,
+    "unstoredQuantity": 2200
+   },
+   {
+    "batchId": 20,
+    "cropName": "Mustard Seed",
+    "farmName": "Karim Krishi Khamar",
+    "farmerName": "Abdul Karim",
+    "farmDistrict": "Bogura",
+    "harvestDate": "2026-08-15T17:15:13.000Z",
+    "qualityGrade": "A",
+    "totalQuantity": 900,
+    "soldQuantity": 0,
+    "batchStatus": "BIDDING_OPEN",
+    "storedQuantity": 600,
+    "unstoredQuantity": 300
+   },
+   {
+    "batchId": 21,
+    "cropName": "Onion",
+    "farmName": "Karim Krishi Khamar",
+    "farmerName": "Abdul Karim",
+    "farmDistrict": "Bogura",
+    "harvestDate": "2026-08-15T17:15:13.000Z",
+    "qualityGrade": "B",
+    "totalQuantity": 3000,
+    "soldQuantity": 0,
+    "batchStatus": "BIDDING_OPEN",
+    "storedQuantity": 1500,
+    "unstoredQuantity": 1500
+   }
+  ],
+  "/storage/awaiting/leg2": [
+   {
+    "saleOrderId": 1,
+    "cropName": "Aman Rice",
+    "acceptedQuantity": 4000,
+    "buyerName": "Anisur Rahman",
+    "businessName": "Anisur Bazar Supply",
+    "buyerDistrict": "Sylhet",
+    "orderDate": "2026-06-26T18:00:00.000Z",
+    "deliveryStatus": "DELIVERED"
+   },
+   {
+    "saleOrderId": 3,
+    "cropName": "Potato",
+    "acceptedQuantity": 6000,
+    "buyerName": "Mizanur Rahman",
+    "businessName": "Bengal Agro Exports",
+    "buyerDistrict": "Chattogram",
+    "orderDate": "2026-07-06T18:00:00.000Z",
+    "deliveryStatus": "DELIVERED"
+   },
+   {
+    "saleOrderId": 4,
+    "cropName": "Onion",
+    "acceptedQuantity": 3000,
+    "buyerName": "Sultana Parvin",
+    "businessName": "Parvin Fresh Mart",
+    "buyerDistrict": "Dhaka",
+    "orderDate": "2026-07-26T18:00:00.000Z",
+    "deliveryStatus": "IN_TRANSIT"
+   },
+   {
+    "saleOrderId": 5,
+    "cropName": "Mustard Seed",
+    "acceptedQuantity": 2000,
+    "buyerName": "Kamrul Hasan",
+    "businessName": "Hasan Food Processing",
+    "buyerDistrict": "Narayanganj",
+    "orderDate": "2026-08-07T18:00:00.000Z",
+    "deliveryStatus": "ASSIGNED"
+   },
+   {
+    "saleOrderId": 24,
+    "cropName": "Potato",
+    "acceptedQuantity": 2500,
+    "buyerName": "Anisur Rahman",
+    "businessName": "Anisur Bazar Supply",
+    "buyerDistrict": "Sylhet",
+    "orderDate": "2026-08-18T11:15:13.000Z",
+    "deliveryStatus": "PENDING"
+   }
+  ],
+  "/storage/requests": [
+   {
+    "allocationId": 28,
+    "batchId": 20,
+    "cropName": "Mustard Seed",
+    "warehouseId": 1,
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 3,
+    "quantityStored": 600,
+    "minimumStorageDays": 45,
+    "ratePerKg": 7.5,
+    "counterRatePerKg": null,
+    "counteredBy": null,
+    "proposedBy": "CUSTOMER",
+    "allocationStatus": "PENDING_ACCEPT",
+    "saleOrderId": null,
+    "customerType": "FARMER",
+    "customerName": "Abdul Karim",
+    "awaiting": "REQUEST",
+    "estimatedFee": 4500
+   }
+  ],
+  "/reference/warehouses/1/units": [
+   {
+    "warehouseId": 1,
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 1,
+    "capacity": 60000,
+    "freeSpace": 58500,
+    "unitStatus": "PARTIAL"
+   },
+   {
+    "warehouseId": 1,
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 2,
+    "capacity": 60000,
+    "freeSpace": 56000,
+    "unitStatus": "PARTIAL"
+   },
+   {
+    "warehouseId": 1,
+    "warehouseName": "Bogura Cold Storage",
+    "unitNo": 3,
+    "capacity": 45000,
+    "freeSpace": 43200,
+    "unitStatus": "PARTIAL"
+   }
+  ],
+  "/reference/warehouses/5/units": [
+   {
+    "warehouseId": 5,
+    "warehouseName": "Faridpur Grain Store",
+    "unitNo": 1,
+    "capacity": 25000,
+    "freeSpace": 22500,
+    "unitStatus": "PARTIAL"
+   }
+  ],
+  "/reference/warehouses/3/units": [
+   {
+    "warehouseId": 3,
+    "warehouseName": "Munshiganj Potato Cold Store",
+    "unitNo": 1,
+    "capacity": 90000,
+    "freeSpace": 90000,
+    "unitStatus": "EMPTY"
+   },
+   {
+    "warehouseId": 3,
+    "warehouseName": "Munshiganj Potato Cold Store",
+    "unitNo": 2,
+    "capacity": 90000,
+    "freeSpace": 87000,
+    "unitStatus": "PARTIAL"
+   }
+  ],
+  "/reference/warehouses/4/units": [
+   {
+    "warehouseId": 4,
+    "warehouseName": "Pabna Central Warehouse",
+    "unitNo": 1,
+    "capacity": 35000,
+    "freeSpace": 31500,
+    "unitStatus": "PARTIAL"
+   },
+   {
+    "warehouseId": 4,
+    "warehouseName": "Pabna Central Warehouse",
+    "unitNo": 2,
+    "capacity": 35000,
+    "freeSpace": 35000,
+    "unitStatus": "EMPTY"
+   }
+  ],
+  "/reference/warehouses/2/units": [
+   {
+    "warehouseId": 2,
+    "warehouseName": "Rangpur Agro Warehouse",
+    "unitNo": 1,
+    "capacity": 40000,
+    "freeSpace": 40000,
+    "unitStatus": "EMPTY"
+   },
+   {
+    "warehouseId": 2,
+    "warehouseName": "Rangpur Agro Warehouse",
+    "unitNo": 2,
+    "capacity": 40000,
+    "freeSpace": 40000,
+    "unitStatus": "EMPTY"
+   }
+  ]
+ },
+ "TRANSPORT_PERSONNEL": {
+  "/auth/me": {
+   "userId": 21,
+   "firstName": "Sohel",
+   "middleName": null,
+   "lastName": "Rana",
+   "email": "sohel.rana@krishichain.bd",
+   "gender": "M",
+   "dateOfBirth": "1987-11-30T18:00:00.000Z",
+   "age": 38,
+   "district": "Bogura",
+   "upazila": "Bogura Sadar",
+   "village": null,
+   "registrationDate": "2025-07-03T18:00:00.000Z",
+   "status": "ACTIVE",
+   "role": "TRANSPORT_PERSONNEL",
+   "phones": [
+    "01715000021"
+   ]
+  },
+  "/reference/crops": [
+   {
+    "cropId": 1,
+    "cropName": "Aman Rice",
+    "categoryName": "Cereal",
+    "unit": "kg",
+    "basePrice": 32,
+    "shelfLifeDays": 365
+   },
+   {
+    "cropId": 5,
+    "cropName": "Mustard Seed",
+    "categoryName": "Oilseed",
+    "unit": "kg",
+    "basePrice": 68,
+    "shelfLifeDays": 240
+   },
+   {
+    "cropId": 3,
+    "cropName": "Lentil",
+    "categoryName": "Pulse",
+    "unit": "kg",
+    "basePrice": 95,
+    "shelfLifeDays": 300
+   },
+   {
+    "cropId": 4,
+    "cropName": "Onion",
+    "categoryName": "Spice",
+    "unit": "kg",
+    "basePrice": 45,
+    "shelfLifeDays": 90
+   },
+   {
+    "cropId": 2,
+    "cropName": "Potato",
+    "categoryName": "Tuber",
+    "unit": "kg",
+    "basePrice": 18,
+    "shelfLifeDays": 120
+   }
+  ],
+  "/reference/arats": [
+   {
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "district": "Dhaka",
+    "tier": 1,
+    "label": "KrishiChain Central Arat"
+   },
+   {
+    "aratId": 3,
+    "aratName": "Central Regional Arat",
+    "district": "Dhaka",
+    "tier": 2,
+    "label": "   Central Regional Arat"
+   },
+   {
+    "aratId": 5,
+    "aratName": "Munshiganj Zonal Arat",
+    "district": "Munshiganj",
+    "tier": 3,
+    "label": "      Munshiganj Zonal Arat"
+   },
+   {
+    "aratId": 2,
+    "aratName": "North Bengal Regional Arat",
+    "district": "Rangpur",
+    "tier": 2,
+    "label": "   North Bengal Regional Arat"
+   },
+   {
+    "aratId": 4,
+    "aratName": "Bogura Zonal Arat",
+    "district": "Bogura",
+    "tier": 3,
+    "label": "      Bogura Zonal Arat"
+   }
+  ],
+  "/reference/warehouses": [
+   {
+    "warehouseId": 1,
+    "warehouseName": "Bogura Cold Storage",
+    "address": "Sherpur Road, Bogura Sadar",
+    "district": "Bogura",
+    "storageFeePerKgRate": 7.5,
+    "freeSpace": 157700,
+    "unitCount": 3
+   },
+   {
+    "warehouseId": 5,
+    "warehouseName": "Faridpur Grain Store",
+    "address": "Mujib Road, Faridpur Sadar",
+    "district": "Faridpur",
+    "storageFeePerKgRate": 5,
+    "freeSpace": 47500,
+    "unitCount": 2
+   },
+   {
+    "warehouseId": 3,
+    "warehouseName": "Munshiganj Potato Cold Store",
+    "address": "Bazar Road, Munshiganj Sadar",
+    "district": "Munshiganj",
+    "storageFeePerKgRate": 8,
+    "freeSpace": 177000,
+    "unitCount": 2
+   },
+   {
+    "warehouseId": 4,
+    "warehouseName": "Pabna Central Warehouse",
+    "address": "Rupkatha Road, Pabna Sadar",
+    "district": "Pabna",
+    "storageFeePerKgRate": 5.5,
+    "freeSpace": 66500,
+    "unitCount": 2
+   },
+   {
+    "warehouseId": 2,
+    "warehouseName": "Rangpur Agro Warehouse",
+    "address": "Jail Road, Rangpur Sadar",
+    "district": "Rangpur",
+    "storageFeePerKgRate": 6,
+    "freeSpace": 80000,
+    "unitCount": 2
+   }
+  ],
+  "/transport/summary": {
+   "openRequests": 1,
+   "activeTrips": 0,
+   "completedTrips": 1,
+   "vehiclesAvailable": 2,
+   "kgDelivered": 4000
+  },
+  "/transport/assignments": [
+   {
+    "assignmentId": 1,
+    "assignedDate": "2026-06-28T18:00:00.000Z",
+    "assignmentStatus": "COMPLETED",
+    "transportId": 1,
+    "saleOrderId": 1,
+    "pickupLocation": "Bogura Cold Storage, Sherpur Road, Bogura",
+    "deliveryLocation": "Hossain Traders Depot, Tejgaon, Dhaka",
+    "deliveryStatus": "DELIVERED",
+    "deliveryDate": "2026-07-03T18:00:00.000Z",
+    "vehicleNo": "DHK-METRO-TA-11-1234",
+    "vehicleCapacity": 8000,
+    "cropName": "Aman Rice",
+    "quantity": 4000,
+    "totalAmount": 144000,
+    "paymentTerms": "ON_DELIVERY",
+    "orderStatus": "COMPLETED",
+    "farmerName": "Abdul Karim",
+    "buyerName": "Anisur Bazar Supply",
+    "paidSoFar": 144000
+   }
+  ],
+  "/transport/requests": [
+   {
+    "transportId": 24,
+    "saleOrderId": 24,
+    "pickupLocation": "Kahaloo, Bogura, Bogura",
+    "deliveryLocation": "16, Zindabazar, Sylhet Sadar, Sylhet",
+    "requestDate": "2026-08-18T11:15:13.000Z",
+    "deliveryStatus": "PENDING",
+    "cropName": "Potato",
+    "quantity": 2500,
+    "totalAmount": 55000,
+    "paymentTerms": "ON_DELIVERY",
+    "farmerName": "Abdul Karim",
+    "buyerName": "Anisur Bazar Supply"
+   }
+  ],
+  "/transport/vehicles": [
+   {
+    "vehicleId": 1,
+    "vehicleNo": "DHK-METRO-TA-11-1234",
+    "vehicleType": "Truck",
+    "capacity": 8000,
+    "status": "AVAILABLE"
+   },
+   {
+    "vehicleId": 2,
+    "vehicleNo": "RANGPUR-TA-12-5678",
+    "vehicleType": "Truck",
+    "capacity": 5000,
+    "status": "AVAILABLE"
+   }
+  ]
+ },
+ "ADMIN": {
+  "/auth/me": {
+   "userId": 11,
+   "firstName": "Farhana",
+   "middleName": null,
+   "lastName": "Yasmin",
+   "email": "farhana.yasmin@krishichain.bd",
+   "gender": "F",
+   "dateOfBirth": "1991-05-01T18:00:00.000Z",
+   "age": 35,
+   "district": "Dhaka",
+   "upazila": "Tejgaon",
+   "village": null,
+   "registrationDate": "2025-04-04T18:00:00.000Z",
+   "status": "ACTIVE",
+   "role": "ADMIN",
+   "phones": [
+    "01713000011"
+   ]
+  },
+  "/reference/crops": [
+   {
+    "cropId": 1,
+    "cropName": "Aman Rice",
+    "categoryName": "Cereal",
+    "unit": "kg",
+    "basePrice": 32,
+    "shelfLifeDays": 365
+   },
+   {
+    "cropId": 5,
+    "cropName": "Mustard Seed",
+    "categoryName": "Oilseed",
+    "unit": "kg",
+    "basePrice": 68,
+    "shelfLifeDays": 240
+   },
+   {
+    "cropId": 3,
+    "cropName": "Lentil",
+    "categoryName": "Pulse",
+    "unit": "kg",
+    "basePrice": 95,
+    "shelfLifeDays": 300
+   },
+   {
+    "cropId": 4,
+    "cropName": "Onion",
+    "categoryName": "Spice",
+    "unit": "kg",
+    "basePrice": 45,
+    "shelfLifeDays": 90
+   },
+   {
+    "cropId": 2,
+    "cropName": "Potato",
+    "categoryName": "Tuber",
+    "unit": "kg",
+    "basePrice": 18,
+    "shelfLifeDays": 120
+   }
+  ],
+  "/reference/arats": [
+   {
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "district": "Dhaka",
+    "tier": 1,
+    "label": "KrishiChain Central Arat"
+   },
+   {
+    "aratId": 3,
+    "aratName": "Central Regional Arat",
+    "district": "Dhaka",
+    "tier": 2,
+    "label": "   Central Regional Arat"
+   },
+   {
+    "aratId": 5,
+    "aratName": "Munshiganj Zonal Arat",
+    "district": "Munshiganj",
+    "tier": 3,
+    "label": "      Munshiganj Zonal Arat"
+   },
+   {
+    "aratId": 2,
+    "aratName": "North Bengal Regional Arat",
+    "district": "Rangpur",
+    "tier": 2,
+    "label": "   North Bengal Regional Arat"
+   },
+   {
+    "aratId": 4,
+    "aratName": "Bogura Zonal Arat",
+    "district": "Bogura",
+    "tier": 3,
+    "label": "      Bogura Zonal Arat"
+   }
+  ],
+  "/reference/warehouses": [
+   {
+    "warehouseId": 1,
+    "warehouseName": "Bogura Cold Storage",
+    "address": "Sherpur Road, Bogura Sadar",
+    "district": "Bogura",
+    "storageFeePerKgRate": 7.5,
+    "freeSpace": 157700,
+    "unitCount": 3
+   },
+   {
+    "warehouseId": 5,
+    "warehouseName": "Faridpur Grain Store",
+    "address": "Mujib Road, Faridpur Sadar",
+    "district": "Faridpur",
+    "storageFeePerKgRate": 5,
+    "freeSpace": 47500,
+    "unitCount": 2
+   },
+   {
+    "warehouseId": 3,
+    "warehouseName": "Munshiganj Potato Cold Store",
+    "address": "Bazar Road, Munshiganj Sadar",
+    "district": "Munshiganj",
+    "storageFeePerKgRate": 8,
+    "freeSpace": 177000,
+    "unitCount": 2
+   },
+   {
+    "warehouseId": 4,
+    "warehouseName": "Pabna Central Warehouse",
+    "address": "Rupkatha Road, Pabna Sadar",
+    "district": "Pabna",
+    "storageFeePerKgRate": 5.5,
+    "freeSpace": 66500,
+    "unitCount": 2
+   },
+   {
+    "warehouseId": 2,
+    "warehouseName": "Rangpur Agro Warehouse",
+    "address": "Jail Road, Rangpur Sadar",
+    "district": "Rangpur",
+    "storageFeePerKgRate": 6,
+    "freeSpace": 80000,
+    "unitCount": 2
+   }
+  ],
+  "/admin/dashboard": {
+   "summary": {
+    "userCount": 25,
+    "farmerCount": 5,
+    "buyerCount": 5,
+    "batchCount": 11,
+    "openAuctions": 5,
+    "bidCount": 21,
+    "orderCount": 6,
+    "grossValue": 782000,
+    "amountPaid": 553250,
+    "openComplaints": 2,
+    "undelivered": 3,
+    "pricesLoggedToday": 12
+   },
+   "unsoldBatches": [
+    {
+     "batchId": 8,
+     "cropName": "Aman Rice",
+     "totalQuantity": 1800,
+     "status": "LISTED",
+     "farmerName": "Rahima Begum"
+    }
+   ],
+   "unpaidOrders": [],
+   "byCrop": [
+    {
+     "cropName": "Aman Rice",
+     "batches": 3,
+     "totalQuantity": 9000,
+     "soldQuantity": 4000
+    },
+    {
+     "cropName": "Lentil",
+     "batches": 1,
+     "totalQuantity": 2000,
+     "soldQuantity": 1500
+    },
+    {
+     "cropName": "Mustard Seed",
+     "batches": 2,
+     "totalQuantity": 3400,
+     "soldQuantity": 2000
+    },
+    {
+     "cropName": "Onion",
+     "batches": 3,
+     "totalQuantity": 9500,
+     "soldQuantity": 3000
+    },
+    {
+     "cropName": "Potato",
+     "batches": 2,
+     "totalQuantity": 12000,
+     "soldQuantity": 8500
+    }
+   ]
+  },
+  "/admin/users": [
+   {
+    "userId": 1,
+    "name": "Abdul  Karim",
+    "email": "abdul.karim@krishichain.bd",
+    "gender": "M",
+    "district": "Bogura",
+    "registrationDate": "2025-06-23T18:00:00.000Z",
+    "role": "FARMER",
+    "detail": null,
+    "phoneCount": 2
+   },
+   {
+    "userId": 2,
+    "name": "Rahima  Begum",
+    "email": "rahima.begum@krishichain.bd",
+    "gender": "F",
+    "district": "Rangpur",
+    "registrationDate": "2025-07-08T18:00:00.000Z",
+    "role": "FARMER",
+    "detail": null,
+    "phoneCount": 1
+   },
+   {
+    "userId": 3,
+    "name": "Jamal Uddin Sarkar",
+    "email": "jamal.sarkar@krishichain.bd",
+    "gender": "M",
+    "district": "Munshiganj",
+    "registrationDate": "2025-07-15T18:00:00.000Z",
+    "role": "FARMER",
+    "detail": null,
+    "phoneCount": 2
+   },
+   {
+    "userId": 4,
+    "name": "Shafiqul  Islam",
+    "email": "shafiqul.islam@krishichain.bd",
+    "gender": "M",
+    "district": "Pabna",
+    "registrationDate": "2025-08-10T18:00:00.000Z",
+    "role": "FARMER",
+    "detail": null,
+    "phoneCount": 1
+   },
+   {
+    "userId": 5,
+    "name": "Nurjahan  Akter",
+    "email": "nurjahan.akter@krishichain.bd",
+    "gender": "F",
+    "district": "Faridpur",
+    "registrationDate": "2025-09-11T18:00:00.000Z",
+    "role": "FARMER",
+    "detail": null,
+    "phoneCount": 1
+   },
+   {
+    "userId": 6,
+    "name": "Tanvir  Hossain",
+    "email": "tanvir.hossain@krishichain.bd",
+    "gender": "M",
+    "district": "Dhaka",
+    "registrationDate": "2025-08-02T18:00:00.000Z",
+    "role": "BUYER",
+    "detail": "Hossain Traders",
+    "phoneCount": 2
+   },
+   {
+    "userId": 7,
+    "name": "Mizanur  Rahman",
+    "email": "mizanur.rahman@krishichain.bd",
+    "gender": "M",
+    "district": "Chattogram",
+    "registrationDate": "2025-08-17T18:00:00.000Z",
+    "role": "BUYER",
+    "detail": "Bengal Agro Exports",
+    "phoneCount": 2
+   },
+   {
+    "userId": 8,
+    "name": "Sultana  Parvin",
+    "email": "sultana.parvin@krishichain.bd",
+    "gender": "F",
+    "district": "Dhaka",
+    "registrationDate": "2025-10-11T18:00:00.000Z",
+    "role": "BUYER",
+    "detail": "Parvin Fresh Mart",
+    "phoneCount": 1
+   },
+   {
+    "userId": 9,
+    "name": "Kamrul  Hasan",
+    "email": "kamrul.hasan@krishichain.bd",
+    "gender": "M",
+    "district": "Narayanganj",
+    "registrationDate": "2025-10-26T18:00:00.000Z",
+    "role": "BUYER",
+    "detail": "Hasan Food Processing",
+    "phoneCount": 1
+   },
+   {
+    "userId": 10,
+    "name": "Anisur  Rahman",
+    "email": "anisur.rahman@krishichain.bd",
+    "gender": "M",
+    "district": "Sylhet",
+    "registrationDate": "2025-11-02T18:00:00.000Z",
+    "role": "BUYER",
+    "detail": "Anisur Bazar Supply",
+    "phoneCount": 1
+   },
+   {
+    "userId": 11,
+    "name": "Farhana  Yasmin",
+    "email": "farhana.yasmin@krishichain.bd",
+    "gender": "F",
+    "district": "Dhaka",
+    "registrationDate": "2025-04-04T18:00:00.000Z",
+    "role": "ADMIN",
+    "detail": "Market Analyst",
+    "phoneCount": 1
+   },
+   {
+    "userId": 12,
+    "name": "Rezaul  Karim",
+    "email": "rezaul.karim@krishichain.bd",
+    "gender": "M",
+    "district": "Dhaka",
+    "registrationDate": "2025-04-04T18:00:00.000Z",
+    "role": "ADMIN",
+    "detail": "Price Officer",
+    "phoneCount": 1
+   },
+   {
+    "userId": 13,
+    "name": "Shamima  Nasrin",
+    "email": "shamima.nasrin@krishichain.bd",
+    "gender": "F",
+    "district": "Dhaka",
+    "registrationDate": "2025-05-04T18:00:00.000Z",
+    "role": "ADMIN",
+    "detail": "Compliance Officer",
+    "phoneCount": 1
+   },
+   {
+    "userId": 14,
+    "name": "Habibur  Rahman",
+    "email": "habibur.rahman@krishichain.bd",
+    "gender": "M",
+    "district": "Bogura",
+    "registrationDate": "2025-05-19T18:00:00.000Z",
+    "role": "ADMIN",
+    "detail": "Regional Coordinator",
+    "phoneCount": 1
+   },
+   {
+    "userId": 15,
+    "name": "Nazmul  Haque",
+    "email": "nazmul.haque@krishichain.bd",
+    "gender": "M",
+    "district": "Dhaka",
+    "registrationDate": "2025-04-04T18:00:00.000Z",
+    "role": "ADMIN",
+    "detail": "System Administrator",
+    "phoneCount": 1
+   },
+   {
+    "userId": 16,
+    "name": "Ashraful  Alam",
+    "email": "ashraful.alam@krishichain.bd",
+    "gender": "M",
+    "district": "Bogura",
+    "registrationDate": "2025-06-03T18:00:00.000Z",
+    "role": "STORAGE_MANAGER",
+    "detail": null,
+    "phoneCount": 1
+   },
+   {
+    "userId": 17,
+    "name": "Delwar  Hossain",
+    "email": "delwar.hossain@krishichain.bd",
+    "gender": "M",
+    "district": "Rangpur",
+    "registrationDate": "2025-06-08T18:00:00.000Z",
+    "role": "STORAGE_MANAGER",
+    "detail": null,
+    "phoneCount": 1
+   },
+   {
+    "userId": 18,
+    "name": "Salma  Khatun",
+    "email": "salma.khatun@krishichain.bd",
+    "gender": "F",
+    "district": "Munshiganj",
+    "registrationDate": "2025-06-13T18:00:00.000Z",
+    "role": "STORAGE_MANAGER",
+    "detail": null,
+    "phoneCount": 1
+   },
+   {
+    "userId": 19,
+    "name": "Mahbub  Alam",
+    "email": "mahbub.alam@krishichain.bd",
+    "gender": "M",
+    "district": "Pabna",
+    "registrationDate": "2025-06-18T18:00:00.000Z",
+    "role": "STORAGE_MANAGER",
+    "detail": null,
+    "phoneCount": 1
+   },
+   {
+    "userId": 20,
+    "name": "Ruma  Akter",
+    "email": "ruma.akter@krishichain.bd",
+    "gender": "F",
+    "district": "Faridpur",
+    "registrationDate": "2025-06-23T18:00:00.000Z",
+    "role": "STORAGE_MANAGER",
+    "detail": null,
+    "phoneCount": 1
+   },
+   {
+    "userId": 21,
+    "name": "Sohel  Rana",
+    "email": "sohel.rana@krishichain.bd",
+    "gender": "M",
+    "district": "Bogura",
+    "registrationDate": "2025-07-03T18:00:00.000Z",
+    "role": "TRANSPORT_PERSONNEL",
+    "detail": "DK-HV-2011-0021",
+    "phoneCount": 1
+   },
+   {
+    "userId": 22,
+    "name": "Babul  Mia",
+    "email": "babul.mia@krishichain.bd",
+    "gender": "M",
+    "district": "Rangpur",
+    "registrationDate": "2025-07-13T18:00:00.000Z",
+    "role": "TRANSPORT_PERSONNEL",
+    "detail": "RG-HV-2013-0022",
+    "phoneCount": 1
+   },
+   {
+    "userId": 23,
+    "name": "Rafiqul  Sheikh",
+    "email": "rafiqul.sheikh@krishichain.bd",
+    "gender": "M",
+    "district": "Dhaka",
+    "registrationDate": "2025-07-23T18:00:00.000Z",
+    "role": "TRANSPORT_PERSONNEL",
+    "detail": "DK-HV-2016-0023",
+    "phoneCount": 1
+   },
+   {
+    "userId": 24,
+    "name": "Jasim Uddin Bhuiyan",
+    "email": "jasim.bhuiyan@krishichain.bd",
+    "gender": "M",
+    "district": "Narayanganj",
+    "registrationDate": "2025-07-28T18:00:00.000Z",
+    "role": "TRANSPORT_PERSONNEL",
+    "detail": "NG-HV-2009-0024",
+    "phoneCount": 1
+   },
+   {
+    "userId": 25,
+    "name": "Alamgir  Hossain",
+    "email": "alamgir.hossain@krishichain.bd",
+    "gender": "M",
+    "district": "Pabna",
+    "registrationDate": "2025-08-02T18:00:00.000Z",
+    "role": "TRANSPORT_PERSONNEL",
+    "detail": "PB-HV-2014-0025",
+    "phoneCount": 1
+   }
+  ],
+  "/admin/prices": [
+   {
+    "priceDate": "2026-08-17T18:00:00.000Z",
+    "cropId": 1,
+    "cropName": "Aman Rice",
+    "aratId": 4,
+    "aratName": "Bogura Zonal Arat",
+    "pricePerKg": 38.14,
+    "minPrice": 35.85,
+    "maxPrice": 40.81,
+    "loggedBy": "Nazmul Haque"
+   },
+   {
+    "priceDate": "2026-08-17T18:00:00.000Z",
+    "cropId": 1,
+    "cropName": "Aman Rice",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 36.49,
+    "minPrice": 34.3,
+    "maxPrice": 39.04,
+    "loggedBy": "Nazmul Haque"
+   },
+   {
+    "priceDate": "2026-08-17T18:00:00.000Z",
+    "cropId": 3,
+    "cropName": "Lentil",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 105.96,
+    "minPrice": 99.6,
+    "maxPrice": 113.38,
+    "loggedBy": "Nazmul Haque"
+   },
+   {
+    "priceDate": "2026-08-17T18:00:00.000Z",
+    "cropId": 3,
+    "cropName": "Lentil",
+    "aratId": 2,
+    "aratName": "North Bengal Regional Arat",
+    "pricePerKg": 107.55,
+    "minPrice": 101.1,
+    "maxPrice": 115.08,
+    "loggedBy": "Nazmul Haque"
+   },
+   {
+    "priceDate": "2026-08-17T18:00:00.000Z",
+    "cropId": 5,
+    "cropName": "Mustard Seed",
+    "aratId": 3,
+    "aratName": "Central Regional Arat",
+    "pricePerKg": 74.52,
+    "minPrice": 70.05,
+    "maxPrice": 79.74,
+    "loggedBy": "Nazmul Haque"
+   },
+   {
+    "priceDate": "2026-08-17T18:00:00.000Z",
+    "cropId": 5,
+    "cropName": "Mustard Seed",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 72.35,
+    "minPrice": 68.01,
+    "maxPrice": 77.41,
+    "loggedBy": "Nazmul Haque"
+   },
+   {
+    "priceDate": "2026-08-17T18:00:00.000Z",
+    "cropId": 4,
+    "cropName": "Onion",
+    "aratId": 3,
+    "aratName": "Central Regional Arat",
+    "pricePerKg": 65.24,
+    "minPrice": 61.33,
+    "maxPrice": 69.81,
+    "loggedBy": "Nazmul Haque"
+   },
+   {
+    "priceDate": "2026-08-17T18:00:00.000Z",
+    "cropId": 4,
+    "cropName": "Onion",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 63.34,
+    "minPrice": 59.54,
+    "maxPrice": 67.77,
+    "loggedBy": "Nazmul Haque"
+   },
+   {
+    "priceDate": "2026-08-17T18:00:00.000Z",
+    "cropId": 4,
+    "cropName": "Onion",
+    "aratId": 5,
+    "aratName": "Munshiganj Zonal Arat",
+    "pricePerKg": 67.14,
+    "minPrice": 63.11,
+    "maxPrice": 71.84,
+    "loggedBy": "Nazmul Haque"
+   },
+   {
+    "priceDate": "2026-08-17T18:00:00.000Z",
+    "cropId": 2,
+    "cropName": "Potato",
+    "aratId": 4,
+    "aratName": "Bogura Zonal Arat",
+    "pricePerKg": 15.76,
+    "minPrice": 14.81,
+    "maxPrice": 16.86,
+    "loggedBy": "Nazmul Haque"
+   },
+   {
+    "priceDate": "2026-08-17T18:00:00.000Z",
+    "cropId": 2,
+    "cropName": "Potato",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 15.08,
+    "minPrice": 14.18,
+    "maxPrice": 16.14,
+    "loggedBy": "Nazmul Haque"
+   },
+   {
+    "priceDate": "2026-08-17T18:00:00.000Z",
+    "cropId": 2,
+    "cropName": "Potato",
+    "aratId": 5,
+    "aratName": "Munshiganj Zonal Arat",
+    "pricePerKg": 15.99,
+    "minPrice": 15.03,
+    "maxPrice": 17.11,
+    "loggedBy": "Nazmul Haque"
+   },
+   {
+    "priceDate": "2026-08-16T18:00:00.000Z",
+    "cropId": 1,
+    "cropName": "Aman Rice",
+    "aratId": 4,
+    "aratName": "Bogura Zonal Arat",
+    "pricePerKg": 37.64,
+    "minPrice": 35.38,
+    "maxPrice": 40.27,
+    "loggedBy": "Habibur Rahman"
+   },
+   {
+    "priceDate": "2026-08-16T18:00:00.000Z",
+    "cropId": 1,
+    "cropName": "Aman Rice",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 36.02,
+    "minPrice": 33.86,
+    "maxPrice": 38.54,
+    "loggedBy": "Habibur Rahman"
+   },
+   {
+    "priceDate": "2026-08-16T18:00:00.000Z",
+    "cropId": 3,
+    "cropName": "Lentil",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 105.24,
+    "minPrice": 98.93,
+    "maxPrice": 112.61,
+    "loggedBy": "Habibur Rahman"
+   },
+   {
+    "priceDate": "2026-08-16T18:00:00.000Z",
+    "cropId": 3,
+    "cropName": "Lentil",
+    "aratId": 2,
+    "aratName": "North Bengal Regional Arat",
+    "pricePerKg": 106.82,
+    "minPrice": 100.41,
+    "maxPrice": 114.3,
+    "loggedBy": "Habibur Rahman"
+   },
+   {
+    "priceDate": "2026-08-16T18:00:00.000Z",
+    "cropId": 5,
+    "cropName": "Mustard Seed",
+    "aratId": 3,
+    "aratName": "Central Regional Arat",
+    "pricePerKg": 74.2,
+    "minPrice": 69.75,
+    "maxPrice": 79.39,
+    "loggedBy": "Habibur Rahman"
+   },
+   {
+    "priceDate": "2026-08-16T18:00:00.000Z",
+    "cropId": 5,
+    "cropName": "Mustard Seed",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 72.04,
+    "minPrice": 67.72,
+    "maxPrice": 77.08,
+    "loggedBy": "Habibur Rahman"
+   },
+   {
+    "priceDate": "2026-08-16T18:00:00.000Z",
+    "cropId": 4,
+    "cropName": "Onion",
+    "aratId": 3,
+    "aratName": "Central Regional Arat",
+    "pricePerKg": 63.69,
+    "minPrice": 59.87,
+    "maxPrice": 68.15,
+    "loggedBy": "Habibur Rahman"
+   },
+   {
+    "priceDate": "2026-08-16T18:00:00.000Z",
+    "cropId": 4,
+    "cropName": "Onion",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 61.84,
+    "minPrice": 58.13,
+    "maxPrice": 66.17,
+    "loggedBy": "Habibur Rahman"
+   },
+   {
+    "priceDate": "2026-08-16T18:00:00.000Z",
+    "cropId": 4,
+    "cropName": "Onion",
+    "aratId": 5,
+    "aratName": "Munshiganj Zonal Arat",
+    "pricePerKg": 65.55,
+    "minPrice": 61.62,
+    "maxPrice": 70.14,
+    "loggedBy": "Habibur Rahman"
+   },
+   {
+    "priceDate": "2026-08-16T18:00:00.000Z",
+    "cropId": 2,
+    "cropName": "Potato",
+    "aratId": 4,
+    "aratName": "Bogura Zonal Arat",
+    "pricePerKg": 15.49,
+    "minPrice": 14.56,
+    "maxPrice": 16.57,
+    "loggedBy": "Habibur Rahman"
+   },
+   {
+    "priceDate": "2026-08-16T18:00:00.000Z",
+    "cropId": 2,
+    "cropName": "Potato",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 14.82,
+    "minPrice": 13.93,
+    "maxPrice": 15.86,
+    "loggedBy": "Habibur Rahman"
+   },
+   {
+    "priceDate": "2026-08-16T18:00:00.000Z",
+    "cropId": 2,
+    "cropName": "Potato",
+    "aratId": 5,
+    "aratName": "Munshiganj Zonal Arat",
+    "pricePerKg": 15.71,
+    "minPrice": 14.77,
+    "maxPrice": 16.81,
+    "loggedBy": "Habibur Rahman"
+   },
+   {
+    "priceDate": "2026-08-15T18:00:00.000Z",
+    "cropId": 1,
+    "cropName": "Aman Rice",
+    "aratId": 4,
+    "aratName": "Bogura Zonal Arat",
+    "pricePerKg": 37.14,
+    "minPrice": 34.91,
+    "maxPrice": 39.74,
+    "loggedBy": "Shamima Nasrin"
+   },
+   {
+    "priceDate": "2026-08-15T18:00:00.000Z",
+    "cropId": 1,
+    "cropName": "Aman Rice",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 35.54,
+    "minPrice": 33.41,
+    "maxPrice": 38.03,
+    "loggedBy": "Shamima Nasrin"
+   },
+   {
+    "priceDate": "2026-08-15T18:00:00.000Z",
+    "cropId": 3,
+    "cropName": "Lentil",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 104.51,
+    "minPrice": 98.24,
+    "maxPrice": 111.83,
+    "loggedBy": "Shamima Nasrin"
+   },
+   {
+    "priceDate": "2026-08-15T18:00:00.000Z",
+    "cropId": 3,
+    "cropName": "Lentil",
+    "aratId": 2,
+    "aratName": "North Bengal Regional Arat",
+    "pricePerKg": 106.08,
+    "minPrice": 99.72,
+    "maxPrice": 113.51,
+    "loggedBy": "Shamima Nasrin"
+   },
+   {
+    "priceDate": "2026-08-15T18:00:00.000Z",
+    "cropId": 5,
+    "cropName": "Mustard Seed",
+    "aratId": 3,
+    "aratName": "Central Regional Arat",
+    "pricePerKg": 73.94,
+    "minPrice": 69.5,
+    "maxPrice": 79.12,
+    "loggedBy": "Shamima Nasrin"
+   },
+   {
+    "priceDate": "2026-08-15T18:00:00.000Z",
+    "cropId": 5,
+    "cropName": "Mustard Seed",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 71.78,
+    "minPrice": 67.47,
+    "maxPrice": 76.8,
+    "loggedBy": "Shamima Nasrin"
+   },
+   {
+    "priceDate": "2026-08-15T18:00:00.000Z",
+    "cropId": 4,
+    "cropName": "Onion",
+    "aratId": 3,
+    "aratName": "Central Regional Arat",
+    "pricePerKg": 61.97,
+    "minPrice": 58.25,
+    "maxPrice": 66.31,
+    "loggedBy": "Shamima Nasrin"
+   },
+   {
+    "priceDate": "2026-08-15T18:00:00.000Z",
+    "cropId": 4,
+    "cropName": "Onion",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 60.16,
+    "minPrice": 56.55,
+    "maxPrice": 64.37,
+    "loggedBy": "Shamima Nasrin"
+   },
+   {
+    "priceDate": "2026-08-15T18:00:00.000Z",
+    "cropId": 4,
+    "cropName": "Onion",
+    "aratId": 5,
+    "aratName": "Munshiganj Zonal Arat",
+    "pricePerKg": 63.77,
+    "minPrice": 59.94,
+    "maxPrice": 68.23,
+    "loggedBy": "Shamima Nasrin"
+   },
+   {
+    "priceDate": "2026-08-15T18:00:00.000Z",
+    "cropId": 2,
+    "cropName": "Potato",
+    "aratId": 4,
+    "aratName": "Bogura Zonal Arat",
+    "pricePerKg": 15.24,
+    "minPrice": 14.33,
+    "maxPrice": 16.31,
+    "loggedBy": "Shamima Nasrin"
+   },
+   {
+    "priceDate": "2026-08-15T18:00:00.000Z",
+    "cropId": 2,
+    "cropName": "Potato",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 14.59,
+    "minPrice": 13.71,
+    "maxPrice": 15.61,
+    "loggedBy": "Shamima Nasrin"
+   },
+   {
+    "priceDate": "2026-08-15T18:00:00.000Z",
+    "cropId": 2,
+    "cropName": "Potato",
+    "aratId": 5,
+    "aratName": "Munshiganj Zonal Arat",
+    "pricePerKg": 15.46,
+    "minPrice": 14.53,
+    "maxPrice": 16.54,
+    "loggedBy": "Shamima Nasrin"
+   },
+   {
+    "priceDate": "2026-08-14T18:00:00.000Z",
+    "cropId": 1,
+    "cropName": "Aman Rice",
+    "aratId": 4,
+    "aratName": "Bogura Zonal Arat",
+    "pricePerKg": 36.65,
+    "minPrice": 34.45,
+    "maxPrice": 39.22,
+    "loggedBy": "Rezaul Karim"
+   },
+   {
+    "priceDate": "2026-08-14T18:00:00.000Z",
+    "cropId": 1,
+    "cropName": "Aman Rice",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 35.08,
+    "minPrice": 32.98,
+    "maxPrice": 37.54,
+    "loggedBy": "Rezaul Karim"
+   },
+   {
+    "priceDate": "2026-08-14T18:00:00.000Z",
+    "cropId": 3,
+    "cropName": "Lentil",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 103.82,
+    "minPrice": 97.59,
+    "maxPrice": 111.09,
+    "loggedBy": "Rezaul Karim"
+   },
+   {
+    "priceDate": "2026-08-14T18:00:00.000Z",
+    "cropId": 3,
+    "cropName": "Lentil",
+    "aratId": 2,
+    "aratName": "North Bengal Regional Arat",
+    "pricePerKg": 105.38,
+    "minPrice": 99.06,
+    "maxPrice": 112.76,
+    "loggedBy": "Rezaul Karim"
+   },
+   {
+    "priceDate": "2026-08-14T18:00:00.000Z",
+    "cropId": 5,
+    "cropName": "Mustard Seed",
+    "aratId": 3,
+    "aratName": "Central Regional Arat",
+    "pricePerKg": 73.77,
+    "minPrice": 69.34,
+    "maxPrice": 78.93,
+    "loggedBy": "Rezaul Karim"
+   },
+   {
+    "priceDate": "2026-08-14T18:00:00.000Z",
+    "cropId": 5,
+    "cropName": "Mustard Seed",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 71.62,
+    "minPrice": 67.32,
+    "maxPrice": 76.63,
+    "loggedBy": "Rezaul Karim"
+   },
+   {
+    "priceDate": "2026-08-14T18:00:00.000Z",
+    "cropId": 4,
+    "cropName": "Onion",
+    "aratId": 3,
+    "aratName": "Central Regional Arat",
+    "pricePerKg": 60.13,
+    "minPrice": 56.52,
+    "maxPrice": 64.34,
+    "loggedBy": "Rezaul Karim"
+   },
+   {
+    "priceDate": "2026-08-14T18:00:00.000Z",
+    "cropId": 4,
+    "cropName": "Onion",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 58.38,
+    "minPrice": 54.88,
+    "maxPrice": 62.47,
+    "loggedBy": "Rezaul Karim"
+   },
+   {
+    "priceDate": "2026-08-14T18:00:00.000Z",
+    "cropId": 4,
+    "cropName": "Onion",
+    "aratId": 5,
+    "aratName": "Munshiganj Zonal Arat",
+    "pricePerKg": 61.88,
+    "minPrice": 58.17,
+    "maxPrice": 66.21,
+    "loggedBy": "Rezaul Karim"
+   },
+   {
+    "priceDate": "2026-08-14T18:00:00.000Z",
+    "cropId": 2,
+    "cropName": "Potato",
+    "aratId": 4,
+    "aratName": "Bogura Zonal Arat",
+    "pricePerKg": 15.03,
+    "minPrice": 14.13,
+    "maxPrice": 16.08,
+    "loggedBy": "Rezaul Karim"
+   },
+   {
+    "priceDate": "2026-08-14T18:00:00.000Z",
+    "cropId": 2,
+    "cropName": "Potato",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 14.39,
+    "minPrice": 13.53,
+    "maxPrice": 15.4,
+    "loggedBy": "Rezaul Karim"
+   },
+   {
+    "priceDate": "2026-08-14T18:00:00.000Z",
+    "cropId": 2,
+    "cropName": "Potato",
+    "aratId": 5,
+    "aratName": "Munshiganj Zonal Arat",
+    "pricePerKg": 15.25,
+    "minPrice": 14.34,
+    "maxPrice": 16.32,
+    "loggedBy": "Rezaul Karim"
+   },
+   {
+    "priceDate": "2026-08-13T18:00:00.000Z",
+    "cropId": 1,
+    "cropName": "Aman Rice",
+    "aratId": 4,
+    "aratName": "Bogura Zonal Arat",
+    "pricePerKg": 36.21,
+    "minPrice": 34.04,
+    "maxPrice": 38.74,
+    "loggedBy": "Farhana Yasmin"
+   },
+   {
+    "priceDate": "2026-08-13T18:00:00.000Z",
+    "cropId": 1,
+    "cropName": "Aman Rice",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 34.65,
+    "minPrice": 32.57,
+    "maxPrice": 37.08,
+    "loggedBy": "Farhana Yasmin"
+   },
+   {
+    "priceDate": "2026-08-13T18:00:00.000Z",
+    "cropId": 3,
+    "cropName": "Lentil",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 103.24,
+    "minPrice": 97.05,
+    "maxPrice": 110.47,
+    "loggedBy": "Farhana Yasmin"
+   },
+   {
+    "priceDate": "2026-08-13T18:00:00.000Z",
+    "cropId": 3,
+    "cropName": "Lentil",
+    "aratId": 2,
+    "aratName": "North Bengal Regional Arat",
+    "pricePerKg": 104.79,
+    "minPrice": 98.5,
+    "maxPrice": 112.13,
+    "loggedBy": "Farhana Yasmin"
+   },
+   {
+    "priceDate": "2026-08-13T18:00:00.000Z",
+    "cropId": 5,
+    "cropName": "Mustard Seed",
+    "aratId": 3,
+    "aratName": "Central Regional Arat",
+    "pricePerKg": 73.75,
+    "minPrice": 69.33,
+    "maxPrice": 78.91,
+    "loggedBy": "Farhana Yasmin"
+   },
+   {
+    "priceDate": "2026-08-13T18:00:00.000Z",
+    "cropId": 5,
+    "cropName": "Mustard Seed",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 71.6,
+    "minPrice": 67.3,
+    "maxPrice": 76.61,
+    "loggedBy": "Farhana Yasmin"
+   },
+   {
+    "priceDate": "2026-08-13T18:00:00.000Z",
+    "cropId": 4,
+    "cropName": "Onion",
+    "aratId": 3,
+    "aratName": "Central Regional Arat",
+    "pricePerKg": 58.24,
+    "minPrice": 54.75,
+    "maxPrice": 62.32,
+    "loggedBy": "Farhana Yasmin"
+   },
+   {
+    "priceDate": "2026-08-13T18:00:00.000Z",
+    "cropId": 4,
+    "cropName": "Onion",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 56.54,
+    "minPrice": 53.15,
+    "maxPrice": 60.5,
+    "loggedBy": "Farhana Yasmin"
+   },
+   {
+    "priceDate": "2026-08-13T18:00:00.000Z",
+    "cropId": 4,
+    "cropName": "Onion",
+    "aratId": 5,
+    "aratName": "Munshiganj Zonal Arat",
+    "pricePerKg": 59.93,
+    "minPrice": 56.33,
+    "maxPrice": 64.13,
+    "loggedBy": "Farhana Yasmin"
+   },
+   {
+    "priceDate": "2026-08-13T18:00:00.000Z",
+    "cropId": 2,
+    "cropName": "Potato",
+    "aratId": 4,
+    "aratName": "Bogura Zonal Arat",
+    "pricePerKg": 14.88,
+    "minPrice": 13.99,
+    "maxPrice": 15.92,
+    "loggedBy": "Farhana Yasmin"
+   },
+   {
+    "priceDate": "2026-08-13T18:00:00.000Z",
+    "cropId": 2,
+    "cropName": "Potato",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 14.24,
+    "minPrice": 13.39,
+    "maxPrice": 15.24,
+    "loggedBy": "Farhana Yasmin"
+   },
+   {
+    "priceDate": "2026-08-13T18:00:00.000Z",
+    "cropId": 2,
+    "cropName": "Potato",
+    "aratId": 5,
+    "aratName": "Munshiganj Zonal Arat",
+    "pricePerKg": 15.09,
+    "minPrice": 14.18,
+    "maxPrice": 16.15,
+    "loggedBy": "Farhana Yasmin"
+   },
+   {
+    "priceDate": "2026-08-12T18:00:00.000Z",
+    "cropId": 1,
+    "cropName": "Aman Rice",
+    "aratId": 4,
+    "aratName": "Bogura Zonal Arat",
+    "pricePerKg": 35.82,
+    "minPrice": 33.67,
+    "maxPrice": 38.33,
+    "loggedBy": "Nazmul Haque"
+   },
+   {
+    "priceDate": "2026-08-12T18:00:00.000Z",
+    "cropId": 1,
+    "cropName": "Aman Rice",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 34.27,
+    "minPrice": 32.21,
+    "maxPrice": 36.67,
+    "loggedBy": "Nazmul Haque"
+   },
+   {
+    "priceDate": "2026-08-12T18:00:00.000Z",
+    "cropId": 3,
+    "cropName": "Lentil",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 102.81,
+    "minPrice": 96.64,
+    "maxPrice": 110.01,
+    "loggedBy": "Nazmul Haque"
+   },
+   {
+    "priceDate": "2026-08-12T18:00:00.000Z",
+    "cropId": 3,
+    "cropName": "Lentil",
+    "aratId": 2,
+    "aratName": "North Bengal Regional Arat",
+    "pricePerKg": 104.35,
+    "minPrice": 98.09,
+    "maxPrice": 111.65,
+    "loggedBy": "Nazmul Haque"
+   },
+   {
+    "priceDate": "2026-08-12T18:00:00.000Z",
+    "cropId": 5,
+    "cropName": "Mustard Seed",
+    "aratId": 3,
+    "aratName": "Central Regional Arat",
+    "pricePerKg": 73.9,
+    "minPrice": 69.47,
+    "maxPrice": 79.07,
+    "loggedBy": "Nazmul Haque"
+   },
+   {
+    "priceDate": "2026-08-12T18:00:00.000Z",
+    "cropId": 5,
+    "cropName": "Mustard Seed",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 71.75,
+    "minPrice": 67.45,
+    "maxPrice": 76.77,
+    "loggedBy": "Nazmul Haque"
+   },
+   {
+    "priceDate": "2026-08-12T18:00:00.000Z",
+    "cropId": 4,
+    "cropName": "Onion",
+    "aratId": 3,
+    "aratName": "Central Regional Arat",
+    "pricePerKg": 56.34,
+    "minPrice": 52.96,
+    "maxPrice": 60.28,
+    "loggedBy": "Nazmul Haque"
+   },
+   {
+    "priceDate": "2026-08-12T18:00:00.000Z",
+    "cropId": 4,
+    "cropName": "Onion",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 54.7,
+    "minPrice": 51.42,
+    "maxPrice": 58.53,
+    "loggedBy": "Nazmul Haque"
+   },
+   {
+    "priceDate": "2026-08-12T18:00:00.000Z",
+    "cropId": 4,
+    "cropName": "Onion",
+    "aratId": 5,
+    "aratName": "Munshiganj Zonal Arat",
+    "pricePerKg": 57.98,
+    "minPrice": 54.5,
+    "maxPrice": 62.04,
+    "loggedBy": "Nazmul Haque"
+   },
+   {
+    "priceDate": "2026-08-12T18:00:00.000Z",
+    "cropId": 2,
+    "cropName": "Potato",
+    "aratId": 4,
+    "aratName": "Bogura Zonal Arat",
+    "pricePerKg": 14.78,
+    "minPrice": 13.89,
+    "maxPrice": 15.81,
+    "loggedBy": "Nazmul Haque"
+   },
+   {
+    "priceDate": "2026-08-12T18:00:00.000Z",
+    "cropId": 2,
+    "cropName": "Potato",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 14.14,
+    "minPrice": 13.29,
+    "maxPrice": 15.13,
+    "loggedBy": "Nazmul Haque"
+   },
+   {
+    "priceDate": "2026-08-12T18:00:00.000Z",
+    "cropId": 2,
+    "cropName": "Potato",
+    "aratId": 5,
+    "aratName": "Munshiganj Zonal Arat",
+    "pricePerKg": 14.99,
+    "minPrice": 14.09,
+    "maxPrice": 16.04,
+    "loggedBy": "Nazmul Haque"
+   },
+   {
+    "priceDate": "2026-08-11T18:00:00.000Z",
+    "cropId": 1,
+    "cropName": "Aman Rice",
+    "aratId": 4,
+    "aratName": "Bogura Zonal Arat",
+    "pricePerKg": 35.49,
+    "minPrice": 33.36,
+    "maxPrice": 37.97,
+    "loggedBy": "Habibur Rahman"
+   },
+   {
+    "priceDate": "2026-08-11T18:00:00.000Z",
+    "cropId": 1,
+    "cropName": "Aman Rice",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 33.97,
+    "minPrice": 31.93,
+    "maxPrice": 36.35,
+    "loggedBy": "Habibur Rahman"
+   },
+   {
+    "priceDate": "2026-08-11T18:00:00.000Z",
+    "cropId": 3,
+    "cropName": "Lentil",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 102.57,
+    "minPrice": 96.42,
+    "maxPrice": 109.75,
+    "loggedBy": "Habibur Rahman"
+   },
+   {
+    "priceDate": "2026-08-11T18:00:00.000Z",
+    "cropId": 3,
+    "cropName": "Lentil",
+    "aratId": 2,
+    "aratName": "North Bengal Regional Arat",
+    "pricePerKg": 104.11,
+    "minPrice": 97.86,
+    "maxPrice": 111.4,
+    "loggedBy": "Habibur Rahman"
+   },
+   {
+    "priceDate": "2026-08-11T18:00:00.000Z",
+    "cropId": 5,
+    "cropName": "Mustard Seed",
+    "aratId": 3,
+    "aratName": "Central Regional Arat",
+    "pricePerKg": 74.25,
+    "minPrice": 69.8,
+    "maxPrice": 79.45,
+    "loggedBy": "Habibur Rahman"
+   },
+   {
+    "priceDate": "2026-08-11T18:00:00.000Z",
+    "cropId": 5,
+    "cropName": "Mustard Seed",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 72.08,
+    "minPrice": 67.76,
+    "maxPrice": 77.13,
+    "loggedBy": "Habibur Rahman"
+   },
+   {
+    "priceDate": "2026-08-11T18:00:00.000Z",
+    "cropId": 4,
+    "cropName": "Onion",
+    "aratId": 3,
+    "aratName": "Central Regional Arat",
+    "pricePerKg": 54.49,
+    "minPrice": 51.22,
+    "maxPrice": 58.3,
+    "loggedBy": "Habibur Rahman"
+   },
+   {
+    "priceDate": "2026-08-11T18:00:00.000Z",
+    "cropId": 4,
+    "cropName": "Onion",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 52.9,
+    "minPrice": 49.73,
+    "maxPrice": 56.6,
+    "loggedBy": "Habibur Rahman"
+   },
+   {
+    "priceDate": "2026-08-11T18:00:00.000Z",
+    "cropId": 4,
+    "cropName": "Onion",
+    "aratId": 5,
+    "aratName": "Munshiganj Zonal Arat",
+    "pricePerKg": 56.08,
+    "minPrice": 52.72,
+    "maxPrice": 60.01,
+    "loggedBy": "Habibur Rahman"
+   },
+   {
+    "priceDate": "2026-08-11T18:00:00.000Z",
+    "cropId": 2,
+    "cropName": "Potato",
+    "aratId": 4,
+    "aratName": "Bogura Zonal Arat",
+    "pricePerKg": 14.75,
+    "minPrice": 13.87,
+    "maxPrice": 15.78,
+    "loggedBy": "Habibur Rahman"
+   },
+   {
+    "priceDate": "2026-08-11T18:00:00.000Z",
+    "cropId": 2,
+    "cropName": "Potato",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 14.12,
+    "minPrice": 13.27,
+    "maxPrice": 15.11,
+    "loggedBy": "Habibur Rahman"
+   },
+   {
+    "priceDate": "2026-08-11T18:00:00.000Z",
+    "cropId": 2,
+    "cropName": "Potato",
+    "aratId": 5,
+    "aratName": "Munshiganj Zonal Arat",
+    "pricePerKg": 14.96,
+    "minPrice": 14.06,
+    "maxPrice": 16.01,
+    "loggedBy": "Habibur Rahman"
+   },
+   {
+    "priceDate": "2026-08-10T18:00:00.000Z",
+    "cropId": 1,
+    "cropName": "Aman Rice",
+    "aratId": 4,
+    "aratName": "Bogura Zonal Arat",
+    "pricePerKg": 35.25,
+    "minPrice": 33.14,
+    "maxPrice": 37.72,
+    "loggedBy": "Shamima Nasrin"
+   },
+   {
+    "priceDate": "2026-08-10T18:00:00.000Z",
+    "cropId": 1,
+    "cropName": "Aman Rice",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 33.74,
+    "minPrice": 31.72,
+    "maxPrice": 36.1,
+    "loggedBy": "Shamima Nasrin"
+   },
+   {
+    "priceDate": "2026-08-10T18:00:00.000Z",
+    "cropId": 3,
+    "cropName": "Lentil",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 102.54,
+    "minPrice": 96.39,
+    "maxPrice": 109.72,
+    "loggedBy": "Shamima Nasrin"
+   },
+   {
+    "priceDate": "2026-08-10T18:00:00.000Z",
+    "cropId": 3,
+    "cropName": "Lentil",
+    "aratId": 2,
+    "aratName": "North Bengal Regional Arat",
+    "pricePerKg": 104.07,
+    "minPrice": 97.83,
+    "maxPrice": 111.35,
+    "loggedBy": "Shamima Nasrin"
+   },
+   {
+    "priceDate": "2026-08-10T18:00:00.000Z",
+    "cropId": 5,
+    "cropName": "Mustard Seed",
+    "aratId": 3,
+    "aratName": "Central Regional Arat",
+    "pricePerKg": 74.79,
+    "minPrice": 70.3,
+    "maxPrice": 80.03,
+    "loggedBy": "Shamima Nasrin"
+   },
+   {
+    "priceDate": "2026-08-10T18:00:00.000Z",
+    "cropId": 5,
+    "cropName": "Mustard Seed",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 72.61,
+    "minPrice": 68.25,
+    "maxPrice": 77.69,
+    "loggedBy": "Shamima Nasrin"
+   },
+   {
+    "priceDate": "2026-08-10T18:00:00.000Z",
+    "cropId": 4,
+    "cropName": "Onion",
+    "aratId": 3,
+    "aratName": "Central Regional Arat",
+    "pricePerKg": 52.73,
+    "minPrice": 49.57,
+    "maxPrice": 56.42,
+    "loggedBy": "Shamima Nasrin"
+   },
+   {
+    "priceDate": "2026-08-10T18:00:00.000Z",
+    "cropId": 4,
+    "cropName": "Onion",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 51.19,
+    "minPrice": 48.12,
+    "maxPrice": 54.77,
+    "loggedBy": "Shamima Nasrin"
+   },
+   {
+    "priceDate": "2026-08-10T18:00:00.000Z",
+    "cropId": 4,
+    "cropName": "Onion",
+    "aratId": 5,
+    "aratName": "Munshiganj Zonal Arat",
+    "pricePerKg": 54.27,
+    "minPrice": 51.01,
+    "maxPrice": 58.07,
+    "loggedBy": "Shamima Nasrin"
+   },
+   {
+    "priceDate": "2026-08-10T18:00:00.000Z",
+    "cropId": 2,
+    "cropName": "Potato",
+    "aratId": 4,
+    "aratName": "Bogura Zonal Arat",
+    "pricePerKg": 14.8,
+    "minPrice": 13.91,
+    "maxPrice": 15.84,
+    "loggedBy": "Shamima Nasrin"
+   },
+   {
+    "priceDate": "2026-08-10T18:00:00.000Z",
+    "cropId": 2,
+    "cropName": "Potato",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 14.16,
+    "minPrice": 13.31,
+    "maxPrice": 15.15,
+    "loggedBy": "Shamima Nasrin"
+   },
+   {
+    "priceDate": "2026-08-10T18:00:00.000Z",
+    "cropId": 2,
+    "cropName": "Potato",
+    "aratId": 5,
+    "aratName": "Munshiganj Zonal Arat",
+    "pricePerKg": 15.01,
+    "minPrice": 14.11,
+    "maxPrice": 16.06,
+    "loggedBy": "Shamima Nasrin"
+   },
+   {
+    "priceDate": "2026-08-09T18:00:00.000Z",
+    "cropId": 1,
+    "cropName": "Aman Rice",
+    "aratId": 4,
+    "aratName": "Bogura Zonal Arat",
+    "pricePerKg": 35.09,
+    "minPrice": 32.98,
+    "maxPrice": 37.55,
+    "loggedBy": "Rezaul Karim"
+   },
+   {
+    "priceDate": "2026-08-09T18:00:00.000Z",
+    "cropId": 1,
+    "cropName": "Aman Rice",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 33.58,
+    "minPrice": 31.57,
+    "maxPrice": 35.93,
+    "loggedBy": "Rezaul Karim"
+   },
+   {
+    "priceDate": "2026-08-09T18:00:00.000Z",
+    "cropId": 3,
+    "cropName": "Lentil",
+    "aratId": 1,
+    "aratName": "KrishiChain Central Arat",
+    "pricePerKg": 102.71,
+    "minPrice": 96.55,
+    "maxPrice": 109.9,
+    "loggedBy": "Rezaul Karim"
+   },
+   {
+    "priceDate": "2026-08-09T18:00:00.000Z",
+    "cropId": 3,
+    "cropName": "Lentil",
+    "aratId": 2,
+    "aratName": "North Bengal Regional Arat",
+    "pricePerKg": 104.25,
+    "minPrice": 98,
+    "maxPrice": 111.55,
+    "loggedBy": "Rezaul Karim"
+   }
+  ],
+  "/admin/complaints": [
+   {
+    "complaintId": 5,
+    "saleOrderId": 5,
+    "complaintType": "LOGISTICS",
+    "description": "Pickup from Faridpur Grain Store not yet scheduled after vehicle assignment.",
+    "status": "OPEN",
+    "resolutionDate": null,
+    "orderAmount": 148000,
+    "buyerName": "Hasan Food Processing",
+    "farmerName": "Nurjahan Akter",
+    "handledBy": " "
+   },
+   {
+    "complaintId": 3,
+    "saleOrderId": 4,
+    "complaintType": "DELAY",
+    "description": "Consignment has been in transit past the expected delivery window.",
+    "status": "IN_REVIEW",
+    "resolutionDate": null,
+    "orderAmount": 150750,
+    "buyerName": "Parvin Fresh Mart",
+    "farmerName": "Shafiqul Islam",
+    "handledBy": "Habibur Rahman"
+   },
+   {
+    "complaintId": 1,
+    "saleOrderId": 3,
+    "complaintType": "QUALITY",
+    "description": "Buyer reports ~4% spoilage in the potato consignment; requests partial credit.",
+    "status": "RESOLVED",
+    "resolutionDate": "2026-07-18T18:00:00.000Z",
+    "orderAmount": 130500,
+    "buyerName": "Bengal Agro Exports",
+    "farmerName": "Jamal Sarkar",
+    "handledBy": "Shamima Nasrin"
+   },
+   {
+    "complaintId": 2,
+    "saleOrderId": 1,
+    "complaintType": "DOCUMENTATION",
+    "description": "Weighbridge slip missing from the delivery paperwork at Tejgaon depot.",
+    "status": "RESOLVED",
+    "resolutionDate": "2026-07-06T18:00:00.000Z",
+    "orderAmount": 144000,
+    "buyerName": "Anisur Bazar Supply",
+    "farmerName": "Abdul Karim",
+    "handledBy": "Farhana Yasmin"
+   },
+   {
+    "complaintId": 4,
+    "saleOrderId": 2,
+    "complaintType": "PAYMENT",
+    "description": "Farmer queried the advance settlement date shown on the order.",
+    "status": "RESOLVED",
+    "resolutionDate": "2026-07-04T18:00:00.000Z",
+    "orderAmount": 153750,
+    "buyerName": "Hossain Traders",
+    "farmerName": "Rahima Begum",
+    "handledBy": "Rezaul Karim"
+   }
+  ]
+ }
+}

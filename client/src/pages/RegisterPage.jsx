@@ -1,19 +1,19 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../api/client';
 import Brand from '../components/Brand';
 
-/**
- * The extra fields each role needs, mirroring the subclass tables of the
- * total/disjoint specialization. This must stay in step with SUBCLASS in
- * server/src/services/auth.service.js — the server validates the required
- * ones regardless of what the form sends.
- */
+const LATEST_DOB = (() => {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 18);
+  return d.toISOString().slice(0, 10);
+})();
+
 const ROLE_FIELDS = {
   FARMER: [
     { name: 'nid', label: 'NID number', required: true },
     { name: 'bankAccountNo', label: 'Bank account no.' },
-    { name: 'mobileBankingNo', label: 'Mobile banking no.' },
     { name: 'experienceYears', label: 'Years of experience', type: 'number' },
   ],
   BUYER: [
@@ -48,11 +48,16 @@ export default function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
 
+  const [districts, setDistricts] = useState([]);
   const [role, setRole] = useState('FARMER');
   const [form, setForm] = useState({ gender: 'M' });
   const [phones, setPhones] = useState(['']);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    api('/reference/districts').then(setDistricts).catch(() => setDistricts([]));
+  }, []);
 
   const set = (name) => (e) => setForm({ ...form, [name]: e.target.value });
 
@@ -125,8 +130,10 @@ export default function RegisterPage() {
                 type="date"
                 value={form.dateOfBirth || ''}
                 onChange={set('dateOfBirth')}
+                max={LATEST_DOB}
                 required
               />
+              <small className="muted">You must be at least 18.</small>
             </label>
           </div>
         </fieldset>
@@ -167,12 +174,19 @@ export default function RegisterPage() {
               <input value={form.village || ''} onChange={set('village')} />
             </label>
             <label>
-              Upazila
-              <input value={form.upazila || ''} onChange={set('upazila')} />
+              Upazila *
+              <input value={form.upazila || ''} onChange={set('upazila')} required />
             </label>
             <label>
               District *
-              <input value={form.district || ''} onChange={set('district')} required />
+              <select value={form.district || ''} onChange={set('district')} required>
+                <option value="">Select a district…</option>
+                {districts.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
             </label>
             <label>
               Postal code
@@ -181,16 +195,18 @@ export default function RegisterPage() {
           </div>
         </fieldset>
 
-        {/* {PhoneNo} is a multivalued attribute — one user, many rows in
-            USER_PHONE — so the form has to allow more than one. */}
+        {}
         <fieldset>
-          <legend>Phone numbers</legend>
+          <legend>Phone numbers *</legend>
           {phones.map((phone, i) => (
             <input
               key={i}
               value={phone}
               onChange={(e) => setPhone(i, e.target.value)}
               placeholder="017XXXXXXXX"
+              pattern="01[3-9][0-9]{8}"
+              title="An 11-digit Bangladeshi mobile number, e.g. 01711000001"
+              required={i === 0}
             />
           ))}
           <button type="button" className="link" onClick={() => setPhones([...phones, ''])}>

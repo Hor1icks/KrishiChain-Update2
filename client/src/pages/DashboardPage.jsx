@@ -1,10 +1,5 @@
 import { useAuth } from '../context/AuthContext';
 
-/**
- * Placeholder landing page. Phases 4-6 replace the "coming next" list
- * below with the real role modules; this exists so the auth flow has
- * somewhere to land and so role-based routing can be demonstrated now.
- */
 const ROLE_PLAN = {
   FARMER: ['My farms', 'Create harvest batch', 'My batches & bids', 'My sales'],
   BUYER: ['Browse open batches', 'Place a bid', 'My bids', 'My orders'],

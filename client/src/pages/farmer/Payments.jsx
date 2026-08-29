@@ -2,11 +2,6 @@ import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
 import { date, taka } from '../../utils/format';
 
-/**
- * Money in. Payments are buyer -> farmer directly (D-2: no ARAT
- * commission, no escrow), so every row here is the full amount the buyer
- * sent, not a net figure.
- */
 export default function Payments() {
   const [payments, setPayments] = useState(null);
   const [error, setError] = useState('');

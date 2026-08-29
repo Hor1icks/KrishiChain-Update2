@@ -42,6 +42,7 @@ async function loadTrip(connection, transportId) {
   const result = await connection.execute(
     `SELECT tr.TransportID, tr.SaleOrderID, tr.DeliveryStatus, tr.DeliveryDate,
             so.Status AS OrderStatus, so.PaymentTerms, so.TotalAmount,
+            so.DeliveryPreference,
             b.BuyerID, f.FarmerID
        FROM TRANSPORT_REQUEST tr
        JOIN SALE_ORDER so    ON so.SaleOrderID = tr.SaleOrderID
@@ -60,17 +61,49 @@ async function loadTrip(connection, transportId) {
  * The assignment row for a trip, if it is still live. Used to prove the
  * caller is the person actually driving it before letting them move it on.
  */
-async function loadAssignment(connection, transportId) {
+async function driverOnTrip(connection, transportId, personnelId) {
   const result = await connection.execute(
-    `SELECT AssignmentID, VehicleID, PersonnelID, AssignmentStatus
-       FROM ASSIGNED_TO
+    `SELECT COUNT(*) AS N FROM ASSIGNED_TO
+      WHERE TransportID = :transportId AND PersonnelID = :personnelId
+        AND AssignmentStatus = 'ACTIVE'`,
+    { transportId, personnelId }
+  );
+  return result.rows[0].N > 0;
+}
+
+async function tripHolder(connection, transportId) {
+  const result = await connection.execute(
+    `SELECT MIN(PersonnelID) AS HOLDER FROM ASSIGNED_TO
       WHERE TransportID = :transportId AND AssignmentStatus = 'ACTIVE'`,
     { transportId }
   );
-  return result.rows[0] || null;
+  return result.rows[0].HOLDER;
 }
 
-/** Open work: awarded orders whose transport nobody has claimed yet. */
+async function assignedCapacity(connection, transportId) {
+  const result = await connection.execute(
+    `SELECT NVL(SUM(v.Capacity), 0) AS CAP
+       FROM ASSIGNED_TO a
+       JOIN VEHICLE v ON v.VehicleID = a.VehicleID
+      WHERE a.TransportID = :transportId AND a.AssignmentStatus = 'ACTIVE'`,
+    { transportId }
+  );
+  return result.rows[0].CAP;
+}
+
+/**
+ * Open work: awarded orders whose transport nobody has claimed yet AND
+ * whose buyer has settled where the load is actually going.
+ *
+ * THE DELIVERY GATE. Winning a bid raises a transport request
+ * immediately, but at that moment nobody knows the destination: the
+ * buyer may want it driven straight to them, or into a warehouse first
+ * (leg 2). Until they say which, the trip has no real address, so it is
+ * not offered to drivers at all. DeliveryPreference leaves 'PENDING' by
+ * exactly two routes — the buyer choosing direct delivery
+ * (buyer.service.js setDeliveryDirect) or a leg-2 storage allocation
+ * going ACTIVE (storage.service.js finalizeAcceptance).
+ */
 async function listOpenRequests() {
   const result = await query(
     `SELECT tr.TransportID      AS "transportId",
@@ -81,6 +114,10 @@ async function listOpenRequests() {
             tr.DeliveryStatus   AS "deliveryStatus",
             c.CropName          AS "cropName",
             so.AcceptedQuantity AS "quantity",
+            NVL((SELECT SUM(v.Capacity) FROM ASSIGNED_TO a
+                   JOIN VEHICLE v ON v.VehicleID = a.VehicleID
+                  WHERE a.TransportID = tr.TransportID
+                    AND a.AssignmentStatus = 'ACTIVE'), 0) AS "assignedCapacity",
             so.TotalAmount      AS "totalAmount",
             so.PaymentTerms     AS "paymentTerms",
             uf.FirstName || ' ' || uf.LastName AS "farmerName",
@@ -95,9 +132,11 @@ async function listOpenRequests() {
        JOIN BUYER byr        ON byr.BuyerID    = b.BuyerID
        JOIN USERS ub         ON ub.UserID      = byr.BuyerID
       WHERE tr.DeliveryStatus = 'PENDING'
-        AND NOT EXISTS (SELECT 1 FROM ASSIGNED_TO a
-                         WHERE a.TransportID = tr.TransportID
-                           AND a.AssignmentStatus = 'ACTIVE')
+        AND so.DeliveryPreference IN ('DIRECT', 'VIA_STORAGE')
+        AND NVL((SELECT SUM(v.Capacity) FROM ASSIGNED_TO a
+                   JOIN VEHICLE v ON v.VehicleID = a.VehicleID
+                  WHERE a.TransportID = tr.TransportID
+                    AND a.AssignmentStatus = 'ACTIVE'), 0) < so.AcceptedQuantity
       ORDER BY tr.RequestDate, tr.TransportID`
   );
   return result.rows;
@@ -140,8 +179,21 @@ async function listMyAssignments(personnelId) {
             uf.FirstName || ' ' || uf.LastName AS "farmerName",
             NVL(byr.BusinessName, ub.FirstName || ' ' || ub.LastName) AS "buyerName",
             NVL((SELECT SUM(p.Amount) FROM PAYMENT p
-                  WHERE p.SaleOrderID = so.SaleOrderID
-                    AND p.PaymentStatus IN ('PENDING','COMPLETED')), 0) AS "paidSoFar"
+                  WHERE p.PaymentType = 'SALE'
+                    AND p.SaleOrderID = so.SaleOrderID
+                    AND p.PaymentStatus IN ('PENDING','COMPLETED')), 0) AS "paidSoFar",
+            (SELECT COUNT(*) FROM ASSIGNED_TO a2
+              WHERE a2.TransportID = tr.TransportID
+                AND a2.AssignmentStatus = a.AssignmentStatus) AS "vehicleCount",
+            (SELECT SUM(v2.Capacity) FROM ASSIGNED_TO a2
+               JOIN VEHICLE v2 ON v2.VehicleID = a2.VehicleID
+              WHERE a2.TransportID = tr.TransportID
+                AND a2.AssignmentStatus = a.AssignmentStatus) AS "fleetCapacity",
+            (SELECT LISTAGG(v2.VehicleNo, ', ') WITHIN GROUP (ORDER BY v2.VehicleNo)
+               FROM ASSIGNED_TO a2
+               JOIN VEHICLE v2 ON v2.VehicleID = a2.VehicleID
+              WHERE a2.TransportID = tr.TransportID
+                AND a2.AssignmentStatus = a.AssignmentStatus) AS "fleetVehicles"
        FROM ASSIGNED_TO a
        JOIN TRANSPORT_REQUEST tr ON tr.TransportID = a.TransportID
        JOIN VEHICLE v        ON v.VehicleID    = a.VehicleID
@@ -207,8 +259,29 @@ async function claim(personnelId, payload) {
         `Transport #${transportId} is already ${trip.DELIVERYSTATUS} — nothing to claim.`
       );
     }
-    if (await loadAssignment(connection, transportId)) {
-      throw ApiError.conflict('Another driver has already taken this trip.');
+    // Re-checked here and not only in listOpenRequests(): the two calls
+    // are not atomic with each other, so a buyer could still be deciding
+    // when the list was fetched. (Different reason from BR-18's recheck
+    // below, which exists because the vehicle is not known until now.)
+    if (!['DIRECT', 'VIA_STORAGE'].includes(trip.DELIVERYPREFERENCE)) {
+      throw ApiError.businessRule(
+        `The buyer has not settled where order #${trip.SALEORDERID} is going yet — ` +
+          `it needs a direct-delivery choice or an accepted storage allocation first.`
+      );
+    }
+    const load = await connection.execute(
+      `SELECT AcceptedQuantity FROM SALE_ORDER WHERE SaleOrderID = :saleOrderId`,
+      { saleOrderId: trip.SALEORDERID }
+    );
+    const quantity = load.rows[0].ACCEPTEDQUANTITY;
+    const alreadyAssigned = await assignedCapacity(connection, transportId);
+
+    const holder = await tripHolder(connection, transportId);
+    if (holder !== null && holder !== personnelId) {
+      throw ApiError.conflict('Another transport operator has already taken this request.');
+    }
+    if (alreadyAssigned >= quantity) {
+      throw ApiError.conflict('This request already has enough capacity on it.');
     }
 
     // FOR UPDATE so two drivers cannot claim the same vehicle at once —
@@ -224,19 +297,9 @@ async function claim(personnelId, payload) {
       throw ApiError.businessRule(`Vehicle ${vehicle.VEHICLENO} is ${vehicle.STATUS}.`);
     }
 
-    const load = await connection.execute(
-      `SELECT AcceptedQuantity FROM SALE_ORDER WHERE SaleOrderID = :saleOrderId`,
-      { saleOrderId: trip.SALEORDERID }
-    );
-    const quantity = load.rows[0].ACCEPTEDQUANTITY;
-    if (quantity > vehicle.CAPACITY) {
-      throw ApiError.businessRule(
-        `BR-18: this order is ${quantity} kg but vehicle ${vehicle.VEHICLENO} ` +
-          `carries only ${vehicle.CAPACITY} kg.`
-      );
-    }
+    const totalCapacity = alreadyAssigned + vehicle.CAPACITY;
 
-    // --- 1. ASSIGNED_TO (the second ternary relationship) -------------
+
     const assignment = await connection.execute(
       `INSERT INTO ASSIGNED_TO (TransportID, VehicleID, PersonnelID, AssignmentStatus)
        VALUES (:transportId, :vehicleId, :personnelId, 'ACTIVE')
@@ -255,12 +318,17 @@ async function claim(personnelId, payload) {
       { vehicleId }
     );
 
-    // --- 3. TRANSPORT_REQUEST -> ASSIGNED ----------------------------
-    await connection.execute(
-      `UPDATE TRANSPORT_REQUEST SET DeliveryStatus = 'ASSIGNED'
-        WHERE TransportID = :transportId`,
-      { transportId }
-    );
+    // BR-18 is met by the fleet on the trip, not by any one vehicle, so
+    // the request only leaves PENDING once the assigned capacity covers
+    // the load. Until then it stays claimable by another driver.
+    const covered = totalCapacity >= quantity;
+    if (covered) {
+      await connection.execute(
+        `UPDATE TRANSPORT_REQUEST SET DeliveryStatus = 'ASSIGNED'
+          WHERE TransportID = :transportId`,
+        { transportId }
+      );
+    }
 
     return {
       assignmentId: assignment.outBinds.assignmentId[0],
@@ -269,7 +337,9 @@ async function claim(personnelId, payload) {
       vehicleNo: vehicle.VEHICLENO,
       quantity,
       capacity: vehicle.CAPACITY,
-      deliveryStatus: 'ASSIGNED',
+      assignedCapacity: totalCapacity,
+      remainingKg: Math.max(0, quantity - totalCapacity),
+      deliveryStatus: covered ? 'ASSIGNED' : 'PENDING',
     };
   });
 }
@@ -283,10 +353,7 @@ async function claim(personnelId, payload) {
 async function advance(personnelId, transportId) {
   return withTransaction(async (connection) => {
     const trip = await loadTrip(connection, transportId);
-    const assignment = await loadAssignment(connection, transportId);
-
-    if (!assignment) throw ApiError.notFound('This trip has no active assignment.');
-    if (assignment.PERSONNELID !== personnelId) {
+    if (!(await driverOnTrip(connection, transportId, personnelId))) {
       throw ApiError.forbidden('This is not your trip.');
     }
 
@@ -328,10 +395,7 @@ async function advance(personnelId, transportId) {
 async function complete(personnelId, transportId, payload = {}) {
   return withTransaction(async (connection) => {
     const trip = await loadTrip(connection, transportId);
-    const assignment = await loadAssignment(connection, transportId);
-
-    if (!assignment) throw ApiError.notFound('This trip has no active assignment.');
-    if (assignment.PERSONNELID !== personnelId) {
+    if (!(await driverOnTrip(connection, transportId, personnelId))) {
       throw ApiError.forbidden('This is not your trip.');
     }
     if (trip.DELIVERYSTATUS === 'DELIVERED') {
@@ -401,16 +465,17 @@ async function complete(personnelId, transportId, payload = {}) {
       );
     }
 
-    // Housekeeping that makes the module reusable: close the assignment
-    // and hand the vehicle back, otherwise it can never be claimed again.
     await connection.execute(
-      `UPDATE ASSIGNED_TO SET AssignmentStatus = 'COMPLETED'
-        WHERE AssignmentID = :assignmentId`,
-      { assignmentId: assignment.ASSIGNMENTID }
+      `UPDATE VEHICLE SET Status = 'AVAILABLE'
+        WHERE VehicleID IN (SELECT VehicleID FROM ASSIGNED_TO
+                             WHERE TransportID = :transportId
+                               AND AssignmentStatus = 'ACTIVE')`,
+      { transportId }
     );
     await connection.execute(
-      `UPDATE VEHICLE SET Status = 'AVAILABLE' WHERE VehicleID = :vehicleId`,
-      { vehicleId: assignment.VEHICLEID }
+      `UPDATE ASSIGNED_TO SET AssignmentStatus = 'COMPLETED'
+        WHERE TransportID = :transportId AND AssignmentStatus = 'ACTIVE'`,
+      { transportId }
     );
 
     return {

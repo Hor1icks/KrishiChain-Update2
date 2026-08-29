@@ -41,27 +41,19 @@ SELECT u.UserID,
        u.FirstName,
        u.MiddleName,
        u.LastName,
-       u.FirstName || ' ' || u.LastName                        AS FullName,
+       u.FirstName || ' ' || u.LastName                    AS FullName,
        u.Email,
        u.Gender,
        u.DateOfBirth,
-       TRUNC(MONTHS_BETWEEN(SYSDATE, u.DateOfBirth) / 12)      AS Age,
-       u.HouseNo,
-       u.Road,
-       u.Village,
-       u.Upazila,
-       u.District,
-       u.PostalCode,
-       -- Composite attribute, assembled. LTRIM strips the leading
-       -- separator left behind when the optional parts are NULL.
-       LTRIM(
-         NVL2(u.HouseNo,  ', ' || u.HouseNo,  '') ||
-         NVL2(u.Road,     ', ' || u.Road,     '') ||
-         NVL2(u.Village,  ', ' || u.Village,  '') ||
-         NVL2(u.Upazila,  ', ' || u.Upazila,  '') ||
-         ', ' || u.District ||
-         NVL2(u.PostalCode, ' - ' || u.PostalCode, ''),
-         ', ')                                                 AS FullAddress,
+       TRUNC(MONTHS_BETWEEN(SYSDATE, u.DateOfBirth) / 12)  AS Age,
+       u.Address.HouseNo                                   AS HouseNo,
+       u.Address.Road                                      AS Road,
+       u.Address.Village                                   AS Village,
+       u.Address.Upazila                                   AS Upazila,
+       u.Address.District                                  AS District,
+       u.Address.PostalCode                                AS PostalCode,
+       u.Address.full_text()                               AS FullAddress,
+       u.Address.short_text()                              AS ShortAddress,
        u.RegistrationDate,
        u.Status,
        u.Role,
@@ -101,6 +93,7 @@ SELECT hb.BatchID,
        hb.MinimumPrice,
        hb.BiddingStartTime,
        hb.BiddingEndTime,
+       hb.MinimumBidQuantity,
        -- Derived attribute /CurrentHighestBid/. OUTBID rows are ignored
        -- because by definition they are below the standing bid.
        (SELECT MAX(b.BidPricePerKg)
@@ -153,7 +146,9 @@ JOIN   USERS mu           ON mu.UserID      = sm.ManagerID
 -- awaiting the customer's answer has to reserve its space, or two
 -- managers could propose the same free capacity to two different
 -- customers and both get accepted -- BR-07 has to see the reservation,
--- not just confirmed occupancy.
+-- not just confirmed occupancy. COUNTERED (feedback-batch migration,
+-- storage negotiation) is the same case: an allocation mid-negotiation
+-- still reserves its space until the counter is accepted or rejected.
 LEFT   JOIN (
          SELECT WarehouseID,
                 UnitNo,
@@ -161,7 +156,7 @@ LEFT   JOIN (
                 COUNT(DISTINCT BatchID) AS BatchesHeld
          FROM   STORES
          WHERE  DateOut IS NULL
-           AND  AllocationStatus IN ('PENDING_ACCEPT', 'ACTIVE', 'PENDING_RELEASE')
+           AND  AllocationStatus IN ('PENDING_ACCEPT', 'ACTIVE', 'PENDING_RELEASE', 'COUNTERED')
          GROUP  BY WarehouseID, UnitNo
        ) ld ON ld.WarehouseID = su.WarehouseID
            AND ld.UnitNo      = su.UnitNo;
@@ -243,7 +238,7 @@ LEFT   JOIN (
 CREATE OR REPLACE VIEW V_FARMER_EARNINGS AS
 SELECT fr.FarmerID,
        fu.FirstName || ' ' || fu.LastName        AS FarmerName,
-       fu.District,
+       fu.Address.District AS District,
        fr.ExperienceYears,
        COUNT(DISTINCT f.FarmID)                  AS FarmCount,
        COUNT(DISTINCT hb.BatchID)                AS BatchesListed,
@@ -267,7 +262,7 @@ LEFT   JOIN HARVEST_BATCH hb ON hb.FarmID = f.FarmID
 LEFT   JOIN BID b           ON b.BatchID  = hb.BatchID
                            AND b.Status   = 'WON'
 LEFT   JOIN SALE_ORDER so   ON so.BidID   = b.BidID
-GROUP  BY fr.FarmerID, fu.FirstName, fu.LastName, fu.District, fr.ExperienceYears;
+GROUP  BY fr.FarmerID, fu.FirstName, fu.LastName, fu.Address.District, fr.ExperienceYears;
 
 -- =====================================================================
 -- V_PENDING_DELIVERY

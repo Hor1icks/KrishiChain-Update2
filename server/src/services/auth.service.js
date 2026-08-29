@@ -7,6 +7,7 @@ const oracledb = require('oracledb');
 const { withTransaction, query } = require('../config/db');
 const { jwt: jwtConfig } = require('../config/env');
 const ApiError = require('../utils/ApiError');
+const { DISTRICTS } = require('../utils/districts');
 
 const SALT_ROUNDS = 10;
 
@@ -132,7 +133,21 @@ async function register(payload) {
     'gender',
     'dateOfBirth',
     'district',
+    'upazila',
   ]);
+
+  if (!DISTRICTS.includes(payload.district)) {
+    throw ApiError.badRequest(`"${payload.district}" is not a district of Bangladesh.`);
+  }
+
+  const born = new Date(payload.dateOfBirth);
+  if (Number.isNaN(born.getTime())) {
+    throw ApiError.badRequest('Date of birth must be a real date (YYYY-MM-DD).');
+  }
+  const eighteenth = new Date(born.getFullYear() + 18, born.getMonth(), born.getDate());
+  if (eighteenth > new Date()) {
+    throw ApiError.badRequest('You must be at least 18 years old to register.');
+  }
 
   const spec = SUBCLASS[role];
   assertPresent(payload, spec.required);
@@ -141,20 +156,26 @@ async function register(payload) {
     ? payload.phones.filter(Boolean)
     : [payload.phone].filter(Boolean);
 
+  if (!phones.length) {
+    throw ApiError.badRequest('At least one phone number is required.');
+  }
+
   const passwordHash = await bcrypt.hash(payload.password, SALT_ROUNDS);
 
   try {
     return await withTransaction(async (connection) => {
       // --- 1. USERS -------------------------------------------------
       const userResult = await connection.execute(
+        // Address is a t_address object column, so the six parts are
+        // passed to the type's constructor rather than to six columns.
         `INSERT INTO USERS (
            FirstName, MiddleName, LastName, Email, PasswordHash, Gender,
-           DateOfBirth, HouseNo, Road, Village, Upazila, District,
-           PostalCode, Role
+           DateOfBirth, Address, Role
          ) VALUES (
            :firstName, :middleName, :lastName, :email, :passwordHash, :gender,
-           TO_DATE(:dateOfBirth, 'YYYY-MM-DD'), :houseNo, :road, :village,
-           :upazila, :district, :postalCode, :role
+           TO_DATE(:dateOfBirth, 'YYYY-MM-DD'),
+           t_address(:houseNo, :road, :village, :upazila, :district, :postalCode),
+           :role
          )
          RETURNING UserID INTO :userId`,
         {
@@ -260,7 +281,11 @@ async function login(email, password) {
 async function getProfile(userId) {
   const result = await query(
     `SELECT u.UserID, u.FirstName, u.MiddleName, u.LastName, u.Email,
-            u.Gender, u.DateOfBirth, u.District, u.Upazila, u.Village,
+            u.Gender, u.DateOfBirth,
+            u.Address.District AS District,
+            u.Address.Upazila  AS Upazila,
+            u.Address.Village  AS Village,
+            u.Address.full_text() AS FullAddress,
             u.RegistrationDate, u.Status, u.Role,
             TRUNC(MONTHS_BETWEEN(SYSDATE, u.DateOfBirth) / 12) AS Age
        FROM USERS u

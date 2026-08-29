@@ -54,9 +54,6 @@ export default function BuyerBatchDetail() {
 
   const open = batch.biddingState === 'OPEN NOW';
 
-  // BR-11 preview: the floor this bid has to clear is whichever is
-  // higher — the farmer's minimum, or one step above the standing bid.
-  // The server re-checks both; this just explains the rule up front.
   const floor = batch.currentHighestBid
     ? Math.max(Number(batch.minimumPrice), Number(batch.currentHighestBid))
     : Number(batch.minimumPrice);
@@ -66,6 +63,9 @@ export default function BuyerBatchDetail() {
     (batch.currentHighestBid ? price <= floor : price < floor);
   const qtyTooHigh =
     form.requestedQuantity !== '' && Number(form.requestedQuantity) > batch.availableQuantity;
+  const qtyTooLow =
+    form.requestedQuantity !== '' &&
+    Number(form.requestedQuantity) < Number(batch.minimumBidQuantity);
 
   return (
     <div className="page">
@@ -83,7 +83,15 @@ export default function BuyerBatchDetail() {
             harvested {date(batch.harvestDate)}
           </p>
         </div>
-        <span className={`tag tag-${batch.status.toLowerCase()}`}>{batch.biddingState}</span>
+        <div>
+          <span className={`tag tag-${batch.status.toLowerCase()}`}>{batch.biddingState}</span>
+          {}
+          {batch.soldQuantity > 0 && batch.status !== 'SOLD' && (
+            <div className="muted small">
+              Partially sold — {number(batch.availableQuantity)} kg still open
+            </div>
+          )}
+        </div>
       </div>
 
       {result && (
@@ -99,6 +107,7 @@ export default function BuyerBatchDetail() {
       <div className="stats">
         <Stat label="Available" value={`${number(batch.availableQuantity)} kg`} />
         <Stat label="Minimum" value={`${batch.minimumPrice}/kg`} />
+        <Stat label="Min bid" value={`${number(batch.minimumBidQuantity)} kg`} />
         <Stat label="Standing bid" value={batch.currentHighestBid ?? '—'} />
         <Stat label="Bids" value={number(batch.bidCount)} />
         <Stat label="Bidders" value={number(batch.bidderCount)} />
@@ -140,7 +149,7 @@ export default function BuyerBatchDetail() {
               <input
                 type="number"
                 step="0.001"
-                min="0.001"
+                min={batch.minimumBidQuantity}
                 max={batch.availableQuantity}
                 value={form.requestedQuantity}
                 onChange={set('requestedQuantity')}
@@ -151,8 +160,9 @@ export default function BuyerBatchDetail() {
 
           <p className="note">
             {batch.currentHighestBid
-              ? `Must be strictly above the standing bid of ${batch.currentHighestBid}/kg (BR-11).`
-              : `Must be at least the minimum of ${batch.minimumPrice}/kg (BR-11).`}
+              ? `Must be above the standing bid of ${batch.currentHighestBid}/kg.`
+              : `Must be at least the minimum of ${batch.minimumPrice}/kg.`}{' '}
+            Minimum bid quantity is {number(batch.minimumBidQuantity)} kg.
           </p>
 
           {priceTooLow && (
@@ -165,14 +175,23 @@ export default function BuyerBatchDetail() {
           {qtyTooHigh && (
             <p className="error">Only {number(batch.availableQuantity)} kg are available.</p>
           )}
-          {form.bidPricePerKg && form.requestedQuantity && !priceTooLow && !qtyTooHigh && (
-            <p className="muted">
-              Total commitment: <strong>{taka(price * Number(form.requestedQuantity))}</strong>
+          {qtyTooLow && (
+            <p className="error">
+              This batch requires a minimum bid of {number(batch.minimumBidQuantity)} kg.
             </p>
           )}
+          {form.bidPricePerKg &&
+            form.requestedQuantity &&
+            !priceTooLow &&
+            !qtyTooHigh &&
+            !qtyTooLow && (
+              <p className="muted">
+                Total commitment: <strong>{taka(price * Number(form.requestedQuantity))}</strong>
+              </p>
+            )}
           {error && <p className="error">{error}</p>}
 
-          <button type="submit" disabled={busy || priceTooLow || qtyTooHigh}>
+          <button type="submit" disabled={busy || priceTooLow || qtyTooHigh || qtyTooLow}>
             {busy ? 'Placing…' : 'Place bid'}
           </button>
         </form>
@@ -210,8 +229,7 @@ export default function BuyerBatchDetail() {
                 <td>
                   <span className={`tag tag-${b.status.toLowerCase()}`}>{b.status}</span>
                 </td>
-                {/* PreviousBidID — the recursive relationship, shown as
-                    the chain it actually is. */}
+                {}
                 <td className="muted">{b.previousBidId ? `#${b.previousBidId}` : '—'}</td>
               </tr>
             ))}

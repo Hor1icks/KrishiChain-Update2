@@ -158,17 +158,6 @@ BEGIN
 END;
 /
 
--- Added post-Phase-5 (06_storage_workflow.sql) alongside STORAGE_PAYMENT.
-CREATE SEQUENCE seq_storage_payment_id START WITH 1 INCREMENT BY 1 NOCACHE;
-CREATE OR REPLACE TRIGGER trg_storage_payment_id
-BEFORE INSERT ON STORAGE_PAYMENT
-FOR EACH ROW
-WHEN (NEW.StoragePaymentID IS NULL)
-BEGIN
-  SELECT seq_storage_payment_id.NEXTVAL INTO :NEW.StoragePaymentID FROM dual;
-END;
-/
-
 CREATE SEQUENCE seq_vehicle_id START WITH 1 INCREMENT BY 1 NOCACHE;
 CREATE OR REPLACE TRIGGER trg_vehicle_id
 BEFORE INSERT ON VEHICLE
@@ -229,9 +218,45 @@ BEGIN
 END;
 /
 
+-- Added with the feedback-batch migration, alongside NOTIFICATION in
+-- 01_create_tables.sql Section 8.
+CREATE SEQUENCE seq_notification_id START WITH 1 INCREMENT BY 1 NOCACHE;
+CREATE OR REPLACE TRIGGER trg_notification_id
+BEFORE INSERT ON NOTIFICATION
+FOR EACH ROW
+WHEN (NEW.NotificationID IS NULL)
+BEGIN
+  SELECT seq_notification_id.NEXTVAL INTO :NEW.NotificationID FROM dual;
+END;
+/
+
 -- =====================================================================
--- PART B — BUSINESS-RULE TRIGGERS (BR-19, BR-20 revised)
+-- PART B — BUSINESS-RULE TRIGGERS (BR-19, BR-20 revised; minimum bid qty)
 -- =====================================================================
+
+-- Added with the feedback-batch migration. RequestedQuantity vs the
+-- batch's MinimumBidQuantity is a cross-table comparison (BID vs
+-- HARVEST_BATCH), so unlike CK_BATCH_MINBIDQTY (same-table, a plain
+-- CHECK) this needs a trigger. Plain BEFORE INSERT, not compound: unlike
+-- trg_payment_biz_rules (which must be compound because it sums its OWN
+-- table, PAYMENT, and a row-level trigger cannot query the table it is
+-- firing on -- ORA-04091), this trigger only reads HARVEST_BATCH, a
+-- different table, so there is no mutating-table problem.
+CREATE OR REPLACE TRIGGER trg_bid_min_qty
+BEFORE INSERT ON BID
+FOR EACH ROW
+DECLARE
+  v_min HARVEST_BATCH.MinimumBidQuantity%TYPE;
+BEGIN
+  SELECT MinimumBidQuantity INTO v_min FROM HARVEST_BATCH WHERE BatchID = :NEW.BatchID;
+
+  IF :NEW.RequestedQuantity < v_min THEN
+    RAISE_APPLICATION_ERROR(-20003,
+      'Requested quantity ' || :NEW.RequestedQuantity ||
+      ' is below this batch''s minimum bid quantity of ' || v_min || '.');
+  END IF;
+END;
+/
 
 -- Implemented as a COMPOUND trigger, not a plain BEFORE EACH ROW one.
 -- BR-19 has to sum the PAYMENT rows already recorded against this sale
@@ -249,46 +274,49 @@ COMPOUND TRIGGER
   TYPE t_order_ids IS TABLE OF PAYMENT.SaleOrderID%TYPE INDEX BY PLS_INTEGER;
   g_orders t_order_ids;
 
-  -- BR-20 (revised this phase): payment timing is no longer hard-coded to
-  -- "after delivery only". SALE_ORDER.PaymentTerms records what the buyer
-  -- and farmer agreed:
-  --   'ADVANCE'     -> payment allowed as soon as the order exists
-  --   'ON_DELIVERY' -> payment allowed only once transport is DELIVERED
-  -- (the old, unconditional BR-20 behavior -- still the DEFAULT terms).
+  -- BR-20: SALE_ORDER.PaymentTerms decides when payment is allowed.
+  --   'ADVANCE'     -> allowed as soon as the order exists
+  --   'ON_DELIVERY' -> allowed only once transport is DELIVERED
+  -- Storage payments are settled against an allocation, not an order,
+  -- so neither rule applies to them.
   BEFORE EACH ROW IS
     v_terms            SALE_ORDER.PaymentTerms%TYPE;
     v_delivery_status  TRANSPORT_REQUEST.DeliveryStatus%TYPE;
   BEGIN
-    SELECT PaymentTerms
-      INTO v_terms
-      FROM SALE_ORDER
-     WHERE SaleOrderID = :NEW.SaleOrderID;
+    -- A bare RETURN is illegal inside a compound trigger (PLS-00678),
+    -- so the SALE-only logic is guarded by an IF instead.
+    IF :NEW.PaymentType = 'SALE' THEN
 
-    IF v_terms = 'ON_DELIVERY' THEN
-      BEGIN
-        SELECT DeliveryStatus
-          INTO v_delivery_status
-          FROM TRANSPORT_REQUEST
-         WHERE SaleOrderID = :NEW.SaleOrderID;
-      EXCEPTION
-        WHEN NO_DATA_FOUND THEN
+      SELECT PaymentTerms
+        INTO v_terms
+        FROM SALE_ORDER
+       WHERE SaleOrderID = :NEW.SaleOrderID;
+
+      IF v_terms = 'ON_DELIVERY' THEN
+        BEGIN
+          SELECT DeliveryStatus
+            INTO v_delivery_status
+            FROM TRANSPORT_REQUEST
+           WHERE SaleOrderID = :NEW.SaleOrderID;
+        EXCEPTION
+          WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20002,
+              'BR-20 violation: payment terms are ON_DELIVERY but no transport request exists yet.');
+        END;
+
+        IF v_delivery_status <> 'DELIVERED' THEN
           RAISE_APPLICATION_ERROR(-20002,
-            'BR-20 violation: payment terms are ON_DELIVERY but no transport request exists yet.');
-      END;
-
-      IF v_delivery_status <> 'DELIVERED' THEN
-        RAISE_APPLICATION_ERROR(-20002,
-          'BR-20 violation: payment terms are ON_DELIVERY and delivery is not yet complete.');
+            'BR-20 violation: payment terms are ON_DELIVERY and delivery is not yet complete.');
+        END IF;
       END IF;
-    END IF;
-    -- v_terms = 'ADVANCE' -> no delivery-status check.
 
-    g_orders(g_orders.COUNT + 1) := :NEW.SaleOrderID;
+      g_orders(g_orders.COUNT + 1) := :NEW.SaleOrderID;
+    END IF;
   END BEFORE EACH ROW;
 
-  -- BR-19: total payments recorded against a sale order may never exceed
-  -- its TotalAmount. Counts PENDING and COMPLETED rows; FAILED and
-  -- REFUNDED payments do not consume the order's balance.
+  -- BR-19: payments recorded against a sale order may never exceed its
+  -- TotalAmount. PENDING and COMPLETED count; FAILED and REFUNDED do
+  -- not consume the balance. Only SALE rows reach g_orders.
   AFTER STATEMENT IS
     v_total_amount  NUMBER;
     v_paid_so_far   NUMBER;
@@ -303,6 +331,7 @@ COMPOUND TRIGGER
         INTO v_paid_so_far
         FROM PAYMENT
        WHERE SaleOrderID = g_orders(i)
+         AND PaymentType = 'SALE'
          AND PaymentStatus IN ('PENDING', 'COMPLETED');
 
       IF v_paid_so_far > v_total_amount THEN
@@ -324,3 +353,24 @@ END trg_payment_biz_rules;
 -- per table, in the FK-safe order given in PRD 14, with root ARATs and
 -- earliest bids inserted NULL-parent then UPDATEd (self-referencing FKs).
 -- =====================================================================
+
+
+CREATE OR REPLACE TRIGGER trg_assigned_one_personnel
+BEFORE INSERT OR UPDATE ON ASSIGNED_TO
+FOR EACH ROW
+DECLARE
+  v_holder ASSIGNED_TO.PersonnelID%TYPE;
+BEGIN
+  SELECT MIN(PersonnelID) INTO v_holder
+    FROM ASSIGNED_TO
+   WHERE TransportID = :NEW.TransportID
+     AND (:NEW.AssignmentID IS NULL OR AssignmentID <> :NEW.AssignmentID);
+
+  IF v_holder IS NOT NULL AND v_holder <> :NEW.PersonnelID THEN
+    RAISE_APPLICATION_ERROR(-20004,
+      'Transport request ' || :NEW.TransportID ||
+      ' already belongs to another transport person. One request, one person.');
+  END IF;
+END;
+/
+

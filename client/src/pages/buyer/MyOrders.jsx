@@ -3,15 +3,6 @@ import { Link } from 'react-router';
 import { api } from '../../api/client';
 import { date, number, taka } from '../../utils/format';
 
-/**
- * The buyer's side of a sale, and the one place they can settle it.
- *
- * Paying is only offered where it can actually succeed: ADVANCE terms may
- * be paid at any time, ON_DELIVERY only once the driver has marked the
- * trip delivered. That mirrors BR-20, which the database enforces through
- * trg_payment_biz_rules — the button is hidden to avoid inviting a
- * request that the trigger would only reject.
- */
 export default function MyOrders() {
   const [orders, setOrders] = useState(null);
   const [error, setError] = useState('');
@@ -50,6 +41,27 @@ export default function MyOrders() {
       );
       setPaying(null);
       setForm({ amount: '', paymentMethod: 'BKASH' });
+      await load();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+    async function chooseDirect(saleOrderId) {
+    setError('');
+    setNotice('');
+    setBusy(true);
+    try {
+      const res = await api(`/buyer/orders/${saleOrderId}/delivery-preference`, {
+        method: 'POST',
+        body: {},
+      });
+      setNotice(
+        `Order #${res.saleOrderId} will be delivered straight to you at ${res.deliveryLocation}. ` +
+          `Drivers can now pick up the trip.`
+      );
       await load();
     } catch (e) {
       setError(e.message);
@@ -141,25 +153,43 @@ export default function MyOrders() {
                     ) : (
                       '—'
                     )}
+                    {}
+                    {o.deliveryPreference === 'PENDING' ? (
+                      <div className="muted small">destination not set</div>
+                    ) : o.deliveryPreference === 'VIA_STORAGE' ? (
+                      <div className="muted small">via storage</div>
+                    ) : null}
                   </td>
                   <td>
                     <span className={`tag tag-${o.status.toLowerCase()}`}>{o.status}</span>
                   </td>
                   <td>
-                    {canPay(o) ? (
-                      <button
-                        type="button"
-                        className="small"
-                        onClick={() => {
-                          setPaying(o);
-                          setForm({ amount: String(outstanding), paymentMethod: 'BKASH' });
-                        }}
-                      >
-                        Pay
-                      </button>
-                    ) : outstanding > 0 ? (
-                      <span className="muted small">Pay on delivery</span>
-                    ) : null}
+                    <div className="actions" style={{ margin: 0 }}>
+                      {o.deliveryPreference === 'PENDING' && (
+                        <button
+                          type="button"
+                          className="small"
+                          disabled={busy}
+                          onClick={() => chooseDirect(o.saleOrderId)}
+                        >
+                          Deliver to me
+                        </button>
+                      )}
+                      {canPay(o) ? (
+                        <button
+                          type="button"
+                          className="small"
+                          onClick={() => {
+                            setPaying(o);
+                            setForm({ amount: String(outstanding), paymentMethod: 'BKASH' });
+                          }}
+                        >
+                          Pay
+                        </button>
+                      ) : outstanding > 0 ? (
+                        <span className="muted small">Pay on delivery</span>
+                      ) : null}
+                    </div>
                   </td>
                 </tr>
               );
@@ -201,7 +231,7 @@ export default function MyOrders() {
             </label>
           </div>
           <p className="note">
-            The database refuses anything above the {taka(paying.totalAmount)} order total (BR-19).
+            A payment cannot take the total above the {taka(paying.totalAmount)} order value.
           </p>
           <div className="actions">
             <button type="submit" disabled={busy}>

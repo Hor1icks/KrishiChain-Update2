@@ -2,15 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../api/client';
 import { date, taka } from '../../utils/format';
 
-/**
- * Complaint triage. The only thing an admin changes is the status, and
- * doing so stamps them as the handler — HandledByAdminID is written
- * nowhere else, so without this page "who dealt with it?" has no answer.
- *
- * Closing a complaint (RESOLVED or REJECTED) sets ResolutionDate; moving
- * it back to OPEN or IN_REVIEW clears it, so a reopened complaint never
- * keeps a stale resolution date.
- */
 const FLOW = {
   OPEN: ['IN_REVIEW', 'RESOLVED', 'REJECTED'],
   IN_REVIEW: ['RESOLVED', 'REJECTED', 'OPEN'],

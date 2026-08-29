@@ -1,11 +1,3 @@
-/**
- * Wordmark. The mark is a sprout drawn as two leaves off one stem — one
- * leaf below the join, one above, for the two halves of the chain the
- * product models (what the farm grows, what the market pays for it).
- *
- * Colour is inherited, so the same lockup works on the dark nav bar and
- * on the sage sign-in field.
- */
 export default function Brand() {
   return (
     <span className="brand">

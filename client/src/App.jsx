@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { NotificationProvider } from './context/NotificationContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import NavBar from './components/NavBar';
 import LoginPage from './pages/LoginPage';
@@ -29,8 +30,8 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import ManageUsers from './pages/admin/ManageUsers';
 import DailyPrices from './pages/admin/DailyPrices';
 import Complaints from './pages/admin/Complaints';
+import Reports from './pages/admin/Reports';
 
-/** Role wrappers, so each role is stated once per route rather than twice. */
 function Farmer({ children }) {
   return <ProtectedRoute roles={['FARMER']}>{children}</ProtectedRoute>;
 }
@@ -51,11 +52,6 @@ function Admin({ children }) {
   return <ProtectedRoute roles={['ADMIN']}>{children}</ProtectedRoute>;
 }
 
-/**
- * Signing in lands you on your role's home. Every one of the five roles
- * now has a real module, so the placeholder dashboard is only reachable
- * if a token ever carries a role this build does not know about.
- */
 function RoleHome() {
   const { user } = useAuth();
   if (user?.role === 'FARMER') return <Navigate to="/farmer" replace />;
@@ -70,53 +66,56 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <NavBar />
-        <main className="app">
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
+        <NotificationProvider>
+          <NavBar />
+          <main className="app">
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
 
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <RoleHome />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <RoleHome />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route path="/farmer" element={<Farmer><FarmerDashboard /></Farmer>} />
-            <Route path="/farmer/farms" element={<Farmer><MyFarms /></Farmer>} />
-            <Route path="/farmer/batches" element={<Farmer><MyBatches /></Farmer>} />
-            <Route path="/farmer/batches/new" element={<Farmer><CreateBatch /></Farmer>} />
-            <Route path="/farmer/batches/:batchId" element={<Farmer><BatchDetail /></Farmer>} />
-            <Route path="/farmer/orders" element={<Farmer><FarmerOrders /></Farmer>} />
-            <Route path="/farmer/payments" element={<Farmer><FarmerPayments /></Farmer>} />
-            <Route path="/farmer/storage" element={<Farmer><StorageRequests /></Farmer>} />
+              <Route path="/farmer" element={<Farmer><FarmerDashboard /></Farmer>} />
+              <Route path="/farmer/farms" element={<Farmer><MyFarms /></Farmer>} />
+              <Route path="/farmer/batches" element={<Farmer><MyBatches /></Farmer>} />
+              <Route path="/farmer/batches/new" element={<Farmer><CreateBatch /></Farmer>} />
+              <Route path="/farmer/batches/:batchId" element={<Farmer><BatchDetail /></Farmer>} />
+              <Route path="/farmer/orders" element={<Farmer><FarmerOrders /></Farmer>} />
+              <Route path="/farmer/payments" element={<Farmer><FarmerPayments /></Farmer>} />
+              <Route path="/farmer/storage" element={<Farmer><StorageRequests /></Farmer>} />
 
-            <Route path="/buyer" element={<Buyer><BuyerDashboard /></Buyer>} />
-            <Route path="/buyer/browse" element={<Buyer><BrowseListings /></Buyer>} />
-            <Route path="/buyer/bids" element={<Buyer><MyBids /></Buyer>} />
-            <Route path="/buyer/batches/:batchId" element={<Buyer><BuyerBatchDetail /></Buyer>} />
-            <Route path="/buyer/orders" element={<Buyer><BuyerOrders /></Buyer>} />
-            <Route path="/buyer/payments" element={<Buyer><BuyerPayments /></Buyer>} />
-            <Route path="/buyer/storage" element={<Buyer><MyStorage /></Buyer>} />
-            <Route path="/buyer/reviews" element={<Buyer><Reviews /></Buyer>} />
+              <Route path="/buyer" element={<Buyer><BuyerDashboard /></Buyer>} />
+              <Route path="/buyer/browse" element={<Buyer><BrowseListings /></Buyer>} />
+              <Route path="/buyer/bids" element={<Buyer><MyBids /></Buyer>} />
+              <Route path="/buyer/batches/:batchId" element={<Buyer><BuyerBatchDetail /></Buyer>} />
+              <Route path="/buyer/orders" element={<Buyer><BuyerOrders /></Buyer>} />
+              <Route path="/buyer/payments" element={<Buyer><BuyerPayments /></Buyer>} />
+              <Route path="/buyer/storage" element={<Buyer><MyStorage /></Buyer>} />
+              <Route path="/buyer/reviews" element={<Buyer><Reviews /></Buyer>} />
 
-            <Route path="/storage" element={<Storage><StorageDashboard /></Storage>} />
-            <Route path="/storage/warehouses" element={<Storage><Warehouses /></Storage>} />
-            <Route path="/storage/allocations" element={<Storage><Allocations /></Storage>} />
+              <Route path="/storage" element={<Storage><StorageDashboard /></Storage>} />
+              <Route path="/storage/warehouses" element={<Storage><Warehouses /></Storage>} />
+              <Route path="/storage/allocations" element={<Storage><Allocations /></Storage>} />
 
-            <Route path="/transport" element={<Transport><Assignments /></Transport>} />
+              <Route path="/transport" element={<Transport><Assignments /></Transport>} />
 
-            <Route path="/admin" element={<Admin><AdminDashboard /></Admin>} />
-            <Route path="/admin/users" element={<Admin><ManageUsers /></Admin>} />
-            <Route path="/admin/prices" element={<Admin><DailyPrices /></Admin>} />
-            <Route path="/admin/complaints" element={<Admin><Complaints /></Admin>} />
+              <Route path="/admin" element={<Admin><AdminDashboard /></Admin>} />
+              <Route path="/admin/users" element={<Admin><ManageUsers /></Admin>} />
+              <Route path="/admin/prices" element={<Admin><DailyPrices /></Admin>} />
+              <Route path="/admin/complaints" element={<Admin><Complaints /></Admin>} />
+              <Route path="/admin/reports" element={<Admin><Reports /></Admin>} />
 
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </main>
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </main>
+        </NotificationProvider>
       </AuthProvider>
     </BrowserRouter>
   );

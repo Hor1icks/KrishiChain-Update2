@@ -112,6 +112,52 @@ router.post('/allocations', async (req, res, next) => {
   }
 });
 
+// Everything waiting on THIS manager: customer-initiated requests, and
+// counter-offers the customer sent back against the manager's proposals.
+router.get('/requests', async (req, res, next) => {
+  try {
+    res.json(await storage.listRequestsForManager(me(req)));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Answer a customer's request: ACCEPT, REJECT or COUNTER (with a
+// counterRatePerKg). Same service call the customer uses against a
+// manager's proposal — who may answer is derived from ProposedBy.
+router.post('/requests/:allocationId/respond', async (req, res, next) => {
+  try {
+    res.json(
+      await storage.respondToProposal(
+        'MANAGER',
+        me(req),
+        Number(req.params.allocationId),
+        req.body.decision,
+        req.body
+      )
+    );
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Settle a counter the customer sent back against this manager's own
+// proposal. ACCEPT or REJECT only — one negotiation round, no re-counter.
+router.post('/allocations/:allocationId/counter/respond', async (req, res, next) => {
+  try {
+    res.json(
+      await storage.respondToCounter(
+        'MANAGER',
+        me(req),
+        Number(req.params.allocationId),
+        req.body.decision
+      )
+    );
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Manager-initiated release request (the customer is the other party
 // who must approve it, unless the minimum term is already fulfilled).
 router.post('/allocations/:allocationId/release', async (req, res, next) => {

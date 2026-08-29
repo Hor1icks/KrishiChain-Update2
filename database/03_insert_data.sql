@@ -63,18 +63,26 @@ SET FEEDBACK ON
 UPDATE BID          SET PreviousBidID = NULL;
 UPDATE VIRTUAL_ARAT SET ParentAratID  = NULL;
 
+-- Added with the feedback-batch migration: NOTIFICATION.UserID FKs to
+-- USERS, so any app-generated notifications must be cleared before USERS
+-- can be, or the final DELETE FROM USERS hits ORA-02292.
+DELETE FROM NOTIFICATION;
 DELETE FROM COMPLAINT;
 DELETE FROM REVIEW;
 DELETE FROM BAZAR_DAILY_RECORD;
 DELETE FROM PHYSICAL_BAZAR;
 DELETE FROM DAILY_MARKET_PRICE;
+-- PAYMENT clears first: it now holds both SALE rows (FK to SALE_ORDER)
+-- and STORAGE rows (FK to STORES), so it must go before either of them.
+-- STORES itself must precede SALE_ORDER, because a leg-2 allocation
+-- carries a nullable SaleOrderID FK.
 DELETE FROM PAYMENT;
 DELETE FROM ASSIGNED_TO;
 DELETE FROM TRANSPORT_REQUEST;
 DELETE FROM VEHICLE;
+DELETE FROM STORES;
 DELETE FROM SALE_ORDER;
 DELETE FROM BID;
-DELETE FROM STORES;
 DELETE FROM STORAGE_UNIT;
 DELETE FROM WAREHOUSE;
 DELETE FROM HARVEST_BATCH;
@@ -109,64 +117,64 @@ COMMIT;
 -- =====================================================================
 
 -- --- FARMERS (1-5) ---------------------------------------------------
-INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, HouseNo, Road, Village, Upazila, District, PostalCode, RegistrationDate, Status, Role) VALUES
- (1, 'Abdul', NULL, 'Karim', 'abdul.karim@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1978-04-12', '12', 'Station Road', 'Kahaloo', 'Kahaloo', 'Bogura', '5710', TRUNC(SYSDATE) - 420, 'ACTIVE', 'FARMER');
-INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, HouseNo, Road, Village, Upazila, District, PostalCode, RegistrationDate, Status, Role) VALUES
- (2, 'Rahima', NULL, 'Begum', 'rahima.begum@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'F', DATE '1985-09-30', '7', 'College Road', 'Mithapukur', 'Mithapukur', 'Rangpur', '5460', TRUNC(SYSDATE) - 405, 'ACTIVE', 'FARMER');
-INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, HouseNo, Road, Village, Upazila, District, PostalCode, RegistrationDate, Status, Role) VALUES
- (3, 'Jamal', 'Uddin', 'Sarkar', 'jamal.sarkar@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1972-01-18', '45', 'Ferry Ghat Road', 'Tongibari', 'Tongibari', 'Munshiganj', '1510', TRUNC(SYSDATE) - 398, 'ACTIVE', 'FARMER');
-INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, HouseNo, Road, Village, Upazila, District, PostalCode, RegistrationDate, Status, Role) VALUES
- (4, 'Shafiqul', NULL, 'Islam', 'shafiqul.islam@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1981-07-25', '3', 'Hat Road', 'Sujanagar', 'Sujanagar', 'Pabna', '6600', TRUNC(SYSDATE) - 372, 'ACTIVE', 'FARMER');
-INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, HouseNo, Road, Village, Upazila, District, PostalCode, RegistrationDate, Status, Role) VALUES
- (5, 'Nurjahan', NULL, 'Akter', 'nurjahan.akter@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'F', DATE '1989-11-05', '21', 'Baitul Aman Road', 'Nagarkanda', 'Nagarkanda', 'Faridpur', '7800', TRUNC(SYSDATE) - 340, 'ACTIVE', 'FARMER');
+INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, Address, RegistrationDate, Status, Role) VALUES
+ (1, 'Abdul', NULL, 'Karim', 'abdul.karim@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1978-04-12', t_address('12', 'Station Road', 'Kahaloo', 'Kahaloo', 'Bogura', '5710'), TRUNC(SYSDATE) - 420, 'ACTIVE', 'FARMER');
+INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, Address, RegistrationDate, Status, Role) VALUES
+ (2, 'Rahima', NULL, 'Begum', 'rahima.begum@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'F', DATE '1985-09-30', t_address('7', 'College Road', 'Mithapukur', 'Mithapukur', 'Rangpur', '5460'), TRUNC(SYSDATE) - 405, 'ACTIVE', 'FARMER');
+INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, Address, RegistrationDate, Status, Role) VALUES
+ (3, 'Jamal', 'Uddin', 'Sarkar', 'jamal.sarkar@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1972-01-18', t_address('45', 'Ferry Ghat Road', 'Tongibari', 'Tongibari', 'Munshiganj', '1510'), TRUNC(SYSDATE) - 398, 'ACTIVE', 'FARMER');
+INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, Address, RegistrationDate, Status, Role) VALUES
+ (4, 'Shafiqul', NULL, 'Islam', 'shafiqul.islam@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1981-07-25', t_address('3', 'Hat Road', 'Sujanagar', 'Sujanagar', 'Pabna', '6600'), TRUNC(SYSDATE) - 372, 'ACTIVE', 'FARMER');
+INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, Address, RegistrationDate, Status, Role) VALUES
+ (5, 'Nurjahan', NULL, 'Akter', 'nurjahan.akter@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'F', DATE '1989-11-05', t_address('21', 'Baitul Aman Road', 'Nagarkanda', 'Nagarkanda', 'Faridpur', '7800'), TRUNC(SYSDATE) - 340, 'ACTIVE', 'FARMER');
 
 -- --- BUYERS (6-10) ---------------------------------------------------
-INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, HouseNo, Road, Village, Upazila, District, PostalCode, RegistrationDate, Status, Role) VALUES
- (6, 'Tanvir', NULL, 'Hossain', 'tanvir.hossain@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1983-02-14', '104', 'Kazi Nazrul Islam Ave', NULL, 'Tejgaon', 'Dhaka', '1215', TRUNC(SYSDATE) - 380, 'ACTIVE', 'BUYER');
-INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, HouseNo, Road, Village, Upazila, District, PostalCode, RegistrationDate, Status, Role) VALUES
- (7, 'Mizanur', NULL, 'Rahman', 'mizanur.rahman@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1976-06-08', '58', 'Agrabad C/A', NULL, 'Double Mooring', 'Chattogram', '4100', TRUNC(SYSDATE) - 365, 'ACTIVE', 'BUYER');
-INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, HouseNo, Road, Village, Upazila, District, PostalCode, RegistrationDate, Status, Role) VALUES
- (8, 'Sultana', NULL, 'Parvin', 'sultana.parvin@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'F', DATE '1990-12-22', '9/B', 'Mirpur Road', NULL, 'Dhanmondi', 'Dhaka', '1205', TRUNC(SYSDATE) - 310, 'ACTIVE', 'BUYER');
-INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, HouseNo, Road, Village, Upazila, District, PostalCode, RegistrationDate, Status, Role) VALUES
- (9, 'Kamrul', NULL, 'Hasan', 'kamrul.hasan@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1987-03-19', '77', 'BSCIC Industrial Area', NULL, 'Fatullah', 'Narayanganj', '1420', TRUNC(SYSDATE) - 295, 'ACTIVE', 'BUYER');
-INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, HouseNo, Road, Village, Upazila, District, PostalCode, RegistrationDate, Status, Role) VALUES
- (10, 'Anisur', NULL, 'Rahman', 'anisur.rahman@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1980-08-11', '16', 'Zindabazar', NULL, 'Sylhet Sadar', 'Sylhet', '3100', TRUNC(SYSDATE) - 288, 'ACTIVE', 'BUYER');
+INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, Address, RegistrationDate, Status, Role) VALUES
+ (6, 'Tanvir', NULL, 'Hossain', 'tanvir.hossain@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1983-02-14', t_address('104', 'Kazi Nazrul Islam Ave', NULL, 'Tejgaon', 'Dhaka', '1215'), TRUNC(SYSDATE) - 380, 'ACTIVE', 'BUYER');
+INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, Address, RegistrationDate, Status, Role) VALUES
+ (7, 'Mizanur', NULL, 'Rahman', 'mizanur.rahman@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1976-06-08', t_address('58', 'Agrabad C/A', NULL, 'Double Mooring', 'Chattogram', '4100'), TRUNC(SYSDATE) - 365, 'ACTIVE', 'BUYER');
+INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, Address, RegistrationDate, Status, Role) VALUES
+ (8, 'Sultana', NULL, 'Parvin', 'sultana.parvin@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'F', DATE '1990-12-22', t_address('9/B', 'Mirpur Road', NULL, 'Dhanmondi', 'Dhaka', '1205'), TRUNC(SYSDATE) - 310, 'ACTIVE', 'BUYER');
+INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, Address, RegistrationDate, Status, Role) VALUES
+ (9, 'Kamrul', NULL, 'Hasan', 'kamrul.hasan@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1987-03-19', t_address('77', 'BSCIC Industrial Area', NULL, 'Fatullah', 'Narayanganj', '1420'), TRUNC(SYSDATE) - 295, 'ACTIVE', 'BUYER');
+INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, Address, RegistrationDate, Status, Role) VALUES
+ (10, 'Anisur', NULL, 'Rahman', 'anisur.rahman@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1980-08-11', t_address('16', 'Zindabazar', NULL, 'Sylhet Sadar', 'Sylhet', '3100'), TRUNC(SYSDATE) - 288, 'ACTIVE', 'BUYER');
 
 -- --- ADMIN STAFF (11-15) ---------------------------------------------
-INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, HouseNo, Road, Village, Upazila, District, PostalCode, RegistrationDate, Status, Role) VALUES
- (11, 'Farhana', NULL, 'Yasmin', 'farhana.yasmin@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'F', DATE '1991-05-02', '31', 'Bijoy Sarani', NULL, 'Tejgaon', 'Dhaka', '1215', TRUNC(SYSDATE) - 500, 'ACTIVE', 'ADMIN');
-INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, HouseNo, Road, Village, Upazila, District, PostalCode, RegistrationDate, Status, Role) VALUES
- (12, 'Rezaul', NULL, 'Karim', 'rezaul.karim@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1988-10-16', '31', 'Bijoy Sarani', NULL, 'Tejgaon', 'Dhaka', '1215', TRUNC(SYSDATE) - 500, 'ACTIVE', 'ADMIN');
-INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, HouseNo, Road, Village, Upazila, District, PostalCode, RegistrationDate, Status, Role) VALUES
- (13, 'Shamima', NULL, 'Nasrin', 'shamima.nasrin@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'F', DATE '1993-07-09', '31', 'Bijoy Sarani', NULL, 'Tejgaon', 'Dhaka', '1215', TRUNC(SYSDATE) - 470, 'ACTIVE', 'ADMIN');
-INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, HouseNo, Road, Village, Upazila, District, PostalCode, RegistrationDate, Status, Role) VALUES
- (14, 'Habibur', NULL, 'Rahman', 'habibur.rahman@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1979-04-27', '12', 'Station Road', NULL, 'Bogura Sadar', 'Bogura', '5800', TRUNC(SYSDATE) - 455, 'ACTIVE', 'ADMIN');
-INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, HouseNo, Road, Village, Upazila, District, PostalCode, RegistrationDate, Status, Role) VALUES
- (15, 'Nazmul', NULL, 'Haque', 'nazmul.haque@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1994-01-30', '31', 'Bijoy Sarani', NULL, 'Tejgaon', 'Dhaka', '1215', TRUNC(SYSDATE) - 500, 'ACTIVE', 'ADMIN');
+INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, Address, RegistrationDate, Status, Role) VALUES
+ (11, 'Farhana', NULL, 'Yasmin', 'farhana.yasmin@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'F', DATE '1991-05-02', t_address('31', 'Bijoy Sarani', NULL, 'Tejgaon', 'Dhaka', '1215'), TRUNC(SYSDATE) - 500, 'ACTIVE', 'ADMIN');
+INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, Address, RegistrationDate, Status, Role) VALUES
+ (12, 'Rezaul', NULL, 'Karim', 'rezaul.karim@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1988-10-16', t_address('31', 'Bijoy Sarani', NULL, 'Tejgaon', 'Dhaka', '1215'), TRUNC(SYSDATE) - 500, 'ACTIVE', 'ADMIN');
+INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, Address, RegistrationDate, Status, Role) VALUES
+ (13, 'Shamima', NULL, 'Nasrin', 'shamima.nasrin@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'F', DATE '1993-07-09', t_address('31', 'Bijoy Sarani', NULL, 'Tejgaon', 'Dhaka', '1215'), TRUNC(SYSDATE) - 470, 'ACTIVE', 'ADMIN');
+INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, Address, RegistrationDate, Status, Role) VALUES
+ (14, 'Habibur', NULL, 'Rahman', 'habibur.rahman@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1979-04-27', t_address('12', 'Station Road', NULL, 'Bogura Sadar', 'Bogura', '5800'), TRUNC(SYSDATE) - 455, 'ACTIVE', 'ADMIN');
+INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, Address, RegistrationDate, Status, Role) VALUES
+ (15, 'Nazmul', NULL, 'Haque', 'nazmul.haque@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1994-01-30', t_address('31', 'Bijoy Sarani', NULL, 'Tejgaon', 'Dhaka', '1215'), TRUNC(SYSDATE) - 500, 'ACTIVE', 'ADMIN');
 
 -- --- STORAGE MANAGERS (16-20) ----------------------------------------
-INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, HouseNo, Road, Village, Upazila, District, PostalCode, RegistrationDate, Status, Role) VALUES
- (16, 'Ashraful', NULL, 'Alam', 'ashraful.alam@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1982-09-14', '6', 'Sherpur Road', NULL, 'Bogura Sadar', 'Bogura', '5800', TRUNC(SYSDATE) - 440, 'ACTIVE', 'STORAGE_MANAGER');
-INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, HouseNo, Road, Village, Upazila, District, PostalCode, RegistrationDate, Status, Role) VALUES
- (17, 'Delwar', NULL, 'Hossain', 'delwar.hossain@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1986-02-03', '19', 'Jail Road', NULL, 'Rangpur Sadar', 'Rangpur', '5400', TRUNC(SYSDATE) - 435, 'ACTIVE', 'STORAGE_MANAGER');
-INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, HouseNo, Road, Village, Upazila, District, PostalCode, RegistrationDate, Status, Role) VALUES
- (18, 'Salma', NULL, 'Khatun', 'salma.khatun@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'F', DATE '1990-06-21', '2', 'Munshiganj Bazar Road', NULL, 'Munshiganj Sadar', 'Munshiganj', '1500', TRUNC(SYSDATE) - 430, 'ACTIVE', 'STORAGE_MANAGER');
-INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, HouseNo, Road, Village, Upazila, District, PostalCode, RegistrationDate, Status, Role) VALUES
- (19, 'Mahbub', NULL, 'Alam', 'mahbub.alam@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1984-11-11', '8', 'Rupkatha Road', NULL, 'Pabna Sadar', 'Pabna', '6600', TRUNC(SYSDATE) - 425, 'ACTIVE', 'STORAGE_MANAGER');
-INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, HouseNo, Road, Village, Upazila, District, PostalCode, RegistrationDate, Status, Role) VALUES
- (20, 'Ruma', NULL, 'Akter', 'ruma.akter@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'F', DATE '1992-03-08', '14', 'Mujib Road', NULL, 'Faridpur Sadar', 'Faridpur', '7800', TRUNC(SYSDATE) - 420, 'ACTIVE', 'STORAGE_MANAGER');
+INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, Address, RegistrationDate, Status, Role) VALUES
+ (16, 'Ashraful', NULL, 'Alam', 'ashraful.alam@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1982-09-14', t_address('6', 'Sherpur Road', NULL, 'Bogura Sadar', 'Bogura', '5800'), TRUNC(SYSDATE) - 440, 'ACTIVE', 'STORAGE_MANAGER');
+INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, Address, RegistrationDate, Status, Role) VALUES
+ (17, 'Delwar', NULL, 'Hossain', 'delwar.hossain@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1986-02-03', t_address('19', 'Jail Road', NULL, 'Rangpur Sadar', 'Rangpur', '5400'), TRUNC(SYSDATE) - 435, 'ACTIVE', 'STORAGE_MANAGER');
+INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, Address, RegistrationDate, Status, Role) VALUES
+ (18, 'Salma', NULL, 'Khatun', 'salma.khatun@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'F', DATE '1990-06-21', t_address('2', 'Munshiganj Bazar Road', NULL, 'Munshiganj Sadar', 'Munshiganj', '1500'), TRUNC(SYSDATE) - 430, 'ACTIVE', 'STORAGE_MANAGER');
+INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, Address, RegistrationDate, Status, Role) VALUES
+ (19, 'Mahbub', NULL, 'Alam', 'mahbub.alam@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1984-11-11', t_address('8', 'Rupkatha Road', NULL, 'Pabna Sadar', 'Pabna', '6600'), TRUNC(SYSDATE) - 425, 'ACTIVE', 'STORAGE_MANAGER');
+INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, Address, RegistrationDate, Status, Role) VALUES
+ (20, 'Ruma', NULL, 'Akter', 'ruma.akter@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'F', DATE '1992-03-08', t_address('14', 'Mujib Road', NULL, 'Faridpur Sadar', 'Faridpur', '7800'), TRUNC(SYSDATE) - 420, 'ACTIVE', 'STORAGE_MANAGER');
 
 -- --- TRANSPORT PERSONNEL (21-25) -------------------------------------
-INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, HouseNo, Road, Village, Upazila, District, PostalCode, RegistrationDate, Status, Role) VALUES
- (21, 'Sohel', NULL, 'Rana', 'sohel.rana@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1987-12-01', '33', 'Truck Stand Road', NULL, 'Bogura Sadar', 'Bogura', '5800', TRUNC(SYSDATE) - 410, 'ACTIVE', 'TRANSPORT_PERSONNEL');
-INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, HouseNo, Road, Village, Upazila, District, PostalCode, RegistrationDate, Status, Role) VALUES
- (22, 'Babul', NULL, 'Mia', 'babul.mia@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1983-05-17', '5', 'Modern Mor', NULL, 'Rangpur Sadar', 'Rangpur', '5400', TRUNC(SYSDATE) - 400, 'ACTIVE', 'TRANSPORT_PERSONNEL');
-INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, HouseNo, Road, Village, Upazila, District, PostalCode, RegistrationDate, Status, Role) VALUES
- (23, 'Rafiqul', NULL, 'Sheikh', 'rafiqul.sheikh@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1991-09-23', '61', 'Postogola', NULL, 'Shyampur', 'Dhaka', '1204', TRUNC(SYSDATE) - 390, 'ACTIVE', 'TRANSPORT_PERSONNEL');
-INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, HouseNo, Road, Village, Upazila, District, PostalCode, RegistrationDate, Status, Role) VALUES
- (24, 'Jasim', 'Uddin', 'Bhuiyan', 'jasim.bhuiyan@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1979-02-28', '18', 'Chashara', NULL, 'Narayanganj Sadar', 'Narayanganj', '1400', TRUNC(SYSDATE) - 385, 'ACTIVE', 'TRANSPORT_PERSONNEL');
-INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, HouseNo, Road, Village, Upazila, District, PostalCode, RegistrationDate, Status, Role) VALUES
- (25, 'Alamgir', NULL, 'Hossain', 'alamgir.hossain@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1985-07-04', '40', 'Pabna Bus Terminal', NULL, 'Pabna Sadar', 'Pabna', '6600', TRUNC(SYSDATE) - 380, 'ACTIVE', 'TRANSPORT_PERSONNEL');
+INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, Address, RegistrationDate, Status, Role) VALUES
+ (21, 'Sohel', NULL, 'Rana', 'sohel.rana@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1987-12-01', t_address('33', 'Truck Stand Road', NULL, 'Bogura Sadar', 'Bogura', '5800'), TRUNC(SYSDATE) - 410, 'ACTIVE', 'TRANSPORT_PERSONNEL');
+INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, Address, RegistrationDate, Status, Role) VALUES
+ (22, 'Babul', NULL, 'Mia', 'babul.mia@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1983-05-17', t_address('5', 'Modern Mor', NULL, 'Rangpur Sadar', 'Rangpur', '5400'), TRUNC(SYSDATE) - 400, 'ACTIVE', 'TRANSPORT_PERSONNEL');
+INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, Address, RegistrationDate, Status, Role) VALUES
+ (23, 'Rafiqul', NULL, 'Sheikh', 'rafiqul.sheikh@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1991-09-23', t_address('61', 'Postogola', NULL, 'Shyampur', 'Dhaka', '1204'), TRUNC(SYSDATE) - 390, 'ACTIVE', 'TRANSPORT_PERSONNEL');
+INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, Address, RegistrationDate, Status, Role) VALUES
+ (24, 'Jasim', 'Uddin', 'Bhuiyan', 'jasim.bhuiyan@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1979-02-28', t_address('18', 'Chashara', NULL, 'Narayanganj Sadar', 'Narayanganj', '1400'), TRUNC(SYSDATE) - 385, 'ACTIVE', 'TRANSPORT_PERSONNEL');
+INSERT INTO USERS (UserID, FirstName, MiddleName, LastName, Email, PasswordHash, Gender, DateOfBirth, Address, RegistrationDate, Status, Role) VALUES
+ (25, 'Alamgir', NULL, 'Hossain', 'alamgir.hossain@krishichain.bd', '$2b$10$z36cm2.3eH0SfqSyT/TLbuG0ZmUbPWe7YFCO4NxG6rj8VF1zRRiTy', 'M', DATE '1985-07-04', t_address('40', 'Pabna Bus Terminal', NULL, 'Pabna Sadar', 'Pabna', '6600'), TRUNC(SYSDATE) - 380, 'ACTIVE', 'TRANSPORT_PERSONNEL');
 
 -- --- USER_PHONE: the multivalued attribute {PhoneNo}. -----------------
 -- Users 1, 3, 6 and 7 carry two numbers each -- that is the whole point
@@ -221,11 +229,16 @@ INSERT INTO ADMIN_STAFF (AdminID, EmployeeID, Designation) VALUES (13, 'KC-EMP-0
 INSERT INTO ADMIN_STAFF (AdminID, EmployeeID, Designation) VALUES (14, 'KC-EMP-0014', 'Regional Coordinator');
 INSERT INTO ADMIN_STAFF (AdminID, EmployeeID, Designation) VALUES (15, 'KC-EMP-0015', 'System Administrator');
 
-INSERT INTO STORAGE_MANAGER (ManagerID, EmployeeID) VALUES (16, 'KC-SM-0016');
-INSERT INTO STORAGE_MANAGER (ManagerID, EmployeeID) VALUES (17, 'KC-SM-0017');
-INSERT INTO STORAGE_MANAGER (ManagerID, EmployeeID) VALUES (18, 'KC-SM-0018');
-INSERT INTO STORAGE_MANAGER (ManagerID, EmployeeID) VALUES (19, 'KC-SM-0019');
-INSERT INTO STORAGE_MANAGER (ManagerID, EmployeeID) VALUES (20, 'KC-SM-0020');
+INSERT INTO STORAGE_MANAGER (ManagerID, EmployeeID, Designation, HireDate, ShiftSchedule, CertificationNo) VALUES
+ (16, 'KC-SM-0016', 'Chief Storage Officer', TRUNC(SYSDATE) - 400, 'NIGHT', 'BSTI-CS-2416');
+INSERT INTO STORAGE_MANAGER (ManagerID, EmployeeID, Designation, HireDate, ShiftSchedule, CertificationNo) VALUES
+ (17, 'KC-SM-0017', 'Cold Chain Supervisor', TRUNC(SYSDATE) - 590, 'ROTATING', 'BSTI-CS-2417');
+INSERT INTO STORAGE_MANAGER (ManagerID, EmployeeID, Designation, HireDate, ShiftSchedule, CertificationNo) VALUES
+ (18, 'KC-SM-0018', 'Warehouse Manager', TRUNC(SYSDATE) - 780, 'DAY', 'BSTI-CS-2418');
+INSERT INTO STORAGE_MANAGER (ManagerID, EmployeeID, Designation, HireDate, ShiftSchedule, CertificationNo) VALUES
+ (19, 'KC-SM-0019', 'Warehouse Manager', TRUNC(SYSDATE) - 970, 'NIGHT', 'BSTI-CS-2419');
+INSERT INTO STORAGE_MANAGER (ManagerID, EmployeeID, Designation, HireDate, ShiftSchedule, CertificationNo) VALUES
+ (20, 'KC-SM-0020', 'Assistant Storage Manager', TRUNC(SYSDATE) - 1160, 'ROTATING', 'BSTI-CS-2420');
 
 INSERT INTO TRANSPORT_PERSONNEL (PersonnelID, LicenseNo, ExperienceYears) VALUES (21, 'DK-HV-2011-0021', 13);
 INSERT INTO TRANSPORT_PERSONNEL (PersonnelID, LicenseNo, ExperienceYears) VALUES (22, 'RG-HV-2013-0022', 11);
@@ -302,28 +315,34 @@ COMMIT;
 --               order accepted below. Bidding window is in the past.
 -- Batches 6-7 : BIDDING_OPEN with a live window straddling SYSDATE, so
 --               the demo can place a real bid on screen.
+--
+-- MinimumBidQuantity (feedback-batch migration): 10% of TotalQuantity per
+-- batch, chosen against the actual seeded BID.RequestedQuantity values in
+-- Section 6 below so every already-seeded bid clears its batch's floor --
+-- the lowest RequestedQuantity ever bid per batch is 4000/1500/6000/3000/
+-- 2000/2500/1800 for batches 1-7, all comfortably above the floor here.
 -- =====================================================================
 
-INSERT INTO HARVEST_BATCH (BatchID, FarmID, CropID, AratID, HarvestDate, TotalQuantity, ReservedQuantity, SoldQuantity, QualityGrade, MoisturePercentage, MinimumPrice, BiddingStartTime, BiddingEndTime, Status) VALUES
- (1, 1, 1, 4, TRUNC(SYSDATE) - 60, 5000.000, 0.000, 4000.000, 'A', 13.50, 34.00, TRUNC(SYSDATE) - 58, TRUNC(SYSDATE) - 52, 'SOLD');
-INSERT INTO HARVEST_BATCH (BatchID, FarmID, CropID, AratID, HarvestDate, TotalQuantity, ReservedQuantity, SoldQuantity, QualityGrade, MoisturePercentage, MinimumPrice, BiddingStartTime, BiddingEndTime, Status) VALUES
- (2, 2, 3, 2, TRUNC(SYSDATE) - 55, 2000.000, 0.000, 1500.000, 'A', 10.20, 98.00, TRUNC(SYSDATE) - 53, TRUNC(SYSDATE) - 47, 'SOLD');
-INSERT INTO HARVEST_BATCH (BatchID, FarmID, CropID, AratID, HarvestDate, TotalQuantity, ReservedQuantity, SoldQuantity, QualityGrade, MoisturePercentage, MinimumPrice, BiddingStartTime, BiddingEndTime, Status) VALUES
- (3, 3, 2, 5, TRUNC(SYSDATE) - 50, 8000.000, 0.000, 6000.000, 'B', 78.40, 19.50, TRUNC(SYSDATE) - 48, TRUNC(SYSDATE) - 42, 'SOLD');
-INSERT INTO HARVEST_BATCH (BatchID, FarmID, CropID, AratID, HarvestDate, TotalQuantity, ReservedQuantity, SoldQuantity, QualityGrade, MoisturePercentage, MinimumPrice, BiddingStartTime, BiddingEndTime, Status) VALUES
- (4, 4, 4, 3, TRUNC(SYSDATE) - 30, 3500.000, 0.000, 3000.000, 'A', 12.80, 47.00, TRUNC(SYSDATE) - 28, TRUNC(SYSDATE) - 22, 'SOLD');
-INSERT INTO HARVEST_BATCH (BatchID, FarmID, CropID, AratID, HarvestDate, TotalQuantity, ReservedQuantity, SoldQuantity, QualityGrade, MoisturePercentage, MinimumPrice, BiddingStartTime, BiddingEndTime, Status) VALUES
- (5, 5, 5, 3, TRUNC(SYSDATE) - 18, 2500.000, 0.000, 2000.000, 'B', 8.90, 70.00, TRUNC(SYSDATE) - 16, TRUNC(SYSDATE) - 10, 'SOLD');
-INSERT INTO HARVEST_BATCH (BatchID, FarmID, CropID, AratID, HarvestDate, TotalQuantity, ReservedQuantity, SoldQuantity, QualityGrade, MoisturePercentage, MinimumPrice, BiddingStartTime, BiddingEndTime, Status) VALUES
- (6, 1, 2, 4, TRUNC(SYSDATE) - 10, 4000.000, 0.000, 0.000, 'A', 76.10, 20.00, TRUNC(SYSDATE) - 3, TRUNC(SYSDATE) + 4, 'BIDDING_OPEN');
-INSERT INTO HARVEST_BATCH (BatchID, FarmID, CropID, AratID, HarvestDate, TotalQuantity, ReservedQuantity, SoldQuantity, QualityGrade, MoisturePercentage, MinimumPrice, BiddingStartTime, BiddingEndTime, Status) VALUES
- (7, 3, 4, 5, TRUNC(SYSDATE) - 7,  3000.000, 0.000, 0.000, 'B', 13.10, 48.00, TRUNC(SYSDATE) - 2, TRUNC(SYSDATE) + 5, 'BIDDING_OPEN');
+INSERT INTO HARVEST_BATCH (BatchID, FarmID, CropID, AratID, HarvestDate, TotalQuantity, ReservedQuantity, SoldQuantity, QualityGrade, MoisturePercentage, MinimumPrice, BiddingStartTime, BiddingEndTime, Status, MinimumBidQuantity) VALUES
+ (1, 1, 1, 4, TRUNC(SYSDATE) - 60, 5000.000, 0.000, 4000.000, 'A', 13.50, 34.00, TRUNC(SYSDATE) - 58, TRUNC(SYSDATE) - 52, 'SOLD', 500.000);
+INSERT INTO HARVEST_BATCH (BatchID, FarmID, CropID, AratID, HarvestDate, TotalQuantity, ReservedQuantity, SoldQuantity, QualityGrade, MoisturePercentage, MinimumPrice, BiddingStartTime, BiddingEndTime, Status, MinimumBidQuantity) VALUES
+ (2, 2, 3, 2, TRUNC(SYSDATE) - 55, 2000.000, 0.000, 1500.000, 'A', 10.20, 98.00, TRUNC(SYSDATE) - 53, TRUNC(SYSDATE) - 47, 'SOLD', 200.000);
+INSERT INTO HARVEST_BATCH (BatchID, FarmID, CropID, AratID, HarvestDate, TotalQuantity, ReservedQuantity, SoldQuantity, QualityGrade, MoisturePercentage, MinimumPrice, BiddingStartTime, BiddingEndTime, Status, MinimumBidQuantity) VALUES
+ (3, 3, 2, 5, TRUNC(SYSDATE) - 50, 8000.000, 0.000, 6000.000, 'B', 78.40, 19.50, TRUNC(SYSDATE) - 48, TRUNC(SYSDATE) - 42, 'SOLD', 800.000);
+INSERT INTO HARVEST_BATCH (BatchID, FarmID, CropID, AratID, HarvestDate, TotalQuantity, ReservedQuantity, SoldQuantity, QualityGrade, MoisturePercentage, MinimumPrice, BiddingStartTime, BiddingEndTime, Status, MinimumBidQuantity) VALUES
+ (4, 4, 4, 3, TRUNC(SYSDATE) - 30, 3500.000, 0.000, 3000.000, 'A', 12.80, 47.00, TRUNC(SYSDATE) - 28, TRUNC(SYSDATE) - 22, 'SOLD', 350.000);
+INSERT INTO HARVEST_BATCH (BatchID, FarmID, CropID, AratID, HarvestDate, TotalQuantity, ReservedQuantity, SoldQuantity, QualityGrade, MoisturePercentage, MinimumPrice, BiddingStartTime, BiddingEndTime, Status, MinimumBidQuantity) VALUES
+ (5, 5, 5, 3, TRUNC(SYSDATE) - 18, 2500.000, 0.000, 2000.000, 'B', 8.90, 70.00, TRUNC(SYSDATE) - 16, TRUNC(SYSDATE) - 10, 'SOLD', 250.000);
+INSERT INTO HARVEST_BATCH (BatchID, FarmID, CropID, AratID, HarvestDate, TotalQuantity, ReservedQuantity, SoldQuantity, QualityGrade, MoisturePercentage, MinimumPrice, BiddingStartTime, BiddingEndTime, Status, MinimumBidQuantity) VALUES
+ (6, 1, 2, 4, TRUNC(SYSDATE) - 10, 4000.000, 0.000, 0.000, 'A', 76.10, 20.00, TRUNC(SYSDATE) - 3, TRUNC(SYSDATE) + 4, 'BIDDING_OPEN', 400.000);
+INSERT INTO HARVEST_BATCH (BatchID, FarmID, CropID, AratID, HarvestDate, TotalQuantity, ReservedQuantity, SoldQuantity, QualityGrade, MoisturePercentage, MinimumPrice, BiddingStartTime, BiddingEndTime, Status, MinimumBidQuantity) VALUES
+ (7, 3, 4, 5, TRUNC(SYSDATE) - 7,  3000.000, 0.000, 0.000, 'B', 13.10, 48.00, TRUNC(SYSDATE) - 2, TRUNC(SYSDATE) + 5, 'BIDDING_OPEN', 300.000);
 -- Batch 8 is LISTED with bidding not yet open, and deliberately receives
 -- NO bids. Without it the anti-join half of Q5-candidate Q4 ("batches
 -- that attracted no bids at all") matches nothing and the UNION branch
 -- reports a meaningless zero.
-INSERT INTO HARVEST_BATCH (BatchID, FarmID, CropID, AratID, HarvestDate, TotalQuantity, ReservedQuantity, SoldQuantity, QualityGrade, MoisturePercentage, MinimumPrice, BiddingStartTime, BiddingEndTime, Status) VALUES
- (8, 2, 1, 2, TRUNC(SYSDATE) - 5,  1800.000, 0.000, 0.000, 'A', 12.90, 35.00, TRUNC(SYSDATE) + 1, TRUNC(SYSDATE) + 6, 'LISTED');
+INSERT INTO HARVEST_BATCH (BatchID, FarmID, CropID, AratID, HarvestDate, TotalQuantity, ReservedQuantity, SoldQuantity, QualityGrade, MoisturePercentage, MinimumPrice, BiddingStartTime, BiddingEndTime, Status, MinimumBidQuantity) VALUES
+ (8, 2, 1, 2, TRUNC(SYSDATE) - 5,  1800.000, 0.000, 0.000, 'A', 12.90, 35.00, TRUNC(SYSDATE) + 1, TRUNC(SYSDATE) + 6, 'LISTED', 180.000);
 
 COMMIT;
 
@@ -378,13 +397,17 @@ INSERT INTO STORAGE_UNIT (WarehouseID, Capacity, Status) VALUES (1, 45000.000, '
 -- allocations 4 and 5 are past MinimumReleaseDate (either party may
 -- release directly), 6 and 7 are still inside their committed term (the
 -- other party has to approve early release).
-INSERT INTO STORES (AllocationID, BatchID, WarehouseID, UnitNo, ManagerID, QuantityStored, DateIn, DateOut, AllocationStatus, RequestedByFarmerID, MinimumStorageDays, StorageFeePerKgSnapshot) VALUES (1, 1, 1, 1, 16, 5000.000, TRUNC(SYSDATE) - 59, TRUNC(SYSDATE) - 45, 'COMPLETED', 1, 10, 7.50);
-INSERT INTO STORES (AllocationID, BatchID, WarehouseID, UnitNo, ManagerID, QuantityStored, DateIn, DateOut, AllocationStatus, RequestedByFarmerID, MinimumStorageDays, StorageFeePerKgSnapshot) VALUES (2, 2, 2, 1, 17, 2000.000, TRUNC(SYSDATE) - 54, TRUNC(SYSDATE) - 40, 'COMPLETED', 2, 10, 6.00);
-INSERT INTO STORES (AllocationID, BatchID, WarehouseID, UnitNo, ManagerID, QuantityStored, DateIn, DateOut, AllocationStatus, RequestedByFarmerID, MinimumStorageDays, StorageFeePerKgSnapshot) VALUES (3, 3, 3, 1, 18, 8000.000, TRUNC(SYSDATE) - 49, TRUNC(SYSDATE) - 35, 'COMPLETED', 3, 10, 8.00);
-INSERT INTO STORES (AllocationID, BatchID, WarehouseID, UnitNo, ManagerID, QuantityStored, DateIn, DateOut, AllocationStatus, RequestedByFarmerID, MinimumStorageDays, StorageFeePerKgSnapshot) VALUES (4, 4, 4, 1, 19, 3500.000, TRUNC(SYSDATE) - 29, NULL,                  'ACTIVE',    4, 10, 5.50);
-INSERT INTO STORES (AllocationID, BatchID, WarehouseID, UnitNo, ManagerID, QuantityStored, DateIn, DateOut, AllocationStatus, RequestedByFarmerID, MinimumStorageDays, StorageFeePerKgSnapshot) VALUES (5, 5, 5, 1, 20, 2500.000, TRUNC(SYSDATE) - 17, NULL,                  'ACTIVE',    5, 15, 5.00);
-INSERT INTO STORES (AllocationID, BatchID, WarehouseID, UnitNo, ManagerID, QuantityStored, DateIn, DateOut, AllocationStatus, RequestedByFarmerID, MinimumStorageDays, StorageFeePerKgSnapshot) VALUES (6, 6, 1, 2, 16, 4000.000, TRUNC(SYSDATE) - 9,  NULL,                  'ACTIVE',    1, 30, 7.50);
-INSERT INTO STORES (AllocationID, BatchID, WarehouseID, UnitNo, ManagerID, QuantityStored, DateIn, DateOut, AllocationStatus, RequestedByFarmerID, MinimumStorageDays, StorageFeePerKgSnapshot) VALUES (7, 7, 3, 2, 18, 3000.000, TRUNC(SYSDATE) - 6,  NULL,                  'ACTIVE',    3, 20, 8.00);
+-- ProposedBy='MANAGER' on all seven: the storage-consent workflow (and
+-- now the negotiation feature, feedback-batch migration) has only ever
+-- had the manager initiate here -- these predate customer-initiated
+-- requests (ProposedBy='CUSTOMER'), which only exist via the app.
+INSERT INTO STORES (AllocationID, BatchID, WarehouseID, UnitNo, ManagerID, QuantityStored, DateIn, DateOut, AllocationStatus, RequestedByFarmerID, MinimumStorageDays, StorageFeePerKgSnapshot, ProposedBy) VALUES (1, 1, 1, 1, 16, 5000.000, TRUNC(SYSDATE) - 59, TRUNC(SYSDATE) - 45, 'COMPLETED', 1, 10, 7.50, 'MANAGER');
+INSERT INTO STORES (AllocationID, BatchID, WarehouseID, UnitNo, ManagerID, QuantityStored, DateIn, DateOut, AllocationStatus, RequestedByFarmerID, MinimumStorageDays, StorageFeePerKgSnapshot, ProposedBy) VALUES (2, 2, 2, 1, 17, 2000.000, TRUNC(SYSDATE) - 54, TRUNC(SYSDATE) - 40, 'COMPLETED', 2, 10, 6.00, 'MANAGER');
+INSERT INTO STORES (AllocationID, BatchID, WarehouseID, UnitNo, ManagerID, QuantityStored, DateIn, DateOut, AllocationStatus, RequestedByFarmerID, MinimumStorageDays, StorageFeePerKgSnapshot, ProposedBy) VALUES (3, 3, 3, 1, 18, 8000.000, TRUNC(SYSDATE) - 49, TRUNC(SYSDATE) - 35, 'COMPLETED', 3, 10, 8.00, 'MANAGER');
+INSERT INTO STORES (AllocationID, BatchID, WarehouseID, UnitNo, ManagerID, QuantityStored, DateIn, DateOut, AllocationStatus, RequestedByFarmerID, MinimumStorageDays, StorageFeePerKgSnapshot, ProposedBy) VALUES (4, 4, 4, 1, 19, 3500.000, TRUNC(SYSDATE) - 29, NULL,                  'ACTIVE',    4, 10, 5.50, 'MANAGER');
+INSERT INTO STORES (AllocationID, BatchID, WarehouseID, UnitNo, ManagerID, QuantityStored, DateIn, DateOut, AllocationStatus, RequestedByFarmerID, MinimumStorageDays, StorageFeePerKgSnapshot, ProposedBy) VALUES (5, 5, 5, 1, 20, 2500.000, TRUNC(SYSDATE) - 17, NULL,                  'ACTIVE',    5, 15, 5.00, 'MANAGER');
+INSERT INTO STORES (AllocationID, BatchID, WarehouseID, UnitNo, ManagerID, QuantityStored, DateIn, DateOut, AllocationStatus, RequestedByFarmerID, MinimumStorageDays, StorageFeePerKgSnapshot, ProposedBy) VALUES (6, 6, 1, 2, 16, 4000.000, TRUNC(SYSDATE) - 9,  NULL,                  'ACTIVE',    1, 30, 7.50, 'MANAGER');
+INSERT INTO STORES (AllocationID, BatchID, WarehouseID, UnitNo, ManagerID, QuantityStored, DateIn, DateOut, AllocationStatus, RequestedByFarmerID, MinimumStorageDays, StorageFeePerKgSnapshot, ProposedBy) VALUES (7, 7, 3, 2, 18, 3000.000, TRUNC(SYSDATE) - 6,  NULL,                  'ACTIVE',    3, 20, 8.00, 'MANAGER');
 
 COMMIT;
 
@@ -462,24 +485,35 @@ COMMIT;
 --   SO 3: 6000 x  21.75 = 130,500.00
 --   SO 4: 3000 x  50.25 = 150,750.00
 --   SO 5: 2000 x  74.00 = 148,000.00
+--
+-- DeliveryPreference (feedback-batch migration): all five backfilled to
+-- DIRECT, not left at the column default PENDING. None of the seven
+-- seeded STORES rows is leg-2 (all seven are pre-sale, farmer-owned --
+-- see Section 5), and every one of these five already has a
+-- TRANSPORT_REQUEST past PENDING (DELIVERED/IN_TRANSIT/ASSIGNED, Section
+-- 8) -- transport.service.js's new DeliveryPreference gate only applies
+-- going forward at claim() time, but leaving these at PENDING would look
+-- inconsistent sitting next to already-moving transport rows.
 -- =====================================================================
 
-INSERT INTO SALE_ORDER (SaleOrderID, BidID, AcceptedQuantity, AcceptedPricePerKg, OrderDate, Status, PaymentTerms) VALUES (1,  3, 4000.000,  36.00, TRUNC(SYSDATE) - 52, 'COMPLETED',  'ON_DELIVERY');
-INSERT INTO SALE_ORDER (SaleOrderID, BidID, AcceptedQuantity, AcceptedPricePerKg, OrderDate, Status, PaymentTerms) VALUES (2,  5, 1500.000, 102.50, TRUNC(SYSDATE) - 47, 'COMPLETED',  'ADVANCE');
-INSERT INTO SALE_ORDER (SaleOrderID, BidID, AcceptedQuantity, AcceptedPricePerKg, OrderDate, Status, PaymentTerms) VALUES (3,  7, 6000.000,  21.75, TRUNC(SYSDATE) - 42, 'COMPLETED',  'ON_DELIVERY');
-INSERT INTO SALE_ORDER (SaleOrderID, BidID, AcceptedQuantity, AcceptedPricePerKg, OrderDate, Status, PaymentTerms) VALUES (4,  9, 3000.000,  50.25, TRUNC(SYSDATE) - 22, 'IN_TRANSIT', 'ADVANCE');
-INSERT INTO SALE_ORDER (SaleOrderID, BidID, AcceptedQuantity, AcceptedPricePerKg, OrderDate, Status, PaymentTerms) VALUES (5, 11, 2000.000,  74.00, TRUNC(SYSDATE) - 10, 'CONFIRMED',  'ON_DELIVERY');
+INSERT INTO SALE_ORDER (SaleOrderID, BidID, AcceptedQuantity, AcceptedPricePerKg, OrderDate, Status, PaymentTerms, DeliveryPreference) VALUES (1,  3, 4000.000,  36.00, TRUNC(SYSDATE) - 52, 'COMPLETED',  'ON_DELIVERY', 'DIRECT');
+INSERT INTO SALE_ORDER (SaleOrderID, BidID, AcceptedQuantity, AcceptedPricePerKg, OrderDate, Status, PaymentTerms, DeliveryPreference) VALUES (2,  5, 1500.000, 102.50, TRUNC(SYSDATE) - 47, 'COMPLETED',  'ADVANCE', 'DIRECT');
+INSERT INTO SALE_ORDER (SaleOrderID, BidID, AcceptedQuantity, AcceptedPricePerKg, OrderDate, Status, PaymentTerms, DeliveryPreference) VALUES (3,  7, 6000.000,  21.75, TRUNC(SYSDATE) - 42, 'COMPLETED',  'ON_DELIVERY', 'DIRECT');
+INSERT INTO SALE_ORDER (SaleOrderID, BidID, AcceptedQuantity, AcceptedPricePerKg, OrderDate, Status, PaymentTerms, DeliveryPreference) VALUES (4,  9, 3000.000,  50.25, TRUNC(SYSDATE) - 22, 'IN_TRANSIT', 'ADVANCE', 'DIRECT');
+INSERT INTO SALE_ORDER (SaleOrderID, BidID, AcceptedQuantity, AcceptedPricePerKg, OrderDate, Status, PaymentTerms, DeliveryPreference) VALUES (5, 11, 2000.000,  74.00, TRUNC(SYSDATE) - 10, 'CONFIRMED',  'ON_DELIVERY', 'DIRECT');
 
 COMMIT;
 
 -- =====================================================================
 -- SECTION 8 — LOGISTICS (vehicles, transport requests, ternary #2)
 --
--- Vehicle capacity is checked against the order quantity by hand here
--- (BR-18) for the same reason as BR-09 -- it is cross-table and the
--- Phase 4 service layer owns it, so the seed must not violate it:
---   T1 4000kg -> V1 8000  | T2 1500kg -> V2 5000 | T3 6000kg -> V1 8000
---   T4 3000kg -> V5 6000  | T5 2000kg -> V4 2500
+-- A request belongs to one transport person, who may use several of
+-- their own vehicles. BR-18 is met by that fleet, not by one vehicle.
+--   T1 4000kg -> V1 8000
+--   T2 1500kg -> V2 5000
+--   T3 6000kg -> V2 5000 + V3 3000 = 8000   (one person, two vehicles)
+--   T4 3000kg -> V5 6000
+--   T5 2000kg -> V4 2500
 -- =====================================================================
 
 INSERT INTO VEHICLE (VehicleID, VehicleNo, VehicleType, Capacity, Status) VALUES (1, 'DHK-METRO-TA-11-1234', 'Truck',              8000.000, 'AVAILABLE');
@@ -504,7 +538,8 @@ INSERT INTO TRANSPORT_REQUEST (TransportID, SaleOrderID, PickupLocation, Deliver
 -- trip 3, which is why the triple (not the vehicle alone) is unique.
 INSERT INTO ASSIGNED_TO (AssignmentID, TransportID, VehicleID, PersonnelID, AssignedDate, AssignmentStatus) VALUES (1, 1, 1, 21, TRUNC(SYSDATE) - 50, 'COMPLETED');
 INSERT INTO ASSIGNED_TO (AssignmentID, TransportID, VehicleID, PersonnelID, AssignedDate, AssignmentStatus) VALUES (2, 2, 2, 22, TRUNC(SYSDATE) - 45, 'COMPLETED');
-INSERT INTO ASSIGNED_TO (AssignmentID, TransportID, VehicleID, PersonnelID, AssignedDate, AssignmentStatus) VALUES (3, 3, 1, 23, TRUNC(SYSDATE) - 40, 'COMPLETED');
+INSERT INTO ASSIGNED_TO (AssignmentID, TransportID, VehicleID, PersonnelID, AssignedDate, AssignmentStatus) VALUES (3, 3, 2, 23, TRUNC(SYSDATE) - 40, 'COMPLETED');
+INSERT INTO ASSIGNED_TO (AssignmentID, TransportID, VehicleID, PersonnelID, AssignedDate, AssignmentStatus) VALUES (6, 3, 3, 23, TRUNC(SYSDATE) - 40, 'COMPLETED');
 INSERT INTO ASSIGNED_TO (AssignmentID, TransportID, VehicleID, PersonnelID, AssignedDate, AssignmentStatus) VALUES (4, 4, 5, 24, TRUNC(SYSDATE) - 20, 'ACTIVE');
 INSERT INTO ASSIGNED_TO (AssignmentID, TransportID, VehicleID, PersonnelID, AssignedDate, AssignmentStatus) VALUES (5, 5, 4, 25, TRUNC(SYSDATE) - 8,  'ACTIVE');
 
@@ -529,16 +564,44 @@ COMMIT;
 -- ASSIGNED. Trying to insert one is the live BR-20 demo.
 -- =====================================================================
 
-INSERT INTO PAYMENT (PaymentID, SaleOrderID, BuyerID, FarmerID, Amount, PaymentMethod, PaymentDate, TransactionReference, PaymentStatus) VALUES
- (1, 1, 10, 1, 144000.00, 'BANK_TRANSFER', TRUNC(SYSDATE) - 44, 'TRX-BNK-20240001', 'COMPLETED');
-INSERT INTO PAYMENT (PaymentID, SaleOrderID, BuyerID, FarmerID, Amount, PaymentMethod, PaymentDate, TransactionReference, PaymentStatus) VALUES
- (2, 2, 6,  2, 153750.00, 'BANK_TRANSFER', TRUNC(SYSDATE) - 46, 'TRX-BNK-20240002', 'COMPLETED');
-INSERT INTO PAYMENT (PaymentID, SaleOrderID, BuyerID, FarmerID, Amount, PaymentMethod, PaymentDate, TransactionReference, PaymentStatus) VALUES
- (3, 3, 7,  3, 130500.00, 'MOBILE_BANKING',TRUNC(SYSDATE) - 34, 'TRX-MFS-20240003', 'COMPLETED');
-INSERT INTO PAYMENT (PaymentID, SaleOrderID, BuyerID, FarmerID, Amount, PaymentMethod, PaymentDate, TransactionReference, PaymentStatus) VALUES
- (4, 4, 8,  4,  75000.00, 'BANK_TRANSFER', TRUNC(SYSDATE) - 21, 'TRX-BNK-20240004', 'COMPLETED');
-INSERT INTO PAYMENT (PaymentID, SaleOrderID, BuyerID, FarmerID, Amount, PaymentMethod, PaymentDate, TransactionReference, PaymentStatus) VALUES
- (5, 4, 8,  4,  50000.00, 'MOBILE_BANKING',TRUNC(SYSDATE) - 5,  'TRX-MFS-20240005', 'PENDING');
+INSERT INTO PAYMENT (PaymentID, PaymentType, SaleOrderID, BuyerID, FarmerID, Amount, PaymentMethod, PaymentDate, TransactionReference, PaymentStatus) VALUES
+ (1, 'SALE', 1, 10, 1, 144000.00, 'BANK_TRANSFER', TRUNC(SYSDATE) - 44, 'TRX-BNK-20240001', 'COMPLETED');
+INSERT INTO PAYMENT (PaymentID, PaymentType, SaleOrderID, BuyerID, FarmerID, Amount, PaymentMethod, PaymentDate, TransactionReference, PaymentStatus) VALUES
+ (2, 'SALE', 2, 6,  2, 153750.00, 'BANK_TRANSFER', TRUNC(SYSDATE) - 46, 'TRX-BNK-20240002', 'COMPLETED');
+INSERT INTO PAYMENT (PaymentID, PaymentType, SaleOrderID, BuyerID, FarmerID, Amount, PaymentMethod, PaymentDate, TransactionReference, PaymentStatus) VALUES
+ (3, 'SALE', 3, 7,  3, 130500.00, 'MOBILE_BANKING',TRUNC(SYSDATE) - 34, 'TRX-MFS-20240003', 'COMPLETED');
+INSERT INTO PAYMENT (PaymentID, PaymentType, SaleOrderID, BuyerID, FarmerID, Amount, PaymentMethod, PaymentDate, TransactionReference, PaymentStatus) VALUES
+ (4, 'SALE', 4, 8,  4,  75000.00, 'BANK_TRANSFER', TRUNC(SYSDATE) - 21, 'TRX-BNK-20240004', 'COMPLETED');
+INSERT INTO PAYMENT (PaymentID, PaymentType, SaleOrderID, BuyerID, FarmerID, Amount, PaymentMethod, PaymentDate, TransactionReference, PaymentStatus) VALUES
+ (5, 'SALE', 4, 8,  4,  50000.00, 'MOBILE_BANKING',TRUNC(SYSDATE) - 5,  'TRX-MFS-20240005', 'PENDING');
+
+-- ---------------------------------------------------------------------
+-- The STORAGE half of the same table. These carry an AllocationID and
+-- no order, buyer or farmer, which is what CK_PAYMENT_TYPE_SHAPE
+-- requires of a STORAGE row.
+--
+-- The fee is owed for the STORES *allocation* as one fact, not for the
+-- batch, the unit or the manager separately. That is the aggregation.
+--
+-- Amounts equal the StorageFee virtual column
+-- (QuantityStored * StorageFeePerKgSnapshot):
+--   alloc 1  5000 x 7.50 = 37500      alloc 4  3500 x 5.50 = 19250
+--   alloc 2  2000 x 6.00 = 12000      alloc 5  2500 x 5.00 = 12500
+--   alloc 3  8000 x 8.00 = 64000
+--
+-- Allocation 5 is still owed, so one PENDING row remains for the
+-- storage-fee screens to show.
+-- ---------------------------------------------------------------------
+INSERT INTO PAYMENT (PaymentID, PaymentType, AllocationID, Amount, PaymentMethod, PaymentDate, TransactionReference, PaymentStatus) VALUES
+ (6,  'STORAGE', 1, 37500.00, 'BANK_TRANSFER',  TRUNC(SYSDATE) - 45, 'TRX-STG-20240001', 'COMPLETED');
+INSERT INTO PAYMENT (PaymentID, PaymentType, AllocationID, Amount, PaymentMethod, PaymentDate, TransactionReference, PaymentStatus) VALUES
+ (7,  'STORAGE', 2, 12000.00, 'MOBILE_BANKING', TRUNC(SYSDATE) - 40, 'TRX-STG-20240002', 'COMPLETED');
+INSERT INTO PAYMENT (PaymentID, PaymentType, AllocationID, Amount, PaymentMethod, PaymentDate, TransactionReference, PaymentStatus) VALUES
+ (8,  'STORAGE', 3, 64000.00, 'BANK_TRANSFER',  TRUNC(SYSDATE) - 35, 'TRX-STG-20240003', 'COMPLETED');
+INSERT INTO PAYMENT (PaymentID, PaymentType, AllocationID, Amount, PaymentMethod, PaymentDate, TransactionReference, PaymentStatus) VALUES
+ (9,  'STORAGE', 4, 19250.00, 'MOBILE_BANKING', TRUNC(SYSDATE) - 28, 'TRX-STG-20240004', 'COMPLETED');
+INSERT INTO PAYMENT (PaymentID, PaymentType, AllocationID, Amount, PaymentMethod, PaymentDate, TransactionReference, PaymentStatus) VALUES
+ (10, 'STORAGE', 5, 12500.00, 'MOBILE_BANKING', TRUNC(SYSDATE) - 3,  'TRX-STG-20240005', 'PENDING');
 
 COMMIT;
 
@@ -686,6 +749,28 @@ INSERT INTO COMPLAINT (ComplaintID, SaleOrderID, ComplaintType, Description, Sta
 INSERT INTO COMPLAINT (ComplaintID, SaleOrderID, ComplaintType, Description, Status, ResolutionDate, HandledByAdminID) VALUES
  (5, 5, 'LOGISTICS',      'Pickup from Faridpur Grain Store not yet scheduled after vehicle assignment.',    'OPEN',      NULL,                NULL);
 
+-- ---------------------------------------------------------------------
+-- NOTIFICATION — one per role, so every branch of the specialization has
+-- something in its bell. UserID references USERS directly rather than a
+-- subclass, since all five roles are notified the same way.
+--
+-- RelatedEntityType / RelatedEntityID point at rows that actually exist
+-- above, so following a notification lands on real data:
+--   batch 6 (bidding open), batch 1 (sold), allocation 6 (ACTIVE),
+--   complaint 3 (IN_REVIEW, handled by admin 14), transport request 4.
+-- CreatedAt uses INTERVAL arithmetic because the column is TIMESTAMP.
+-- ---------------------------------------------------------------------
+INSERT INTO NOTIFICATION (NotificationID, UserID, Type, Title, Message, RelatedEntityType, RelatedEntityID, IsRead, CreatedAt) VALUES
+ (1,  1, 'BID_PLACED',         'New bid on your Aman Rice',        'A buyer has bid on batch 6. Review the standing bids before the window closes.',     'HARVEST_BATCH',     6, 'N', SYSTIMESTAMP - INTERVAL '4'  HOUR);
+INSERT INTO NOTIFICATION (NotificationID, UserID, Type, Title, Message, RelatedEntityType, RelatedEntityID, IsRead, CreatedAt) VALUES
+ (2, 10, 'BID_OUTBID',         'You have been outbid',             'Your bid on batch 1 was superseded by a higher one. Place a new bid to stay in.',     'HARVEST_BATCH',     1, 'Y', SYSTIMESTAMP - INTERVAL '3'  DAY);
+INSERT INTO NOTIFICATION (NotificationID, UserID, Type, Title, Message, RelatedEntityType, RelatedEntityID, IsRead, CreatedAt) VALUES
+ (3, 16, 'STORAGE_ACCEPTED',   'Allocation 6 accepted',            'The customer accepted your storage terms. Unit 2 at Bogura Cold Storage is now ACTIVE.', 'STORES',          6, 'N', SYSTIMESTAMP - INTERVAL '9'  DAY);
+INSERT INTO NOTIFICATION (NotificationID, UserID, Type, Title, Message, RelatedEntityType, RelatedEntityID, IsRead, CreatedAt) VALUES
+ (4, 14, 'COMPLAINT_RAISED',   'Complaint 3 is awaiting review',   'A delivery-delay complaint is open against sale order 4 and is assigned to you.',    'COMPLAINT',         3, 'N', SYSTIMESTAMP - INTERVAL '2'  DAY);
+INSERT INTO NOTIFICATION (NotificationID, UserID, Type, Title, Message, RelatedEntityType, RelatedEntityID, IsRead, CreatedAt) VALUES
+ (5, 21, 'TRANSPORT_ASSIGNED', 'You are assigned to trip 4',       'Collect from the farm gate and update the delivery status as the trip progresses.',   'TRANSPORT_REQUEST', 4, 'Y', SYSTIMESTAMP - INTERVAL '20' DAY);
+
 COMMIT;
 
 -- =====================================================================
@@ -744,6 +829,7 @@ BEGIN
   sync_seq('seq_bazar_id',         'PHYSICAL_BAZAR',    'BazarID');
   sync_seq('seq_review_id',        'REVIEW',            'ReviewID');
   sync_seq('seq_complaint_id',     'COMPLAINT',         'ComplaintID');
+  sync_seq('seq_notification_id',  'NOTIFICATION',      'NotificationID');
 END;
 /
 
@@ -780,6 +866,7 @@ UNION ALL SELECT 'PHYSICAL_BAZAR',       COUNT(*) FROM PHYSICAL_BAZAR
 UNION ALL SELECT 'BAZAR_DAILY_RECORD',   COUNT(*) FROM BAZAR_DAILY_RECORD
 UNION ALL SELECT 'REVIEW',               COUNT(*) FROM REVIEW
 UNION ALL SELECT 'COMPLAINT',            COUNT(*) FROM COMPLAINT
+UNION ALL SELECT 'NOTIFICATION',         COUNT(*) FROM NOTIFICATION
 ORDER BY 1;
 
 PROMPT

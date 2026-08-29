@@ -2,15 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../api/client';
 import { date } from '../../utils/format';
 
-/**
- * Daily market prices — the reference data the farmer's "did I beat the
- * market?" comparison reads from.
- *
- * (CropID, AratID, PriceDate) is the primary key, so a second price for
- * the same crop, arat and day is rejected by the database rather than by
- * a check here. That is acceptance case T-08, and it is worth triggering
- * live during the viva: submit the same day twice.
- */
 export default function DailyPrices() {
   const [prices, setPrices] = useState(null);
   const [crops, setCrops] = useState([]);

@@ -126,10 +126,12 @@ async function browseBatches(buyerId, filters = {}) {
             v.FarmDistrict       AS "farmDistrict",
             v.AratName           AS "aratName",
             v.HarvestDate        AS "harvestDate",
+            v.SoldQuantity       AS "soldQuantity",
             v.AvailableQuantity  AS "availableQuantity",
             v.QualityGrade       AS "qualityGrade",
             v.MoisturePercentage AS "moisturePercentage",
             v.MinimumPrice       AS "minimumPrice",
+            v.MinimumBidQuantity AS "minimumBidQuantity",
             v.CurrentHighestBid  AS "currentHighestBid",
             v.BiddingEndTime     AS "biddingEndTime",
             bs.BidCount          AS "bidCount",
@@ -161,10 +163,12 @@ async function getBatch(buyerId, batchId) {
             v.AratDistrict       AS "aratDistrict",
             v.HarvestDate        AS "harvestDate",
             v.TotalQuantity      AS "totalQuantity",
+            v.SoldQuantity       AS "soldQuantity",
             v.AvailableQuantity  AS "availableQuantity",
             v.QualityGrade       AS "qualityGrade",
             v.MoisturePercentage AS "moisturePercentage",
             v.MinimumPrice       AS "minimumPrice",
+            v.MinimumBidQuantity AS "minimumBidQuantity",
             v.CurrentHighestBid  AS "currentHighestBid",
             v.BiddingStartTime   AS "biddingStartTime",
             v.BiddingEndTime     AS "biddingEndTime",
@@ -243,7 +247,7 @@ async function placeBid(buyerId, payload) {
     // --- Lock the batch, then read its current state -----------------
     const batchResult = await connection.execute(
       `SELECT hb.BatchID, hb.Status, hb.MinimumPrice, hb.AvailableQuantity,
-              hb.BiddingStartTime, hb.BiddingEndTime,
+              hb.MinimumBidQuantity, hb.BiddingStartTime, hb.BiddingEndTime,
               CASE WHEN hb.BiddingStartTime IS NULL
                         OR CAST(hb.BiddingStartTime AS DATE) > SYSDATE THEN 'NOT_OPEN'
                    WHEN CAST(hb.BiddingEndTime AS DATE) < SYSDATE      THEN 'CLOSED'
@@ -270,6 +274,13 @@ async function placeBid(buyerId, payload) {
     if (requestedQuantity > batch.AVAILABLEQUANTITY) {
       throw ApiError.businessRule(
         `Only ${batch.AVAILABLEQUANTITY} kg are available; you asked for ${requestedQuantity} kg.`
+      );
+    }
+    // Farmer-set floor (trg_bid_min_qty is the DB backstop) — checked
+    // here first for a clean error message ahead of the trigger.
+    if (requestedQuantity < batch.MINIMUMBIDQUANTITY) {
+      throw ApiError.businessRule(
+        `This batch requires a minimum bid of ${batch.MINIMUMBIDQUANTITY} kg; you asked for ${requestedQuantity} kg.`
       );
     }
 
@@ -347,36 +358,50 @@ async function placeBid(buyerId, payload) {
 // My bids
 // ---------------------------------------------------------------------
 
+/**
+ * A buyer who gets outbid and rebids on the same batch ends up owning
+ * multiple BID rows there (each earlier one flips OUTBID, see placeBid()
+ * step 1) — without this, My Bids showed every one of them as a separate
+ * line. ROW_NUMBER, partitioned by BatchID and ordered by BidTime DESC,
+ * collapses that to the buyer's latest bid per batch; "bidCount" (a plain
+ * COUNT over the same partition) lets the UI show a small "rebid 2x"
+ * indicator without needing the full history.
+ */
 async function listMyBids(buyerId) {
   const result = await query(
-    `SELECT b.BidID             AS "bidId",
-            b.BatchID           AS "batchId",
-            c.CropName          AS "cropName",
-            fu.FirstName || ' ' || fu.LastName AS "farmerName",
-            va.AratName         AS "aratName",
-            b.BidPricePerKg     AS "bidPricePerKg",
-            b.RequestedQuantity AS "requestedQuantity",
-            b.BidPricePerKg * b.RequestedQuantity AS "bidValue",
-            b.BidTime           AS "bidTime",
-            b.Status            AS "status",
-            hb.MinimumPrice     AS "minimumPrice",
-            hb.Status           AS "batchStatus",
-            (SELECT MAX(x.BidPricePerKg) FROM BID x
-              WHERE x.BatchID = b.BatchID AND x.Status IN ('ACTIVE','WON')) AS "standingBid",
-            so.SaleOrderID      AS "saleOrderId",
-            so.TotalAmount      AS "orderTotal",
-            so.PaymentTerms     AS "paymentTerms",
-            tr.DeliveryStatus   AS "deliveryStatus"
-       FROM BID b
-       JOIN HARVEST_BATCH hb ON hb.BatchID = b.BatchID
-       JOIN CROP c           ON c.CropID   = hb.CropID
-       JOIN FARM f           ON f.FarmID   = hb.FarmID
-       JOIN USERS fu         ON fu.UserID  = f.FarmerID
-       JOIN VIRTUAL_ARAT va  ON va.AratID  = hb.AratID
-       LEFT JOIN SALE_ORDER so       ON so.BidID       = b.BidID
-       LEFT JOIN TRANSPORT_REQUEST tr ON tr.SaleOrderID = so.SaleOrderID
-      WHERE b.BuyerID = :buyerId
-      ORDER BY b.BidTime DESC`,
+    `SELECT * FROM (
+       SELECT b.BidID             AS "bidId",
+              b.BatchID           AS "batchId",
+              c.CropName          AS "cropName",
+              fu.FirstName || ' ' || fu.LastName AS "farmerName",
+              va.AratName         AS "aratName",
+              b.BidPricePerKg     AS "bidPricePerKg",
+              b.RequestedQuantity AS "requestedQuantity",
+              b.BidPricePerKg * b.RequestedQuantity AS "bidValue",
+              b.BidTime           AS "bidTime",
+              b.Status            AS "status",
+              hb.MinimumPrice     AS "minimumPrice",
+              hb.Status           AS "batchStatus",
+              (SELECT MAX(x.BidPricePerKg) FROM BID x
+                WHERE x.BatchID = b.BatchID AND x.Status IN ('ACTIVE','WON')) AS "standingBid",
+              so.SaleOrderID      AS "saleOrderId",
+              so.TotalAmount      AS "orderTotal",
+              so.PaymentTerms     AS "paymentTerms",
+              tr.DeliveryStatus   AS "deliveryStatus",
+              ROW_NUMBER() OVER (PARTITION BY b.BatchID ORDER BY b.BidTime DESC) AS "rn",
+              COUNT(*)     OVER (PARTITION BY b.BatchID)                        AS "bidCount"
+         FROM BID b
+         JOIN HARVEST_BATCH hb ON hb.BatchID = b.BatchID
+         JOIN CROP c           ON c.CropID   = hb.CropID
+         JOIN FARM f           ON f.FarmID   = hb.FarmID
+         JOIN USERS fu         ON fu.UserID  = f.FarmerID
+         JOIN VIRTUAL_ARAT va  ON va.AratID  = hb.AratID
+         LEFT JOIN SALE_ORDER so       ON so.BidID       = b.BidID
+         LEFT JOIN TRANSPORT_REQUEST tr ON tr.SaleOrderID = so.SaleOrderID
+        WHERE b.BuyerID = :buyerId
+     )
+     WHERE "rn" = 1
+     ORDER BY "bidTime" DESC`,
     { buyerId }
   );
   return result.rows;
@@ -407,22 +432,35 @@ async function listStorageProposals(buyerId) {
             s.QuantityStored AS "quantityStored",
             s.MinimumStorageDays AS "minimumStorageDays",
             s.StorageFeePerKgSnapshot AS "ratePerKg",
-            s.QuantityStored * s.StorageFeePerKgSnapshot AS "estimatedFee",
-            s.AllocationStatus AS "allocationStatus"
+            s.CounterRatePerKg AS "counterRatePerKg",
+            s.CounteredBy    AS "counteredBy",
+            s.ProposedBy     AS "proposedBy",
+            s.QuantityStored * NVL(s.CounterRatePerKg, s.StorageFeePerKgSnapshot) AS "estimatedFee",
+            s.AllocationStatus AS "allocationStatus",
+            CASE WHEN s.AllocationStatus = 'COUNTERED' THEN 'COUNTER' ELSE 'PROPOSAL' END AS "awaiting"
        FROM STORES s
        JOIN WAREHOUSE w      ON w.WarehouseID = s.WarehouseID
        JOIN HARVEST_BATCH hb ON hb.BatchID    = s.BatchID
        JOIN CROP c           ON c.CropID      = hb.CropID
       WHERE s.RequestedByBuyerID = :buyerId
-        AND s.AllocationStatus = 'PENDING_ACCEPT'
+        AND (   (s.AllocationStatus = 'PENDING_ACCEPT' AND s.ProposedBy = 'MANAGER')
+             OR (s.AllocationStatus = 'COUNTERED'      AND s.ProposedBy = 'CUSTOMER'))
       ORDER BY s.AllocationID`,
     { buyerId }
   );
   return result.rows;
 }
 
-function respondToStorageProposal(buyerId, allocationId, decision) {
-  return storage.respondToProposal('BUYER', buyerId, allocationId, decision);
+function respondToStorageProposal(buyerId, allocationId, decision, payload) {
+  return storage.respondToProposal('BUYER', buyerId, allocationId, decision, payload);
+}
+
+function respondToStorageCounter(buyerId, allocationId, decision) {
+  return storage.respondToCounter('BUYER', buyerId, allocationId, decision);
+}
+
+function requestStorageAllocation(buyerId, payload) {
+  return storage.requestAllocation('BUYER', buyerId, payload);
 }
 
 function requestStorageRelease(buyerId, allocationId) {
@@ -456,7 +494,11 @@ async function listMyStorage(buyerId) {
             s.MinimumStorageDays AS "minimumStorageDays",
             s.MinimumReleaseDate AS "minimumReleaseDate",
             s.StorageFee       AS "storageFee",
-            s.ReleaseRequestedBy AS "releaseRequestedBy"
+            s.ReleaseRequestedBy AS "releaseRequestedBy",
+            s.ProposedBy       AS "proposedBy",
+            s.CounterRatePerKg AS "counterRatePerKg",
+            s.CounteredBy      AS "counteredBy",
+            s.StorageFeePerKgSnapshot AS "ratePerKg"
        FROM STORES s
        JOIN WAREHOUSE w      ON w.WarehouseID = s.WarehouseID
        JOIN HARVEST_BATCH hb ON hb.BatchID    = s.BatchID
@@ -482,6 +524,7 @@ async function listOrders(buyerId) {
             so.TotalAmount AS "totalAmount",
             so.Status      AS "status",
             so.PaymentTerms AS "paymentTerms",
+            so.DeliveryPreference AS "deliveryPreference",
             hb.BatchID     AS "batchId",
             c.CropName     AS "cropName",
             uf.FirstName || ' ' || uf.LastName AS "farmerName",
@@ -505,6 +548,77 @@ async function listOrders(buyerId) {
     { buyerId }
   );
   return result.rows;
+}
+
+/**
+ * "Drive it straight to me" — the buyer's half of the delivery gate.
+ *
+ * A transport request is raised the moment a bid is awarded, but it is
+ * not offered to drivers until the destination is settled. This is one
+ * of the two ways that happens; the other is accepting a leg-2 storage
+ * allocation, which storage.service.js finalizeAcceptance() handles.
+ * Only legal while the choice is still open, and only when no leg-2
+ * allocation is already in flight — otherwise the two routes could
+ * contradict each other about where the load is going.
+ */
+async function setDeliveryDirect(buyerId, saleOrderId) {
+  return withTransaction(async (connection) => {
+    const order = await connection.execute(
+      `SELECT so.SaleOrderID, so.Status, so.DeliveryPreference, b.BuyerID,
+              u.Address.HouseNo AS HouseNo, u.Address.Road AS Road,
+              u.Address.Village AS Village, u.Address.Upazila AS Upazila,
+              u.Address.District AS District
+         FROM SALE_ORDER so
+         JOIN BID b   ON b.BidID  = so.BidID
+         JOIN USERS u ON u.UserID = b.BuyerID
+        WHERE so.SaleOrderID = :saleOrderId
+          FOR UPDATE OF so.DeliveryPreference`,
+      { saleOrderId }
+    );
+    if (!order.rows.length) throw ApiError.notFound('No such order.');
+    const row = order.rows[0];
+    if (row.BUYERID !== buyerId) throw ApiError.notFound('No such order.');
+    if (row.STATUS === 'CANCELLED') throw ApiError.businessRule('This order is cancelled.');
+
+    if (row.DELIVERYPREFERENCE !== 'PENDING') {
+      throw ApiError.businessRule(
+        row.DELIVERYPREFERENCE === 'DIRECT'
+          ? 'This order is already set for direct delivery.'
+          : 'This order is already going through storage — release it from the warehouse instead.'
+      );
+    }
+
+    const inFlight = await connection.execute(
+      `SELECT COUNT(*) AS Cnt FROM STORES
+        WHERE SaleOrderID = :saleOrderId
+          AND AllocationStatus IN ('PENDING_ACCEPT', 'COUNTERED', 'ACTIVE', 'PENDING_RELEASE')`,
+      { saleOrderId }
+    );
+    if (inFlight.rows[0].CNT > 0) {
+      throw ApiError.businessRule(
+        'A storage allocation for this order is still open. Reject or release it before ' +
+          'choosing direct delivery.'
+      );
+    }
+
+    const destination = [row.HOUSENO, row.ROAD, row.VILLAGE, row.UPAZILA, row.DISTRICT]
+      .filter(Boolean)
+      .join(', ');
+
+    await connection.execute(
+      `UPDATE SALE_ORDER SET DeliveryPreference = 'DIRECT' WHERE SaleOrderID = :saleOrderId`,
+      { saleOrderId }
+    );
+    // SUBSTR at the SQL level — DeliveryLocation is VARCHAR2(200) and a
+    // long address should not fail the whole choice with ORA-12899.
+    await connection.execute(
+      `UPDATE TRANSPORT_REQUEST SET DeliveryLocation = SUBSTR(:destination, 1, 200)
+        WHERE SaleOrderID = :saleOrderId AND DeliveryStatus = 'PENDING'`,
+      { destination, saleOrderId }
+    );
+
+    return { saleOrderId, deliveryPreference: 'DIRECT', deliveryLocation: destination };
+  });
 }
 
 async function listPayments(buyerId) {
@@ -698,10 +812,13 @@ module.exports = {
   listOrders,
   listPayments,
   payOrder,
+  setDeliveryDirect,
   listReviews,
   createReview,
   listStorageProposals,
   respondToStorageProposal,
+  respondToStorageCounter,
+  requestStorageAllocation,
   requestStorageRelease,
   respondToStorageRelease,
   listStorageFees,

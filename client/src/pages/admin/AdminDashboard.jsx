@@ -3,11 +3,6 @@ import { Link } from 'react-router';
 import { api } from '../../api/client';
 import { date, number, taka } from '../../utils/format';
 
-/**
- * Oversight, journey J-07. The three tables below are the reports the PRD
- * asks an admin to be able to answer from: what never sold, what has been
- * delivered but not paid for, and what the platform actually moved.
- */
 export default function AdminDashboard() {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');

@@ -2,16 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../api/client';
 import { date } from '../../utils/format';
 
-/**
- * The user directory, and the clearest view anywhere of the total,
- * disjoint specialization: every row resolves to exactly one subclass,
- * because USERS -> FARMER/BUYER/ADMIN/STORAGE_MANAGER/TRANSPORT_PERSONNEL
- * is total (everyone is something) and disjoint (nobody is two things).
- *
- * Read-only. Deleting a user is refused by the database anyway once they
- * have orders (acceptance case T-09), and an admin who could rewrite
- * identities would undermine every ownership check in the system.
- */
 const ROLES = ['FARMER', 'BUYER', 'ADMIN', 'STORAGE_MANAGER', 'TRANSPORT_PERSONNEL'];
 
 export default function ManageUsers() {
@@ -47,8 +37,7 @@ export default function ManageUsers() {
     <div className="page">
       <h1>Manage Users</h1>
       <p className="muted">
-        Everyone on the platform. Each person resolves to exactly one role — the specialization is
-        total and disjoint.
+        Everyone on the platform. Each person holds exactly one role.
       </p>
 
       <div className="filters">

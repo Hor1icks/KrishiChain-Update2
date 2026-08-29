@@ -60,11 +60,13 @@ export default function MyBids() {
                 </td>
                 <td className="num">{number(b.requestedQuantity)}</td>
                 <td className="num">{taka(b.bidValue)}</td>
-                {/* Shows an OUTBID buyer exactly what they need to beat. */}
+                {}
                 <td className="num">{b.standingBid ?? '—'}</td>
                 <td>{dateTime(b.bidTime)}</td>
                 <td>
                   <span className={`tag tag-${b.status.toLowerCase()}`}>{b.status}</span>
+                  {}
+                  {b.bidCount > 1 && <div className="muted small">rebid {b.bidCount}×</div>}
                 </td>
                 <td>
                   {b.saleOrderId ? (

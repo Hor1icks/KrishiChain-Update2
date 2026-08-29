@@ -54,8 +54,7 @@ export default function MyBatches() {
                 <td className="num">{number(b.availableQuantity)}</td>
                 <td className="num">{b.minimumPrice}</td>
                 <td className="num">
-                  {/* Highest bid above the floor is the farmer's headline
-                      number, so it is called out rather than plain text. */}
+                  {}
                   {b.currentHighestBid ? (
                     <strong className={b.currentHighestBid >= b.minimumPrice ? 'good' : ''}>
                       {b.currentHighestBid}
@@ -68,6 +67,12 @@ export default function MyBatches() {
                   <span className={`tag tag-${b.status.toLowerCase()}`}>
                     {b.status.replace(/_/g, ' ')}
                   </span>
+                  {}
+                  {b.soldQuantity > 0 && b.status !== 'SOLD' && (
+                    <div className="muted small">
+                      Partially sold — {number(b.availableQuantity)} kg still open
+                    </div>
+                  )}
                 </td>
                 <td>
                   <Link to={`/farmer/batches/${b.batchId}`}>Open</Link>

@@ -1,6 +1,5 @@
 import StorageConsentPage from '../../components/StorageConsentPage';
 
-/** Leg 2 — the buyer's local storage, after the sale, on the way to them. */
 export default function MyStorage() {
   return (
     <StorageConsentPage

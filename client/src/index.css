@@ -1,15 +1,4 @@
-/* ==========================================================================
-   KrishiChain design system
 
-   Two voices, held apart on purpose:
-     Archivo  — headings, labels, prose. The human side of the system.
-     IBM Plex Mono — every figure, ID, code and micro-label. The ledger side.
-   If it is a number the database produced, it is set in mono. Nothing else is.
-
-   Flat sage/cream colour blocks, hairline rules, zero corner radius —
-   except buttons and status pills, which are fully round. That square/round
-   tension is the whole identity; don't soften the squares to meet it halfway.
-   ========================================================================== */
 
 :root {
   --forest: #10382a;
@@ -81,12 +70,29 @@ h2 {
   border-top: 1px solid var(--line-strong);
 }
 
-/* The rule above an h2 separates page sections. Inside a panel there is
-   nothing to separate — the panel's own border already does that job. */
-.boxed > h2 {
+.boxed h2 {
   border-top: none;
   padding-top: 0;
   margin-top: 0;
+}
+
+.row:has(h2) {
+  margin: 2.75rem 0 1rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--line-strong);
+  align-items: baseline;
+}
+
+.row h2 {
+  margin: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.boxed .row:has(h2) {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
 }
 
 h3 {
@@ -160,8 +166,6 @@ ul {
   padding: 2.25rem 1.5rem 4rem;
 }
 
-/* Sign-in and register have no nav bar above them, so the sage field runs
-   the full height instead of starting under one. */
 .app:has(.auth-card) {
   align-items: center;
   padding-top: 3rem;
@@ -322,12 +326,239 @@ ul {
   color: var(--forest-deep);
 }
 
-/* ---------- stat ledger ----------
-   One sage block ruled into cells by the 1px grid gap, rather than a row of
-   separate floating cards: these figures are one reading of one entity. */
-/* Rules live on the cells, not on a grid-gap background: a partly-filled
-   last row would otherwise leave the container colour showing through as a
-   block where the missing cells are. */
+.notif {
+  position: relative;
+  display: flex;
+}
+
+.nav-user .notif-button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #9fb694;
+}
+
+.nav-user .notif-button svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.nav-user .notif-button:hover:not(:disabled),
+.nav-user .notif-button[aria-expanded='true'] {
+  background: #1b4534;
+  border-color: #4a6b58;
+  color: var(--paper);
+}
+
+.notif-badge {
+  position: absolute;
+  top: -0.1rem;
+  right: -0.1rem;
+  min-width: 1.05rem;
+  height: 1.05rem;
+  padding: 0 0.25rem;
+  border-radius: 999px;
+  background: var(--rust);
+  border: 1.5px solid var(--forest);
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+}
+
+.notif-panel {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  right: 0;
+  z-index: 60;
+  width: min(24rem, calc(100vw - 2rem));
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  border-radius: 0.5rem;
+  box-shadow: 0 18px 44px rgba(11, 42, 32, 0.22);
+  overflow: hidden;
+}
+
+.notif-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--mist);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--forest);
+}
+
+.notif-head em {
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--rust);
+  margin-left: 0.5rem;
+}
+
+.nav-user .notif-panel button.notif-linkbtn {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--green);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  border-radius: 0;
+}
+
+.nav-user .notif-panel button.notif-linkbtn:hover:not(:disabled) {
+  background: transparent;
+  color: var(--forest);
+}
+
+.notif-list {
+  max-height: 24rem;
+  overflow-y: auto;
+}
+
+.notif-panel .notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  font-weight: 400;
+}
+
+.nav-user .notif-panel button.notif-item:hover:not(:disabled) {
+  background: var(--mist);
+  color: var(--ink);
+}
+
+.notif-panel .notif-item.is-unread {
+  background: #f3f8ee;
+}
+
+.nav-user .notif-panel button.notif-item.is-unread:hover {
+  background: var(--mist);
+}
+
+/* No route to follow, so no click affordance. */
+.notif-panel .notif-item.is-static {
+  cursor: default;
+}
+
+.notif-list > .notif-item:last-child {
+  border-bottom: 0;
+}
+
+.notif-dot {
+  flex: none;
+  width: 0.45rem;
+  height: 0.45rem;
+  margin-top: 0.4rem;
+  border-radius: 999px;
+  background: var(--line-strong);
+}
+
+.notif-warn { background: var(--amber-bright); }
+.notif-good { background: var(--green); }
+.notif-plain { background: var(--sage); }
+
+.notif-item:not(.is-unread) .notif-dot {
+  background: var(--line);
+}
+
+.notif-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.notif-title {
+  font-size: 0.83rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--forest);
+}
+
+.notif-item:not(.is-unread) .notif-title {
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+
+.notif-message {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+.notif-type {
+  margin-top: 0.15rem;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  opacity: 0.75;
+}
+
+.notif-age {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--ink-soft);
+  padding-top: 0.15rem;
+}
+
+.notif-empty {
+  margin: 0;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  font-size: 0.8rem;
+}
+
+.notif-foot {
+  padding: 0.55rem 0.9rem;
+  border-top: 1px solid var(--line);
+  background: var(--mist);
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+@media (max-width: 40rem) {
+  .notif-panel {
+    position: fixed;
+    top: 3.6rem;
+    right: 0.75rem;
+    left: 0.75rem;
+    width: auto;
+  }
+}
+
 .stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
@@ -373,6 +604,16 @@ ul {
 }
 
 /* ---------- tables ---------- */
+.scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.scroll-x table {
+  min-width: 100%;
+  width: max-content;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -473,6 +714,7 @@ tr.row-won {
 .tag-pending,
 .tag-pending_accept,
 .tag-pending_release,
+.tag-countered,
 .tag-in_review,
 .tag-assigned {
   color: var(--amber);
@@ -717,10 +959,6 @@ button.link:hover:not(:disabled) {
   margin-bottom: 1.75rem;
 }
 
-/* ---------- the commit panel ----------
-   Award-a-bid and allocate-to-storage are the two irreversible multi-table
-   transactions in the product. They get the only dark field in the UI, so
-   "this one is different" is legible before the text is read. */
 .boxed.confirm {
   background: var(--forest);
   border-color: var(--forest);
@@ -847,8 +1085,7 @@ button.link:hover:not(:disabled) {
     padding: 1.25rem 0.9rem 2.5rem;
   }
 
-  /* Three stacked rows rather than a ragged wrap: identity, then where you
-     can go, then who you are. */
+  
   .navbar-inner {
     padding: 0.8rem 1rem;
     gap: 0.7rem;
@@ -888,8 +1125,7 @@ button.link:hover:not(:disabled) {
     grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
   }
 
-  /* Ledger tables stay ledgers — they scroll rather than reflow, so
-     columns keep aligning across rows. */
+  
   table {
     display: block;
     overflow-x: auto;

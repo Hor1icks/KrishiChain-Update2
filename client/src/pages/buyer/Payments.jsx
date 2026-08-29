@@ -3,7 +3,6 @@ import { Link } from 'react-router';
 import { api } from '../../api/client';
 import { date, taka } from '../../utils/format';
 
-/** Money out. Every row went straight to a farmer. */
 export default function Payments() {
   const [payments, setPayments] = useState(null);
   const [error, setError] = useState('');

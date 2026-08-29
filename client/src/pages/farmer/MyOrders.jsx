@@ -3,11 +3,6 @@ import { Link } from 'react-router';
 import { api } from '../../api/client';
 import { date, number, taka } from '../../utils/format';
 
-/**
- * Sales that came out of this farmer's batches. Read-only by design — the
- * farmer creates an order by awarding a bid, and it is the buyer or the
- * driver who moves the money. Nothing on this page writes.
- */
 export default function MyOrders() {
   const [orders, setOrders] = useState(null);
   const [error, setError] = useState('');

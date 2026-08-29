@@ -10,10 +10,6 @@ export default function BatchDetail() {
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
 
-  // Which bid is mid-award, and on what terms. Payment terms are an
-  // agreement between the two parties (see context.md), so the farmer
-  // picks them at the moment of accepting rather than the system fixing
-  // one policy for everyone.
   const [awarding, setAwarding] = useState(null);
   const [terms, setTerms] = useState('ON_DELIVERY');
   const [busy, setBusy] = useState(false);
@@ -73,9 +69,17 @@ export default function BatchDetail() {
             {batch.farmName} · {batch.aratName} · harvested {date(batch.harvestDate)}
           </p>
         </div>
-        <span className={`tag tag-${batch.status.toLowerCase()}`}>
-          {batch.status.replace(/_/g, ' ')}
-        </span>
+        <div>
+          <span className={`tag tag-${batch.status.toLowerCase()}`}>
+            {batch.status.replace(/_/g, ' ')}
+          </span>
+          {}
+          {batch.soldQuantity > 0 && batch.status !== 'SOLD' && (
+            <div className="muted small">
+              Partially sold — {number(batch.availableQuantity)} kg still open
+            </div>
+          )}
+        </div>
       </div>
 
       {result && (
@@ -91,7 +95,7 @@ export default function BatchDetail() {
       <div className="stats">
         <Stat label="Total" value={`${number(batch.totalQuantity)} kg`} />
         <Stat label="Sold" value={`${number(batch.soldQuantity)} kg`} />
-        {/* Virtual column — Oracle computes this, it is never stored. */}
+        {}
         <Stat label="Available" value={`${number(batch.availableQuantity)} kg`} />
         <Stat label="Minimum price" value={`${batch.minimumPrice}/kg`} />
         <Stat label="Highest bid" value={batch.currentHighestBid ?? '—'} />
@@ -158,9 +162,7 @@ export default function BatchDetail() {
         </table>
       )}
 
-      {/* Confirmation step. Awarding writes five rows across four tables
-          in one transaction and cannot be undone from the UI, so it does
-          not happen on a single stray click. */}
+      {}
       {awarding && (
         <div className="boxed confirm">
           <h3>Accept bid #{awarding.bidId}?</h3>
@@ -182,8 +184,8 @@ export default function BatchDetail() {
             </select>
           </label>
           <p className="note">
-            On-delivery terms mean the database itself will block any payment until transport is
-            marked DELIVERED (BR-20).
+            On-delivery terms mean payment is only accepted once the goods have been
+            delivered.
           </p>
 
           <div className="actions">
