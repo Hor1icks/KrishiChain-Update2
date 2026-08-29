@@ -13,14 +13,15 @@ business rules, and scope. Read it (or the relevant section) before making desig
 don't re-derive things it already answers. Key sections: §0 Design Decisions, §7 ER constructs,
 §8 Business Rules, §9 Relational Schema + Oracle 11g standards, §11 Architecture/front-end plan.
 
-**Current state:** Phases 1–4 done and verified against the live database, plus the buyer and
-storage modules from Day 5. On disk: `Phase1/` (environment proof), `database/` (schema, seed, six
-views, five advanced queries, a read-only inspection script), `server/` (Express API: auth,
-reference, farmer, buyer, storage), `client/` (React + Vite, 12 pages). **Not built yet:**
-transport and admin modules — check before referencing anything else from PRD §11.2.
+**Current state:** Phases 1–6 done and verified against the live database. On disk: `Phase1/`
+(environment proof), `database/` (schema, seed, six views, five advanced queries, a read-only
+inspection script), `server/` (Express API: auth, reference, farmer, buyer, storage, transport,
+admin), `client/` (React + Vite, all 28 PRD §11.3 pages across five role modules). The navigation
+has no disabled "Phase 2" entries left. **Still outstanding:** the narration script (PRD §11.3)
+and the Day-7 dry run.
 
-Four of the six PRD §9.10 transactions are implemented: Registration, Storage Allocation, Place
-Bid, Award Winning Bid. Assign Transport and Delivery+Payment are not.
+All six PRD §9.10 transactions are implemented and fault-injection verified: Registration, Storage
+Allocation, Place Bid, Award Winning Bid, Assign Transport, Delivery+Payment.
 
 **Every transaction was verified by fault injection**, and new ones should be too: arm a temporary
 `ALTER TABLE ... ADD CONSTRAINT ... CHECK (...) ENABLE NOVALIDATE` so a *late* statement fails,
@@ -60,6 +61,11 @@ sqlplus krishichain/"Krishi#2026"@localhost:1521/XE @database/99_inspect_data.sq
 - `database/04_views.sql` — six views, all `CREATE OR REPLACE`, safe to re-run.
 - `database/05_advanced_queries.sql`, `database/99_inspect_data.sql` — read-only. Run these
   for inspection.
+- `database/08_plsql_layer.sql` — the PL/SQL layer (2 packages, 5 functions,
+  7 procedures). All `CREATE OR REPLACE`, safe to re-run, and unaffected by a re-seed.
+  Run it after `04_views.sql` on a fresh database. **The six PRD §9.10 transactions are
+  deliberately NOT in here** — they need the authenticated user's identity and stay in the
+  service layer; see `context.md` before adding anything to this file.
 
 `Phase1/00_environment_check.sql` is one-time-per-machine setup: run as SYSTEM (checks 1–4,
 creates the `krishichain` app user), then reconnect as `krishichain` for Check 5.
@@ -90,7 +96,7 @@ first — it must point at the unzipped Instant Client 19c directory, not a OneD
 - Never develop as `SYS`/`SYSTEM` — use the dedicated `krishichain` app user created by
   `00_environment_check.sql` (`CONNECT, RESOURCE` + `CREATE VIEW/SEQUENCE/TRIGGER/PROCEDURE`).
 
-**Data model shape** (PRD §7/§9, `Phase1/ER_BLUEPRINT.md`): 26 tables (24 core + 2 P2) built
+**Data model shape** (PRD §7/§9, `Phase1/ER_BLUEPRINT.md`): 27 tables built
 around five graded ER constructs that any schema or query work must preserve:
 
 1. **Total, disjoint specialization** — `USERS` → `FARMER`/`BUYER`/`ADMIN_STAFF`/
@@ -98,6 +104,8 @@ around five graded ER constructs that any schema or query work must preserve:
    FK → `USERS`), not a discriminator column.
 2. **Aggregation** — `(BUYER —places— BID —on— HARVEST_BATCH)` as a whole is what `SALE_ORDER`
    relates to, not any one of the three independently (`UQ(BID.SaleOrderID... )` / `UQ(SALE_ORDER.BidID)` enforces 1:1).
+   The second aggregation is `PAYMENT.AllocationID` → `STORES`: a storage fee is owed for the
+   three-way allocation as a whole, not for the batch, the unit or the manager separately.
 3. **Two ternary relationships** — `STORES` (HARVEST_BATCH × STORAGE_UNIT × STORAGE_MANAGER) and
    `ASSIGNED_TO` (TRANSPORT_REQUEST × VEHICLE × TRANSPORT_PERSONNEL). Keep these as single
    junction tables with three FK sets, not decomposed into binary relationships — decomposing
@@ -112,6 +120,27 @@ Note: **there is no `AUCTION` entity** — it was deliberately removed (D-4); it
 attributes (`MinimumPrice`, `BiddingStartTime`, `BiddingEndTime`) live directly on
 `HARVEST_BATCH`, and `BID` references the batch directly. Don't reintroduce it.
 
+**Post-Update-1 schema changes** (`database/09_feedback_fixes.sql`, `10_object_types.sql` —
+both applied, both re-runnable):
+
+- **`STORAGE_PAYMENT` no longer exists.** It was merged into `PAYMENT` behind a
+  `PaymentType IN ('SALE','STORAGE')` discriminator. `SaleOrderID`/`BuyerID`/`FarmerID` are now
+  nullable and `AllocationID` was added; `CK_PAYMENT_TYPE_SHAPE` enforces that exactly the right
+  columns are populated per subtype. Any storage-fee query needs `PaymentType = 'STORAGE'`.
+  `trg_payment_biz_rules` guards BR-19/BR-20 behind `IF :NEW.PaymentType = 'SALE'` — a bare
+  `RETURN` is illegal in a compound trigger (`PLS-00678`).
+- **`USERS` has no flat address columns.** The six became one `Address t_address` object column
+  (`10_object_types.sql`), with `full_text()` / `short_text()` member functions. **Attribute
+  access requires a table alias**: `u.Address.District` is legal, `Address.District` is not.
+  `NVL2` is SQL-only and cannot be used inside the type body (`PLS-00201`).
+- **`ON DELETE` on 23 of 41 FKs** — 20 `CASCADE`, 3 `SET NULL`. The other 18 are deliberately
+  left restricting: deleting a crop with sales history, or a farmer who has been paid, *should*
+  fail. Don't "fix" them.
+- **`STORAGE_MANAGER`** gained `Designation`, `HireDate`, `ShiftSchedule`, `CertificationNo` —
+  one attribute was not enough to justify the subclass.
+- **`database/00_reset.sql`** drops all 27 tables, then every sequence and type, so
+  `01`→`02`→`03`→`04`→`08` rebuilds the schema from empty with zero errors.
+
 **Payment model (D-2):** direct buyer → farmer, no ARAT commission, no escrow. **Payment timing
 (BR-20)** is only allowed after transport status is `DELIVERED` — this is called out in the PRD as
 still-open for confirmation with the team before DDL is written; check before assuming it.
@@ -121,6 +150,11 @@ explicit `COMMIT`/`ROLLBACK`, never issue the statements independently: Registra
 subclass + phone rows), Storage allocation, Place bid (new bid + previous-highest → OUTBID), Award
 winning bid (bid → WON + batch → SOLD + sale order + transport request — "the demo centrepiece"),
 Assign transport, Delivery + payment.
+
+**In Delivery+payment (#6), `TRANSPORT_REQUEST → DELIVERED` must be written BEFORE the `PAYMENT`
+insert.** `trg_payment_biz_rules` reads `TRANSPORT_REQUEST` to enforce BR-20, and within one
+transaction it sees the uncommitted value. Reordering those two statements makes every
+on-delivery payment fail with `ORA-20002`. See `server/src/services/transport.service.js`.
 
 Use `withTransaction()` from `server/src/config/db.js` for all six — it commits on return and
 rolls back on throw. `oracledb.autoCommit` is set to `false` globally there; leave it that way.
@@ -140,6 +174,15 @@ constraint is expected to be the backstop.
 **Naming conventions**: `PK_`, `FK_`, `UQ_`, `CK_`, `IX_` prefixes on all constraints (so
 violations are readable during the viva/demo). Index every FK column explicitly — Oracle does not
 auto-index them.
+
+**A SQL*Plus line ending in `-` is a line continuation.** A `PROMPT ---- heading ----` line
+therefore swallows the statement on the next line, which then fails with a baffling `SP2-0734`
+naming a fragment of that statement. Never end a `PROMPT` (or any line) with a hyphen.
+
+**Bind variable names are parsed as identifiers, so a reserved word breaks the statement before it
+runs.** `:comment` fails with `ORA-01745: invalid host/bind variable name`, and the error names
+neither the column nor the offending word. Avoid reserved words (`COMMENT`, `LEVEL`, `SIZE`,
+`DATE`, …) as bind names — prefix them instead (`:reviewComment`).
 
 **Seed data** (`database/03_insert_data.sql`, already applied): narratively consistent — the same
 5 farmers, 5 crops and 7 batches thread through bids → orders → transport → payments. Random or

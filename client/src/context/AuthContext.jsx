@@ -7,9 +7,6 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // On a page refresh the token survives in localStorage but the user
-  // object does not, so re-fetch the profile before rendering any route.
-  // Without this, ProtectedRoute would bounce a logged-in user to /login.
   useEffect(() => {
     if (!tokenStore.get()) {
       setLoading(false);

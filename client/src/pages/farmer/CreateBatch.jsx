@@ -28,12 +28,17 @@ export default function CreateBatch() {
     [crops, form.cropId]
   );
 
-  // BR-09 preview. The server enforces this rule regardless — showing it
-  // here just saves a round trip and explains the rule while the farmer
-  // is still typing, rather than rejecting them after submit.
   const belowBase =
     selectedCrop && form.minimumPrice !== '' && form.minimumPrice !== undefined
       ? Number(form.minimumPrice) < Number(selectedCrop.basePrice)
+      : false;
+
+  const minQtyOverTotal =
+    form.minimumBidQuantity !== '' &&
+    form.minimumBidQuantity !== undefined &&
+    form.totalQuantity !== '' &&
+    form.totalQuantity !== undefined
+      ? Number(form.minimumBidQuantity) > Number(form.totalQuantity)
       : false;
 
   async function submit(event) {
@@ -93,9 +98,6 @@ export default function CreateBatch() {
                   ))}
                 </select>
               </label>
-
-              {/* Options keep the CONNECT BY indentation, so the ARAT
-                  hierarchy is visible in the dropdown itself. */}
               <label>
                 Sell through ARAT *
                 <select value={form.aratId || ''} onChange={set('aratId')} required>
@@ -170,6 +172,17 @@ export default function CreateBatch() {
                 />
               </label>
               <label>
+                Minimum bid quantity (kg) *
+                <input
+                  type="number"
+                  step="0.001"
+                  min="0.001"
+                  value={form.minimumBidQuantity || ''}
+                  onChange={set('minimumBidQuantity')}
+                  required
+                />
+              </label>
+              <label>
                 Bidding opens
                 <input
                   type="datetime-local"
@@ -189,19 +202,24 @@ export default function CreateBatch() {
 
             {belowBase && (
               <p className="error">
-                BR-09: {selectedCrop.cropName}&rsquo;s base price is ৳{selectedCrop.basePrice}. You
+                {selectedCrop.cropName}&rsquo;s base price is ৳{selectedCrop.basePrice}. You
                 cannot list below it.
               </p>
             )}
+            {minQtyOverTotal && (
+              <p className="error">
+                Minimum bid quantity cannot exceed the total quantity ({form.totalQuantity} kg).
+              </p>
+            )}
             <p className="note">
-              Leave the bidding times empty to save the batch as a draft — you can open bidding
-              later.
+              No bid below the minimum bid quantity will be accepted. Leave the bidding times
+              empty to save the batch as a draft — you can open bidding later.
             </p>
           </fieldset>
 
           {error && <p className="error">{error}</p>}
 
-          <button type="submit" disabled={busy || belowBase}>
+          <button type="submit" disabled={busy || belowBase || minQtyOverTotal}>
             {busy ? 'Creating…' : 'Create batch'}
           </button>
         </form>

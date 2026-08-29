@@ -1,46 +1,41 @@
 import { Link, useLocation } from 'react-router';
 import { useAuth } from '../context/AuthContext';
+import Brand from './Brand';
+import NotificationBell from './NotificationBell';
 
-/**
- * Role-aware navigation.
- *
- * PRD §11.3 is explicit that the deferred modules must still be VISIBLE
- * but disabled, so an examiner can see the full site map rather than
- * guessing what was planned. Hence `ready: false` entries below — they
- * render greyed out with a "Phase 2" tag instead of being hidden.
- */
 const NAV = {
   FARMER: [
     { to: '/farmer', label: 'Dashboard', ready: true, end: true },
     { to: '/farmer/farms', label: 'My Farms', ready: true },
     { to: '/farmer/batches', label: 'My Batches', ready: true },
     { to: '/farmer/batches/new', label: 'New Batch', ready: true },
-    { label: 'Payment History', ready: false },
-    { label: 'Storage Requests', ready: false },
+    { to: '/farmer/orders', label: 'My Orders', ready: true },
+    { to: '/farmer/payments', label: 'Payment History', ready: true },
+    { to: '/farmer/storage', label: 'Storage Requests', ready: true },
   ],
   BUYER: [
     { to: '/buyer', label: 'Dashboard', ready: true, end: true },
     { to: '/buyer/browse', label: 'Browse Listings', ready: true },
     { to: '/buyer/bids', label: 'My Bids', ready: true },
-    { label: 'My Orders', ready: false },
-    { label: 'Payments', ready: false },
-    { label: 'Reviews', ready: false },
+    { to: '/buyer/orders', label: 'My Orders', ready: true },
+    { to: '/buyer/payments', label: 'Payments', ready: true },
+    { to: '/buyer/storage', label: 'My Storage', ready: true },
+    { to: '/buyer/reviews', label: 'Reviews', ready: true },
   ],
   ADMIN: [
-    { label: 'Dashboard', ready: false },
-    { label: 'Daily Prices', ready: false },
-    { label: 'Manage Users', ready: false },
-    { label: 'Complaints', ready: false },
+    { to: '/admin', label: 'Dashboard', ready: true, end: true },
+    { to: '/admin/prices', label: 'Daily Prices', ready: true },
+    { to: '/admin/users', label: 'Manage Users', ready: true },
+    { to: '/admin/complaints', label: 'Complaints', ready: true },
+    { to: '/admin/reports', label: 'Reports', ready: true },
   ],
   STORAGE_MANAGER: [
     { to: '/storage', label: 'Dashboard', ready: true, end: true },
     { to: '/storage/warehouses', label: 'Warehouses & Units', ready: true },
     { to: '/storage/allocations', label: 'Allocations', ready: true },
-    { label: 'Unit Maintenance', ready: false },
   ],
   TRANSPORT_PERSONNEL: [
-    { label: 'My Assignments', ready: false },
-    { label: 'Delivery Status', ready: false },
+    { to: '/transport', label: 'My Assignments', ready: true, end: true },
   ],
 };
 
@@ -57,7 +52,7 @@ export default function NavBar() {
   return (
     <nav className="navbar">
       <div className="navbar-inner">
-        <span className="brand">KrishiChain</span>
+        <Brand />
 
         <ul className="nav-links">
           {items.map((item) =>
@@ -78,6 +73,7 @@ export default function NavBar() {
         </ul>
 
         <div className="nav-user">
+          <NotificationBell />
           <span className="muted">
             {user.firstName} · {user.role}
           </span>

@@ -97,12 +97,15 @@ export default function BrowseListings() {
                 <td>#{b.batchId}</td>
                 <td>
                   {b.cropName}
-                  {/* Standing-bid holder gets a badge — the single most
-                      useful thing for a bidder scanning the list. */}
+                  {}
                   {b.myBidStatus === 'ACTIVE' && (
                     <div>
                       <span className="tag tag-active">You lead</span>
                     </div>
+                  )}
+                  {}
+                  {b.soldQuantity > 0 && (
+                    <div className="muted small">Partially sold</div>
                   )}
                 </td>
                 <td>{b.farmerName}</td>

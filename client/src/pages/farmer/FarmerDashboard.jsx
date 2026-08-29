@@ -23,7 +23,7 @@ export default function FarmerDashboard() {
         {s.farmerName} · {s.district}
       </p>
 
-      {/* V_FARMER_EARNINGS supplies every figure on this row in one query. */}
+      {}
       <div className="stats">
         <Stat label="Farms" value={number(s.farmCount)} />
         <Stat label="Batches listed" value={number(s.batchesListed)} />

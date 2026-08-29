@@ -22,6 +22,60 @@
 -- =====================================================================
 
 -- =====================================================================
+-- SECTION 0 - USER-DEFINED TYPES
+--
+-- t_address is an abstract data type: the six address fields are one
+-- thing, not six, and the type carries member functions so the object
+-- knows how to format itself. USERS.Address below is a column of it.
+--
+-- Attribute access from SQL needs a table alias: u.Address.District is
+-- legal, Address.District is not.
+-- =====================================================================
+
+CREATE OR REPLACE TYPE t_address AS OBJECT (
+  HouseNo     VARCHAR2(30  CHAR),
+  Road        VARCHAR2(60  CHAR),
+  Village     VARCHAR2(100 CHAR),
+  Upazila     VARCHAR2(100 CHAR),
+  District    VARCHAR2(100 CHAR),
+  PostalCode  VARCHAR2(10  CHAR),
+
+  MEMBER FUNCTION full_text   RETURN VARCHAR2,
+  MEMBER FUNCTION short_text  RETURN VARCHAR2
+) NOT FINAL;
+/
+
+CREATE OR REPLACE TYPE BODY t_address AS
+
+  -- NVL2 is a SQL function and is not available inside PL/SQL
+  -- (PLS-00201), so the optional parts are handled with CASE.
+
+  -- The whole address on one line. LTRIM removes the separator left
+  -- behind when the optional leading parts are NULL.
+  MEMBER FUNCTION full_text RETURN VARCHAR2 IS
+  BEGIN
+    RETURN LTRIM(
+      CASE WHEN HouseNo    IS NOT NULL THEN ', ' || HouseNo    END ||
+      CASE WHEN Road       IS NOT NULL THEN ', ' || Road       END ||
+      CASE WHEN Village    IS NOT NULL THEN ', ' || Village    END ||
+      CASE WHEN Upazila    IS NOT NULL THEN ', ' || Upazila    END ||
+      ', ' || District ||
+      CASE WHEN PostalCode IS NOT NULL THEN ' - ' || PostalCode END,
+      ', ');
+  END full_text;
+
+  -- Upazila and district only, for list screens where the full address
+  -- would not fit.
+  MEMBER FUNCTION short_text RETURN VARCHAR2 IS
+  BEGIN
+    RETURN CASE WHEN Upazila IS NOT NULL THEN Upazila || ', ' END || District;
+  END short_text;
+
+END;
+/
+
+
+-- =====================================================================
 -- SECTION 1 — IDENTITY AND SPECIALIZATION
 -- =====================================================================
 
@@ -34,18 +88,16 @@ CREATE TABLE USERS (
   PasswordHash     VARCHAR2(255 CHAR)  NOT NULL,
   Gender           CHAR(1)             NOT NULL,
   DateOfBirth      DATE                NOT NULL,
-  HouseNo          VARCHAR2(30 CHAR),
-  Road             VARCHAR2(60 CHAR),
-  Village          VARCHAR2(100 CHAR),
-  Upazila          VARCHAR2(100 CHAR),
-  District         VARCHAR2(100 CHAR)  NOT NULL,
-  PostalCode       VARCHAR2(10 CHAR),
+  Address          t_address           NOT NULL,
   RegistrationDate DATE                DEFAULT SYSDATE NOT NULL,
   Status           VARCHAR2(10 CHAR)   DEFAULT 'ACTIVE' NOT NULL,
   Role             VARCHAR2(20 CHAR)   NOT NULL,
   CONSTRAINT PK_USERS PRIMARY KEY (UserID),
   CONSTRAINT UQ_USERS_EMAIL UNIQUE (Email),
   CONSTRAINT CK_USERS_GENDER CHECK (Gender IN ('M','F','O')),
+  -- District was NOT NULL as a column; as an object attribute that
+  -- has to be expressed as a table-level CHECK instead.
+  CONSTRAINT CK_USERS_DISTRICT CHECK ("ADDRESS"."DISTRICT" IS NOT NULL),
   CONSTRAINT CK_USERS_STATUS CHECK (Status IN ('ACTIVE','BLOCKED','INACTIVE')),
   CONSTRAINT CK_USERS_ROLE CHECK (Role IN ('FARMER','BUYER','ADMIN','STORAGE_MANAGER','TRANSPORT_PERSONNEL'))
 );
@@ -71,7 +123,7 @@ CREATE TABLE FARMER (
   MobileBankingNo  VARCHAR2(20 CHAR),
   ExperienceYears  NUMBER(3),
   CONSTRAINT PK_FARMER PRIMARY KEY (FarmerID),
-  CONSTRAINT FK_FARMER_USERS FOREIGN KEY (FarmerID) REFERENCES USERS (UserID),
+  CONSTRAINT FK_FARMER_USERS FOREIGN KEY (FarmerID) REFERENCES USERS (UserID) ON DELETE CASCADE,
   CONSTRAINT UQ_FARMER_NID UNIQUE (NID),
   CONSTRAINT CK_FARMER_EXPERIENCE CHECK (ExperienceYears >= 0)
 );
@@ -82,7 +134,7 @@ CREATE TABLE BUYER (
   BuyerType       VARCHAR2(20 CHAR),
   TradeLicenseNo  VARCHAR2(30 CHAR),
   CONSTRAINT PK_BUYER PRIMARY KEY (BuyerID),
-  CONSTRAINT FK_BUYER_USERS FOREIGN KEY (BuyerID) REFERENCES USERS (UserID),
+  CONSTRAINT FK_BUYER_USERS FOREIGN KEY (BuyerID) REFERENCES USERS (UserID) ON DELETE CASCADE,
   CONSTRAINT UQ_BUYER_LICENSE UNIQUE (TradeLicenseNo),
   CONSTRAINT CK_BUYER_TYPE CHECK (BuyerType IN ('WHOLESALER','RETAILER','EXPORTER','PROCESSOR'))
 );
@@ -92,16 +144,23 @@ CREATE TABLE ADMIN_STAFF (
   EmployeeID   VARCHAR2(20 CHAR)  NOT NULL,
   Designation  VARCHAR2(50 CHAR),
   CONSTRAINT PK_ADMIN_STAFF PRIMARY KEY (AdminID),
-  CONSTRAINT FK_ADMIN_USERS FOREIGN KEY (AdminID) REFERENCES USERS (UserID),
+  CONSTRAINT FK_ADMIN_USERS FOREIGN KEY (AdminID) REFERENCES USERS (UserID) ON DELETE CASCADE,
   CONSTRAINT UQ_ADMIN_EMPLOYEEID UNIQUE (EmployeeID)
 );
 
 CREATE TABLE STORAGE_MANAGER (
-  ManagerID   NUMBER(10)        NOT NULL,
-  EmployeeID  VARCHAR2(20 CHAR) NOT NULL,
+  ManagerID        NUMBER(10)        NOT NULL,
+  EmployeeID       VARCHAR2(20 CHAR) NOT NULL,
+  Designation      VARCHAR2(50 CHAR) NOT NULL,
+  HireDate         DATE              NOT NULL,
+  ShiftSchedule    VARCHAR2(20 CHAR),
+  CertificationNo  VARCHAR2(30 CHAR),
   CONSTRAINT PK_STORAGE_MANAGER PRIMARY KEY (ManagerID),
-  CONSTRAINT FK_MANAGER_USERS FOREIGN KEY (ManagerID) REFERENCES USERS (UserID),
-  CONSTRAINT UQ_MANAGER_EMPLOYEEID UNIQUE (EmployeeID)
+  CONSTRAINT FK_MANAGER_USERS FOREIGN KEY (ManagerID)
+    REFERENCES USERS (UserID) ON DELETE CASCADE,
+  CONSTRAINT UQ_MANAGER_EMPLOYEEID UNIQUE (EmployeeID),
+  CONSTRAINT UQ_MANAGER_CERT UNIQUE (CertificationNo),
+  CONSTRAINT CK_MANAGER_SHIFT CHECK (ShiftSchedule IN ('DAY','NIGHT','ROTATING'))
 );
 
 CREATE TABLE TRANSPORT_PERSONNEL (
@@ -109,7 +168,7 @@ CREATE TABLE TRANSPORT_PERSONNEL (
   LicenseNo        VARCHAR2(30 CHAR)  NOT NULL,
   ExperienceYears  NUMBER(3),
   CONSTRAINT PK_TRANSPORT_PERSONNEL PRIMARY KEY (PersonnelID),
-  CONSTRAINT FK_PERSONNEL_USERS FOREIGN KEY (PersonnelID) REFERENCES USERS (UserID),
+  CONSTRAINT FK_PERSONNEL_USERS FOREIGN KEY (PersonnelID) REFERENCES USERS (UserID) ON DELETE CASCADE,
   CONSTRAINT UQ_PERSONNEL_LICENSE UNIQUE (LicenseNo),
   CONSTRAINT CK_PERSONNEL_EXPERIENCE CHECK (ExperienceYears >= 0)
 );
@@ -152,7 +211,7 @@ CREATE TABLE FARM (
   District        VARCHAR2(100 CHAR)  NOT NULL,
   Status          VARCHAR2(15 CHAR)   DEFAULT 'ACTIVE' NOT NULL,
   CONSTRAINT PK_FARM PRIMARY KEY (FarmID),
-  CONSTRAINT FK_FARM_FARMER FOREIGN KEY (FarmerID) REFERENCES FARMER (FarmerID),
+  CONSTRAINT FK_FARM_FARMER FOREIGN KEY (FarmerID) REFERENCES FARMER (FarmerID) ON DELETE CASCADE,
   CONSTRAINT CK_FARM_AREA CHECK (Area > 0),
   CONSTRAINT CK_FARM_STATUS CHECK (Status IN ('ACTIVE','INACTIVE'))
 );
@@ -167,7 +226,7 @@ CREATE TABLE VIRTUAL_ARAT (
   ContactNo     VARCHAR2(20 CHAR),
   ParentAratID  NUMBER(10),
   CONSTRAINT PK_VIRTUAL_ARAT PRIMARY KEY (AratID),
-  CONSTRAINT FK_ARAT_PARENT FOREIGN KEY (ParentAratID) REFERENCES VIRTUAL_ARAT (AratID),
+  CONSTRAINT FK_ARAT_PARENT FOREIGN KEY (ParentAratID) REFERENCES VIRTUAL_ARAT (AratID) ON DELETE SET NULL,
   CONSTRAINT CK_ARAT_NOT_OWN_PARENT CHECK (ParentAratID <> AratID)
 );
 
@@ -188,8 +247,14 @@ CREATE TABLE HARVEST_BATCH (
   BiddingStartTime    TIMESTAMP,
   BiddingEndTime      TIMESTAMP,
   Status              VARCHAR2(20 CHAR)   DEFAULT 'CREATED' NOT NULL,
+  -- Farmer-set floor on any single bid's RequestedQuantity, added with
+  -- the feedback-batch migration (07_bid_storage_transport_notifications.sql).
+  -- Enforced here by CK_BATCH_MINBIDQTY (same-table, so a plain CHECK
+  -- suffices) and against BID.RequestedQuantity by trg_bid_min_qty in
+  -- 02_sequences_triggers.sql (cross-table, needs a trigger).
+  MinimumBidQuantity  NUMBER(12,3)        NOT NULL,
   CONSTRAINT PK_HARVEST_BATCH PRIMARY KEY (BatchID),
-  CONSTRAINT FK_BATCH_FARM FOREIGN KEY (FarmID) REFERENCES FARM (FarmID),
+  CONSTRAINT FK_BATCH_FARM FOREIGN KEY (FarmID) REFERENCES FARM (FarmID) ON DELETE CASCADE,
   CONSTRAINT FK_BATCH_CROP FOREIGN KEY (CropID) REFERENCES CROP (CropID),
   CONSTRAINT FK_BATCH_ARAT FOREIGN KEY (AratID) REFERENCES VIRTUAL_ARAT (AratID),
   CONSTRAINT CK_BATCH_TOTALQTY CHECK (TotalQuantity > 0),
@@ -200,7 +265,8 @@ CREATE TABLE HARVEST_BATCH (
   CONSTRAINT CK_BATCH_MOISTURE CHECK (MoisturePercentage BETWEEN 0 AND 100),
   CONSTRAINT CK_BATCH_MINPRICE CHECK (MinimumPrice > 0),
   CONSTRAINT CK_BATCH_BIDWINDOW CHECK (BiddingStartTime IS NULL OR BiddingEndTime IS NULL OR BiddingEndTime > BiddingStartTime),
-  CONSTRAINT CK_BATCH_STATUS CHECK (Status IN ('CREATED','STORED','LISTED','BIDDING_OPEN','BIDDING_CLOSED','SOLD','DELIVERED','EXPIRED'))
+  CONSTRAINT CK_BATCH_STATUS CHECK (Status IN ('CREATED','STORED','LISTED','BIDDING_OPEN','BIDDING_CLOSED','SOLD','DELIVERED','EXPIRED')),
+  CONSTRAINT CK_BATCH_MINBIDQTY CHECK (MinimumBidQuantity > 0 AND MinimumBidQuantity <= TotalQuantity)
 );
 
 -- =====================================================================
@@ -285,8 +351,18 @@ CREATE TABLE STORES (
   StorageFeePerKgSnapshot NUMBER(10,2),
   StorageFee              NUMBER(12,2) GENERATED ALWAYS AS (QuantityStored * StorageFeePerKgSnapshot) VIRTUAL,
   ReleaseRequestedBy      VARCHAR2(10),
+  -- Negotiation, added with the feedback-batch migration. ProposedBy
+  -- records who created the row (a manager proposing, or a customer
+  -- requesting via storage.service.js requestAllocation()) -- the OTHER
+  -- side must respond (assertIsResponder()). A single counter-offer round
+  -- is allowed: CounterRatePerKg/CounteredBy are set when either side
+  -- counters, and only the ORIGINAL proposer may then Accept/Reject the
+  -- counter (respondToCounter()) -- no re-countering.
+  ProposedBy              VARCHAR2(10)      NOT NULL,
+  CounterRatePerKg        NUMBER(10,2),
+  CounteredBy             VARCHAR2(10),
   CONSTRAINT PK_STORES PRIMARY KEY (AllocationID),
-  CONSTRAINT FK_STORES_BATCH FOREIGN KEY (BatchID) REFERENCES HARVEST_BATCH (BatchID),
+  CONSTRAINT FK_STORES_BATCH FOREIGN KEY (BatchID) REFERENCES HARVEST_BATCH (BatchID) ON DELETE CASCADE,
   CONSTRAINT FK_STORES_UNIT FOREIGN KEY (WarehouseID, UnitNo) REFERENCES STORAGE_UNIT (WarehouseID, UnitNo),
   CONSTRAINT FK_STORES_MANAGER FOREIGN KEY (ManagerID) REFERENCES STORAGE_MANAGER (ManagerID),
   CONSTRAINT FK_STORES_REQ_FARMER FOREIGN KEY (RequestedByFarmerID) REFERENCES FARMER (FarmerID),
@@ -298,12 +374,15 @@ CREATE TABLE STORES (
   CONSTRAINT CK_STORES_QTY CHECK (QuantityStored > 0),
   CONSTRAINT CK_STORES_DATES CHECK (DateOut IS NULL OR DateOut >= DateIn),
   CONSTRAINT CK_STORES_STATUS CHECK (AllocationStatus IN
-    ('PENDING_ACCEPT','ACTIVE','PENDING_RELEASE','COMPLETED','REJECTED','CANCELLED')),
+    ('PENDING_ACCEPT','ACTIVE','PENDING_RELEASE','COMPLETED','REJECTED','CANCELLED','COUNTERED')),
   CONSTRAINT CK_STORES_CUSTOMER CHECK (
     (RequestedByFarmerID IS NOT NULL AND RequestedByBuyerID IS NULL) OR
     (RequestedByFarmerID IS NULL AND RequestedByBuyerID IS NOT NULL)),
   CONSTRAINT CK_STORES_MINDAYS CHECK (MinimumStorageDays IS NULL OR MinimumStorageDays > 0),
-  CONSTRAINT CK_STORES_RELEASE_BY CHECK (ReleaseRequestedBy IS NULL OR ReleaseRequestedBy IN ('FARMER','BUYER','MANAGER'))
+  CONSTRAINT CK_STORES_RELEASE_BY CHECK (ReleaseRequestedBy IS NULL OR ReleaseRequestedBy IN ('FARMER','BUYER','MANAGER')),
+  CONSTRAINT CK_STORES_PROPOSEDBY CHECK (ProposedBy IN ('MANAGER','CUSTOMER')),
+  CONSTRAINT CK_STORES_COUNTERRATE CHECK (CounterRatePerKg IS NULL OR CounterRatePerKg > 0),
+  CONSTRAINT CK_STORES_COUNTEREDBY CHECK (CounteredBy IS NULL OR CounteredBy IN ('MANAGER','CUSTOMER'))
 );
 
 -- =====================================================================
@@ -321,9 +400,9 @@ CREATE TABLE BID (
   Status             VARCHAR2(15 CHAR) DEFAULT 'ACTIVE' NOT NULL,
   PreviousBidID      NUMBER(10),
   CONSTRAINT PK_BID PRIMARY KEY (BidID),
-  CONSTRAINT FK_BID_BATCH FOREIGN KEY (BatchID) REFERENCES HARVEST_BATCH (BatchID),
+  CONSTRAINT FK_BID_BATCH FOREIGN KEY (BatchID) REFERENCES HARVEST_BATCH (BatchID) ON DELETE CASCADE,
   CONSTRAINT FK_BID_BUYER FOREIGN KEY (BuyerID) REFERENCES BUYER (BuyerID),
-  CONSTRAINT FK_BID_PREVIOUS FOREIGN KEY (PreviousBidID) REFERENCES BID (BidID),
+  CONSTRAINT FK_BID_PREVIOUS FOREIGN KEY (PreviousBidID) REFERENCES BID (BidID) ON DELETE SET NULL,
   CONSTRAINT CK_BID_PRICE CHECK (BidPricePerKg > 0),
   CONSTRAINT CK_BID_QTY CHECK (RequestedQuantity > 0),
   CONSTRAINT CK_BID_STATUS CHECK (Status IN ('ACTIVE','OUTBID','WON','WITHDRAWN')),
@@ -342,13 +421,22 @@ CREATE TABLE SALE_ORDER (
   OrderDate           DATE              DEFAULT SYSDATE NOT NULL,
   Status              VARCHAR2(15 CHAR) DEFAULT 'CONFIRMED' NOT NULL,
   PaymentTerms        VARCHAR2(15 CHAR) DEFAULT 'ON_DELIVERY' NOT NULL,
+  -- Added with the feedback-batch migration: a transport request is not
+  -- claimable (transport.service.js listOpenRequests()/claim()) until the
+  -- buyer has made an explicit choice here. 'VIA_STORAGE' is set
+  -- automatically -- never by direct user action -- the moment a leg-2
+  -- STORES allocation for this order reaches ACTIVE (storage.service.js
+  -- finalizeAcceptance()). 'DIRECT' is set explicitly by the buyer via
+  -- POST /buyer/orders/:saleOrderId/delivery-preference.
+  DeliveryPreference  VARCHAR2(15 CHAR) DEFAULT 'PENDING' NOT NULL,
   CONSTRAINT PK_SALE_ORDER PRIMARY KEY (SaleOrderID),
-  CONSTRAINT FK_ORDER_BID FOREIGN KEY (BidID) REFERENCES BID (BidID),
+  CONSTRAINT FK_ORDER_BID FOREIGN KEY (BidID) REFERENCES BID (BidID) ON DELETE CASCADE,
   CONSTRAINT UQ_ORDER_BID UNIQUE (BidID),
   CONSTRAINT CK_ORDER_QTY CHECK (AcceptedQuantity > 0),
   CONSTRAINT CK_ORDER_PRICE CHECK (AcceptedPricePerKg > 0),
   CONSTRAINT CK_ORDER_STATUS CHECK (Status IN ('CONFIRMED','IN_TRANSIT','COMPLETED','CANCELLED')),
-  CONSTRAINT CK_ORDER_TERMS CHECK (PaymentTerms IN ('ADVANCE','ON_DELIVERY'))
+  CONSTRAINT CK_ORDER_TERMS CHECK (PaymentTerms IN ('ADVANCE','ON_DELIVERY')),
+  CONSTRAINT CK_ORDER_DELIVERY_PREF CHECK (DeliveryPreference IN ('PENDING','DIRECT','VIA_STORAGE'))
 );
 
 -- Deferred from STORES's own CREATE TABLE in Section 3 -- SALE_ORDER
@@ -357,44 +445,63 @@ CREATE TABLE SALE_ORDER (
 ALTER TABLE STORES ADD CONSTRAINT FK_STORES_SALE_ORDER
   FOREIGN KEY (SaleOrderID) REFERENCES SALE_ORDER (SaleOrderID);
 
+-- PAYMENT covers both kinds of money in the system, told apart by the
+-- PaymentType discriminator:
+--
+--   SALE     buyer -> farmer for a sale order. Direct, no ARAT
+--            commission and no escrow (D-2), so both parties appear.
+--   STORAGE  the fee owed for a STORES allocation.
+--
+-- The STORAGE branch is the AGGREGATION made concrete: the fee is not
+-- owed for a batch, or a unit, or to a manager, but for the allocation
+-- -- the three-way fact as a whole. Hence AllocationID and nothing
+-- else; the payer (farmer for leg 1, buyer for leg 2) is derivable
+-- through STORES.
+--
+-- Kept as ONE table with a discriminator rather than separate subclass
+-- tables, unlike the USERS specialization: the USERS subtypes each
+-- carry several attributes of their own and earn a table, whereas these
+-- two differ by one or two columns. CK_PAYMENT_TYPE_SHAPE below is what
+-- stops the nullable columns being filled in nonsensically.
 CREATE TABLE PAYMENT (
   PaymentID             NUMBER(10)        NOT NULL,
-  SaleOrderID           NUMBER(10)        NOT NULL,
-  BuyerID               NUMBER(10)        NOT NULL,
-  FarmerID              NUMBER(10)        NOT NULL,
+  PaymentType           VARCHAR2(10 CHAR) DEFAULT 'SALE' NOT NULL,
+  SaleOrderID           NUMBER(10),
+  BuyerID               NUMBER(10),
+  FarmerID              NUMBER(10),
+  AllocationID          NUMBER(10),
   Amount                NUMBER(12,2)      NOT NULL,
   PaymentMethod         VARCHAR2(20 CHAR) NOT NULL,
   PaymentDate           DATE              DEFAULT SYSDATE NOT NULL,
   TransactionReference  VARCHAR2(50 CHAR) NOT NULL,
   PaymentStatus         VARCHAR2(15 CHAR) DEFAULT 'PENDING' NOT NULL,
   CONSTRAINT PK_PAYMENT PRIMARY KEY (PaymentID),
-  CONSTRAINT FK_PAYMENT_ORDER FOREIGN KEY (SaleOrderID) REFERENCES SALE_ORDER (SaleOrderID),
+  CONSTRAINT FK_PAYMENT_ORDER FOREIGN KEY (SaleOrderID)
+    REFERENCES SALE_ORDER (SaleOrderID) ON DELETE CASCADE,
   CONSTRAINT FK_PAYMENT_BUYER FOREIGN KEY (BuyerID) REFERENCES BUYER (BuyerID),
   CONSTRAINT FK_PAYMENT_FARMER FOREIGN KEY (FarmerID) REFERENCES FARMER (FarmerID),
+  CONSTRAINT FK_PAYMENT_ALLOCATION FOREIGN KEY (AllocationID)
+    REFERENCES STORES (AllocationID) ON DELETE CASCADE,
   CONSTRAINT UQ_PAYMENT_REFERENCE UNIQUE (TransactionReference),
   CONSTRAINT CK_PAYMENT_AMOUNT CHECK (Amount > 0),
-  CONSTRAINT CK_PAYMENT_STATUS CHECK (PaymentStatus IN ('PENDING','COMPLETED','FAILED','REFUNDED'))
-);
-
--- Deliberately a SEPARATE table from PAYMENT, not a shared one with a
--- type flag. PAYMENT already has trg_payment_biz_rules enforcing BR-19
--- and BR-20 for buyer-to-farmer sale money; tangling farmer/buyer-to-
--- storage-owner fees into that risks entangling two independent rule
--- sets. The payer (farmer for leg 1, buyer for leg 2) is derivable via
--- AllocationID -> STORES, so no separate FarmerID/BuyerID column here.
-CREATE TABLE STORAGE_PAYMENT (
-  StoragePaymentID      NUMBER(10)        NOT NULL,
-  AllocationID          NUMBER(10)        NOT NULL,
-  Amount                NUMBER(12,2)      NOT NULL,
-  PaymentMethod         VARCHAR2(20 CHAR) NOT NULL,
-  PaymentDate           DATE              DEFAULT SYSDATE NOT NULL,
-  TransactionReference  VARCHAR2(50 CHAR) NOT NULL,
-  PaymentStatus         VARCHAR2(15 CHAR) DEFAULT 'PENDING' NOT NULL,
-  CONSTRAINT PK_STORAGE_PAYMENT PRIMARY KEY (StoragePaymentID),
-  CONSTRAINT FK_STORAGE_PAYMENT_ALLOC FOREIGN KEY (AllocationID) REFERENCES STORES (AllocationID),
-  CONSTRAINT UQ_STORAGE_PAYMENT_REF UNIQUE (TransactionReference),
-  CONSTRAINT CK_STORAGE_PAYMENT_AMOUNT CHECK (Amount > 0),
-  CONSTRAINT CK_STORAGE_PAYMENT_STATUS CHECK (PaymentStatus IN ('PENDING','COMPLETED','FAILED','REFUNDED'))
+  CONSTRAINT CK_PAYMENT_TYPE CHECK (PaymentType IN ('SALE','STORAGE')),
+  CONSTRAINT CK_PAYMENT_STATUS CHECK (PaymentStatus IN ('PENDING','COMPLETED','FAILED','REFUNDED')),
+  -- The discriminator alone would allow a nonsense row. This is what
+  -- actually enforces each subtype's shape: a SALE payment settles a
+  -- sale order between a buyer and a farmer, a STORAGE payment settles
+  -- a STORES allocation and involves neither.
+  CONSTRAINT CK_PAYMENT_TYPE_SHAPE CHECK (
+    (PaymentType = 'SALE'
+       AND SaleOrderID  IS NOT NULL
+       AND BuyerID      IS NOT NULL
+       AND FarmerID     IS NOT NULL
+       AND AllocationID IS NULL)
+    OR
+    (PaymentType = 'STORAGE'
+       AND AllocationID IS NOT NULL
+       AND SaleOrderID  IS NULL
+       AND BuyerID      IS NULL
+       AND FarmerID     IS NULL))
 );
 
 -- =====================================================================
@@ -422,12 +529,15 @@ CREATE TABLE TRANSPORT_REQUEST (
   DeliveryDate      DATE,
   DeliveryStatus    VARCHAR2(15 CHAR) DEFAULT 'PENDING' NOT NULL,
   CONSTRAINT PK_TRANSPORT_REQUEST PRIMARY KEY (TransportID),
-  CONSTRAINT FK_TRANSPORT_ORDER FOREIGN KEY (SaleOrderID) REFERENCES SALE_ORDER (SaleOrderID),
+  CONSTRAINT FK_TRANSPORT_ORDER FOREIGN KEY (SaleOrderID) REFERENCES SALE_ORDER (SaleOrderID) ON DELETE CASCADE,
   CONSTRAINT UQ_TRANSPORT_ORDER UNIQUE (SaleOrderID),
   CONSTRAINT CK_TRANSPORT_STATUS CHECK (DeliveryStatus IN ('PENDING','ASSIGNED','PICKED_UP','IN_TRANSIT','DELIVERED','FAILED'))
 );
 
 -- Ternary #2: TRANSPORT_REQUEST x VEHICLE x TRANSPORT_PERSONNEL
+-- A request belongs to one transport person, who may use several of
+-- their own vehicles. trg_assigned_one_personnel enforces the first
+-- half of that; UQ_ASSIGNED_VEHICLE the second.
 CREATE TABLE ASSIGNED_TO (
   AssignmentID      NUMBER(10)        NOT NULL,
   TransportID       NUMBER(10)        NOT NULL,
@@ -436,10 +546,10 @@ CREATE TABLE ASSIGNED_TO (
   AssignedDate      DATE              DEFAULT SYSDATE NOT NULL,
   AssignmentStatus  VARCHAR2(15 CHAR) DEFAULT 'ACTIVE' NOT NULL,
   CONSTRAINT PK_ASSIGNED_TO PRIMARY KEY (AssignmentID),
-  CONSTRAINT FK_ASSIGNED_TRANSPORT FOREIGN KEY (TransportID) REFERENCES TRANSPORT_REQUEST (TransportID),
+  CONSTRAINT FK_ASSIGNED_TRANSPORT FOREIGN KEY (TransportID) REFERENCES TRANSPORT_REQUEST (TransportID) ON DELETE CASCADE,
   CONSTRAINT FK_ASSIGNED_VEHICLE FOREIGN KEY (VehicleID) REFERENCES VEHICLE (VehicleID),
   CONSTRAINT FK_ASSIGNED_PERSONNEL FOREIGN KEY (PersonnelID) REFERENCES TRANSPORT_PERSONNEL (PersonnelID),
-  CONSTRAINT UQ_ASSIGNED_TRIPLE UNIQUE (TransportID, VehicleID, PersonnelID),
+  CONSTRAINT UQ_ASSIGNED_VEHICLE UNIQUE (TransportID, VehicleID),
   CONSTRAINT CK_ASSIGNED_STATUS CHECK (AssignmentStatus IN ('ACTIVE','COMPLETED','CANCELLED'))
 );
 
@@ -498,7 +608,7 @@ CREATE TABLE REVIEW (
   ReviewComment CLOB,
   ReviewDate  DATE         DEFAULT SYSDATE NOT NULL,
   CONSTRAINT PK_REVIEW PRIMARY KEY (ReviewID),
-  CONSTRAINT FK_REVIEW_ORDER FOREIGN KEY (SaleOrderID) REFERENCES SALE_ORDER (SaleOrderID),
+  CONSTRAINT FK_REVIEW_ORDER FOREIGN KEY (SaleOrderID) REFERENCES SALE_ORDER (SaleOrderID) ON DELETE CASCADE,
   CONSTRAINT UQ_REVIEW_ORDER UNIQUE (SaleOrderID),
   CONSTRAINT CK_REVIEW_RATING CHECK (Rating BETWEEN 1 AND 5)
 );
@@ -512,13 +622,41 @@ CREATE TABLE COMPLAINT (
   ResolutionDate    DATE,
   HandledByAdminID  NUMBER(10),
   CONSTRAINT PK_COMPLAINT PRIMARY KEY (ComplaintID),
-  CONSTRAINT FK_COMPLAINT_ORDER FOREIGN KEY (SaleOrderID) REFERENCES SALE_ORDER (SaleOrderID),
-  CONSTRAINT FK_COMPLAINT_ADMIN FOREIGN KEY (HandledByAdminID) REFERENCES ADMIN_STAFF (AdminID),
+  CONSTRAINT FK_COMPLAINT_ORDER FOREIGN KEY (SaleOrderID) REFERENCES SALE_ORDER (SaleOrderID) ON DELETE CASCADE,
+  CONSTRAINT FK_COMPLAINT_ADMIN FOREIGN KEY (HandledByAdminID) REFERENCES ADMIN_STAFF (AdminID) ON DELETE SET NULL,
   CONSTRAINT CK_COMPLAINT_STATUS CHECK (Status IN ('OPEN','IN_REVIEW','RESOLVED','REJECTED'))
 );
 
 -- =====================================================================
--- SECTION 8 — INDEXES (PRD 9.9: Oracle does not auto-index FK columns)
+-- SECTION 8 — NOTIFICATIONS
+--
+-- Added with the feedback-batch migration. In-app only (no email/SMS,
+-- per PRD §11.3). UserID is a generic FK straight to USERS rather than a
+-- role-specific one -- the only table in this schema shaped that way,
+-- because a notification's recipient can be any of the five roles and
+-- USERS is the total/disjoint superclass every one of them resolves to.
+-- Writes are best-effort from the service layer (see
+-- server/src/services/notification.service.js) so a bug here can never
+-- roll back one of the six PRD §9.10 transactions it is reporting on.
+-- =====================================================================
+
+CREATE TABLE NOTIFICATION (
+  NotificationID     NUMBER(10)         NOT NULL,
+  UserID             NUMBER(10)         NOT NULL,
+  Type               VARCHAR2(30 CHAR)  NOT NULL,
+  Title              VARCHAR2(150 CHAR) NOT NULL,
+  Message            VARCHAR2(500 CHAR) NOT NULL,
+  RelatedEntityType  VARCHAR2(30 CHAR),
+  RelatedEntityID    NUMBER(10),
+  IsRead             CHAR(1)            DEFAULT 'N' NOT NULL,
+  CreatedAt          TIMESTAMP          DEFAULT SYSTIMESTAMP NOT NULL,
+  CONSTRAINT PK_NOTIFICATION PRIMARY KEY (NotificationID),
+  CONSTRAINT FK_NOTIFICATION_USER FOREIGN KEY (UserID) REFERENCES USERS (UserID) ON DELETE CASCADE,
+  CONSTRAINT CK_NOTIFICATION_READ CHECK (IsRead IN ('Y','N'))
+);
+
+-- =====================================================================
+-- SECTION 9 — INDEXES (PRD 9.9: Oracle does not auto-index FK columns)
 -- =====================================================================
 
 CREATE INDEX IX_CROP_CATEGORY        ON CROP (CategoryID);
@@ -537,7 +675,8 @@ CREATE INDEX IX_STORES_OPEN          ON STORES (WarehouseID, UnitNo, DateOut);
 CREATE INDEX IX_STORES_REQ_FARMER    ON STORES (RequestedByFarmerID);
 CREATE INDEX IX_STORES_REQ_BUYER     ON STORES (RequestedByBuyerID);
 CREATE INDEX IX_STORES_SALE_ORDER    ON STORES (SaleOrderID);
-CREATE INDEX IX_STORAGE_PAYMENT_ALLOC ON STORAGE_PAYMENT (AllocationID);
+CREATE INDEX IX_PAYMENT_ALLOCATION ON PAYMENT (AllocationID);
+CREATE INDEX IX_PAYMENT_TYPE       ON PAYMENT (PaymentType);
 
 CREATE INDEX IX_BID_BATCH_PRICE      ON BID (BatchID, BidPricePerKg DESC);
 CREATE INDEX IX_BID_BUYER            ON BID (BuyerID);
@@ -560,6 +699,10 @@ CREATE INDEX IX_BDR_CROP             ON BAZAR_DAILY_RECORD (CropID);
 
 CREATE INDEX IX_COMPLAINT_ORDER      ON COMPLAINT (SaleOrderID);
 CREATE INDEX IX_COMPLAINT_ADMIN      ON COMPLAINT (HandledByAdminID);
+
+-- Composite, not just UserID: the two hot queries are "unread count for
+-- this user" and "recent notifications for this user ordered by time".
+CREATE INDEX IX_NOTIFICATION_USER    ON NOTIFICATION (UserID, IsRead, CreatedAt);
 
 -- =====================================================================
 -- End of 01_create_tables.sql — proceed to 02_sequences_triggers.sql

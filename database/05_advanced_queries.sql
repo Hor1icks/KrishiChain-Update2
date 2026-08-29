@@ -116,7 +116,7 @@ SELECT arat, farmer, district, orders, earnings, rnk
 FROM (
   SELECT va.AratName                        AS arat,
          u.FirstName || ' ' || u.LastName    AS farmer,
-         u.District                         AS district,
+         u.Address.District                 AS district,
          COUNT(so.SaleOrderID)              AS orders,
          SUM(so.TotalAmount)                AS earnings,
          RANK() OVER (PARTITION BY va.AratName
@@ -128,7 +128,7 @@ FROM (
   JOIN   FARM f           ON f.FarmID   = hb.FarmID
   JOIN   USERS u          ON u.UserID   = f.FarmerID
   WHERE  so.Status <> 'CANCELLED'
-  GROUP  BY va.AratName, u.FirstName, u.LastName, u.District
+  GROUP  BY va.AratName, u.FirstName, u.LastName, u.Address.District
 )
 WHERE  rnk <= 3
 ORDER  BY arat, rnk;

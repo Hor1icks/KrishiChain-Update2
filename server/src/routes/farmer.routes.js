@@ -79,6 +79,22 @@ router.post('/bids/:bidId/award', async (req, res, next) => {
   }
 });
 
+router.get('/orders', async (req, res, next) => {
+  try {
+    res.json(await farmer.listOrders(me(req)));
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/payments', async (req, res, next) => {
+  try {
+    res.json(await farmer.listPayments(me(req)));
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ---------------------------------------------------------------------
 // Storage consent (leg 1 — this farmer's own local storage)
 // ---------------------------------------------------------------------
@@ -95,6 +111,33 @@ router.post('/storage/proposals/:allocationId/respond', async (req, res, next) =
   try {
     res.json(
       await farmer.respondToStorageProposal(
+        me(req),
+        Number(req.params.allocationId),
+        req.body.decision,
+        req.body
+      )
+    );
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Ask a manager for space, rather than waiting to be offered it. The
+// customer picks the warehouse and unit from /reference/warehouses.
+router.post('/storage/requests', async (req, res, next) => {
+  try {
+    res.status(201).json(await farmer.requestStorageAllocation(me(req), req.body));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Settle a manager's counter-offer against this customer's own request.
+// ACCEPT or REJECT only — one negotiation round, no re-counter.
+router.post('/storage/:allocationId/counter/respond', async (req, res, next) => {
+  try {
+    res.json(
+      await farmer.respondToStorageCounter(
         me(req),
         Number(req.params.allocationId),
         req.body.decision

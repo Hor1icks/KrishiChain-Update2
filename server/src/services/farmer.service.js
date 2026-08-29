@@ -103,10 +103,17 @@ async function getDashboard(farmerId) {
     { farmerId }
   );
 
+  const metrics = await query(
+    `SELECT pkg_krishi_metrics.fn_farmer_revenue(:farmerId) AS "lifetimeRevenue"
+       FROM dual`,
+    { farmerId }
+  );
+
   return {
     summary: earnings.rows[0] || null,
     batchesByStatus: byStatus.rows,
     openAuctions: openAuctions.rows,
+    lifetimeRevenue: metrics.rows[0].lifetimeRevenue,
   };
 }
 
@@ -179,6 +186,7 @@ async function listBatches(farmerId) {
             v.AvailableQuantity AS "availableQuantity",
             v.QualityGrade      AS "qualityGrade",
             v.MinimumPrice      AS "minimumPrice",
+            v.MinimumBidQuantity AS "minimumBidQuantity",
             v.CurrentHighestBid AS "currentHighestBid",
             v.BiddingEndTime    AS "biddingEndTime",
             v.BatchStatus       AS "status"
@@ -210,6 +218,7 @@ async function getBatch(farmerId, batchId) {
             v.QualityGrade       AS "qualityGrade",
             v.MoisturePercentage AS "moisturePercentage",
             v.MinimumPrice       AS "minimumPrice",
+            v.MinimumBidQuantity AS "minimumBidQuantity",
             v.BiddingStartTime   AS "biddingStartTime",
             v.BiddingEndTime     AS "biddingEndTime",
             v.CurrentHighestBid  AS "currentHighestBid",
@@ -219,7 +228,8 @@ async function getBatch(farmerId, batchId) {
             bs.AvgBid            AS "avgBid",
             bs.PctAboveMinimum   AS "pctAboveMinimum",
             bs.HoursRemaining    AS "hoursRemaining",
-            bs.BiddingState      AS "biddingState"
+            bs.BiddingState      AS "biddingState",
+            pkg_krishi_metrics.fn_batch_unstored(v.BatchID) AS "unstoredQuantity"
        FROM V_BATCH_AVAILABILITY v
        JOIN V_BIDDING_SUMMARY bs ON bs.BatchID = v.BatchID
       WHERE v.BatchID = :batchId AND v.FarmerID = :farmerId`,
@@ -236,7 +246,10 @@ async function getBatch(farmerId, batchId) {
  * is the only thing standing between a bad listing and the database.
  */
 async function createBatch(farmerId, payload) {
-  const required = ['farmId', 'cropId', 'aratId', 'harvestDate', 'totalQuantity', 'minimumPrice'];
+  const required = [
+    'farmId', 'cropId', 'aratId', 'harvestDate', 'totalQuantity', 'minimumPrice',
+    'minimumBidQuantity',
+  ];
   const missing = required.filter(
     (f) => payload[f] === undefined || payload[f] === null || payload[f] === ''
   );
@@ -246,9 +259,18 @@ async function createBatch(farmerId, payload) {
 
   const totalQuantity = Number(payload.totalQuantity);
   const minimumPrice = Number(payload.minimumPrice);
+  const minimumBidQuantity = Number(payload.minimumBidQuantity);
 
   if (!(totalQuantity > 0)) throw ApiError.badRequest('Total quantity must be greater than zero.');
   if (!(minimumPrice > 0)) throw ApiError.badRequest('Minimum price must be greater than zero.');
+  if (!(minimumBidQuantity > 0)) {
+    throw ApiError.badRequest('Minimum bid quantity must be greater than zero.');
+  }
+  if (minimumBidQuantity > totalQuantity) {
+    throw ApiError.businessRule(
+      `Minimum bid quantity (${minimumBidQuantity} kg) cannot exceed the batch's total quantity (${totalQuantity} kg).`
+    );
+  }
 
   const start = payload.biddingStartTime ? new Date(payload.biddingStartTime) : null;
   const end = payload.biddingEndTime ? new Date(payload.biddingEndTime) : null;
@@ -278,11 +300,11 @@ async function createBatch(farmerId, payload) {
       `INSERT INTO HARVEST_BATCH (
          FarmID, CropID, AratID, HarvestDate, TotalQuantity,
          QualityGrade, MoisturePercentage, MinimumPrice,
-         BiddingStartTime, BiddingEndTime, Status
+         BiddingStartTime, BiddingEndTime, Status, MinimumBidQuantity
        ) VALUES (
          :farmId, :cropId, :aratId, :harvestDate, :totalQuantity,
          :qualityGrade, :moisturePercentage, :minimumPrice,
-         :biddingStartTime, :biddingEndTime, :status
+         :biddingStartTime, :biddingEndTime, :status, :minimumBidQuantity
        )
        RETURNING BatchID INTO :batchId`,
       {
@@ -302,6 +324,7 @@ async function createBatch(farmerId, payload) {
         // A batch with no bidding window is just CREATED; one with a
         // window is LISTED and becomes BIDDING_OPEN when it starts.
         status: start ? 'LISTED' : 'CREATED',
+        minimumBidQuantity,
         batchId: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
       }
     );
@@ -491,7 +514,8 @@ async function awardBid(farmerId, bidId, payload = {}) {
     // --- 5. TRANSPORT_REQUEST --------------------------------------
     const buyerAddress = await connection.execute(
       `SELECT NVL(byr.BusinessName, u.FirstName || ' ' || u.LastName) AS Recipient,
-              u.Village, u.Upazila, u.District
+              u.Address.Village AS Village, u.Address.Upazila AS Upazila,
+              u.Address.District AS District
          FROM BUYER byr JOIN USERS u ON u.UserID = byr.BuyerID
         WHERE byr.BuyerID = :buyerId`,
       { buyerId: bid.BUYERID }
@@ -539,7 +563,15 @@ async function awardBid(farmerId, bidId, payload = {}) {
 // storage.service.js's assertIsCustomer(), not duplicated here.
 // ---------------------------------------------------------------------
 
-/** Proposals from a storage manager awaiting this farmer's decision. */
+/**
+ * Everything sitting in this farmer's court. Two shapes land here and
+ * `awaiting` tells the UI which:
+ *   PROPOSAL — a manager offered space, the farmer accepts/rejects/counters
+ *   COUNTER  — the farmer asked, the manager countered the rate, and it
+ *              is back with the farmer to settle (accept or reject only)
+ * The farmer's own outstanding requests are absent: those are waiting on
+ * a manager, and already show in listMyStorage().
+ */
 async function listStorageProposals(farmerId) {
   const result = await query(
     `SELECT s.AllocationID   AS "allocationId",
@@ -550,22 +582,35 @@ async function listStorageProposals(farmerId) {
             s.QuantityStored AS "quantityStored",
             s.MinimumStorageDays AS "minimumStorageDays",
             s.StorageFeePerKgSnapshot AS "ratePerKg",
-            s.QuantityStored * s.StorageFeePerKgSnapshot AS "estimatedFee",
-            s.AllocationStatus AS "allocationStatus"
+            s.CounterRatePerKg AS "counterRatePerKg",
+            s.CounteredBy    AS "counteredBy",
+            s.ProposedBy     AS "proposedBy",
+            s.QuantityStored * NVL(s.CounterRatePerKg, s.StorageFeePerKgSnapshot) AS "estimatedFee",
+            s.AllocationStatus AS "allocationStatus",
+            CASE WHEN s.AllocationStatus = 'COUNTERED' THEN 'COUNTER' ELSE 'PROPOSAL' END AS "awaiting"
        FROM STORES s
        JOIN WAREHOUSE w      ON w.WarehouseID = s.WarehouseID
        JOIN HARVEST_BATCH hb ON hb.BatchID    = s.BatchID
        JOIN CROP c           ON c.CropID      = hb.CropID
       WHERE s.RequestedByFarmerID = :farmerId
-        AND s.AllocationStatus = 'PENDING_ACCEPT'
+        AND (   (s.AllocationStatus = 'PENDING_ACCEPT' AND s.ProposedBy = 'MANAGER')
+             OR (s.AllocationStatus = 'COUNTERED'      AND s.ProposedBy = 'CUSTOMER'))
       ORDER BY s.AllocationID`,
     { farmerId }
   );
   return result.rows;
 }
 
-function respondToStorageProposal(farmerId, allocationId, decision) {
-  return storage.respondToProposal('FARMER', farmerId, allocationId, decision);
+function respondToStorageProposal(farmerId, allocationId, decision, payload) {
+  return storage.respondToProposal('FARMER', farmerId, allocationId, decision, payload);
+}
+
+function respondToStorageCounter(farmerId, allocationId, decision) {
+  return storage.respondToCounter('FARMER', farmerId, allocationId, decision);
+}
+
+function requestStorageAllocation(farmerId, payload) {
+  return storage.requestAllocation('FARMER', farmerId, payload);
 }
 
 function requestStorageRelease(farmerId, allocationId) {
@@ -611,6 +656,74 @@ async function listMyStorage(farmerId) {
   return result.rows;
 }
 
+// ---------------------------------------------------------------------
+// Sales and money in. Both read-only: a farmer never writes a SALE_ORDER
+// (awardBid does that) and never writes a PAYMENT (the buyer pays, or the
+// driver records cash on delivery — transport.service.js transaction #6).
+// ---------------------------------------------------------------------
+
+/** Every order that came out of this farmer's batches. */
+async function listOrders(farmerId) {
+  const result = await query(
+    `SELECT so.SaleOrderID AS "saleOrderId",
+            so.OrderDate   AS "orderDate",
+            so.AcceptedQuantity   AS "acceptedQuantity",
+            so.AcceptedPricePerKg AS "acceptedPricePerKg",
+            so.TotalAmount AS "totalAmount",
+            so.Status      AS "status",
+            so.PaymentTerms AS "paymentTerms",
+            hb.BatchID     AS "batchId",
+            c.CropName     AS "cropName",
+            NVL(byr.BusinessName, ub.FirstName || ' ' || ub.LastName) AS "buyerName",
+            tr.TransportID AS "transportId",
+            tr.DeliveryStatus AS "deliveryStatus",
+            tr.DeliveryDate   AS "deliveryDate",
+            NVL((SELECT SUM(p.Amount) FROM PAYMENT p
+                  WHERE p.SaleOrderID = so.SaleOrderID
+                    AND p.PaymentStatus IN ('PENDING','COMPLETED')), 0) AS "amountReceived"
+       FROM SALE_ORDER so
+       JOIN BID b            ON b.BidID     = so.BidID
+       JOIN HARVEST_BATCH hb ON hb.BatchID  = b.BatchID
+       JOIN CROP c           ON c.CropID    = hb.CropID
+       JOIN FARM f           ON f.FarmID    = hb.FarmID
+       JOIN BUYER byr        ON byr.BuyerID = b.BuyerID
+       JOIN USERS ub         ON ub.UserID   = byr.BuyerID
+       LEFT JOIN TRANSPORT_REQUEST tr ON tr.SaleOrderID = so.SaleOrderID
+      WHERE f.FarmerID = :farmerId
+      ORDER BY so.SaleOrderID DESC`,
+    { farmerId }
+  );
+  return result.rows;
+}
+
+/** Money actually received, newest first. */
+async function listPayments(farmerId) {
+  const result = await query(
+    `SELECT p.PaymentID   AS "paymentId",
+            p.SaleOrderID AS "saleOrderId",
+            p.Amount      AS "amount",
+            p.PaymentMethod AS "paymentMethod",
+            p.PaymentDate   AS "paymentDate",
+            p.TransactionReference AS "transactionReference",
+            p.PaymentStatus AS "paymentStatus",
+            c.CropName    AS "cropName",
+            so.TotalAmount AS "orderTotal",
+            pkg_krishi_metrics.fn_order_outstanding(so.SaleOrderID) AS "outstanding",
+            NVL(byr.BusinessName, ub.FirstName || ' ' || ub.LastName) AS "buyerName"
+       FROM PAYMENT p
+       JOIN SALE_ORDER so    ON so.SaleOrderID = p.SaleOrderID
+       JOIN BID b            ON b.BidID        = so.BidID
+       JOIN HARVEST_BATCH hb ON hb.BatchID     = b.BatchID
+       JOIN CROP c           ON c.CropID       = hb.CropID
+       JOIN BUYER byr        ON byr.BuyerID    = p.BuyerID
+       JOIN USERS ub         ON ub.UserID      = byr.BuyerID
+      WHERE p.PaymentType = 'SALE' AND p.FarmerID = :farmerId
+      ORDER BY p.PaymentID DESC`,
+    { farmerId }
+  );
+  return result.rows;
+}
+
 module.exports = {
   getDashboard,
   listFarms,
@@ -620,8 +733,12 @@ module.exports = {
   createBatch,
   listBidsForBatch,
   awardBid,
+  listOrders,
+  listPayments,
   listStorageProposals,
   respondToStorageProposal,
+  respondToStorageCounter,
+  requestStorageAllocation,
   requestStorageRelease,
   respondToStorageRelease,
   listStorageFees,

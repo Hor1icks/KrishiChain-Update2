@@ -64,6 +64,21 @@ router.post('/warehouses/:warehouseId/units', async (req, res, next) => {
 
 // Candidates for each storage leg — any manager can propose against
 // either list, not just ones tied to their own warehouse's district.
+router.patch('/warehouses/:warehouseId/units/:unitNo/maintenance', async (req, res, next) => {
+  try {
+    res.json(
+      await storage.setUnitMaintenance(
+        me(req),
+        Number(req.params.warehouseId),
+        Number(req.params.unitNo),
+        Boolean(req.body.inMaintenance)
+      )
+    );
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get('/awaiting/leg1', async (_req, res, next) => {
   try {
     res.json(await storage.listBatchesAwaitingStorage());
@@ -92,6 +107,52 @@ router.get('/allocations', async (req, res, next) => {
 router.post('/allocations', async (req, res, next) => {
   try {
     res.status(201).json(await storage.propose(me(req), req.body));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Everything waiting on THIS manager: customer-initiated requests, and
+// counter-offers the customer sent back against the manager's proposals.
+router.get('/requests', async (req, res, next) => {
+  try {
+    res.json(await storage.listRequestsForManager(me(req)));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Answer a customer's request: ACCEPT, REJECT or COUNTER (with a
+// counterRatePerKg). Same service call the customer uses against a
+// manager's proposal — who may answer is derived from ProposedBy.
+router.post('/requests/:allocationId/respond', async (req, res, next) => {
+  try {
+    res.json(
+      await storage.respondToProposal(
+        'MANAGER',
+        me(req),
+        Number(req.params.allocationId),
+        req.body.decision,
+        req.body
+      )
+    );
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Settle a counter the customer sent back against this manager's own
+// proposal. ACCEPT or REJECT only — one negotiation round, no re-counter.
+router.post('/allocations/:allocationId/counter/respond', async (req, res, next) => {
+  try {
+    res.json(
+      await storage.respondToCounter(
+        'MANAGER',
+        me(req),
+        Number(req.params.allocationId),
+        req.body.decision
+      )
+    );
   } catch (err) {
     next(err);
   }

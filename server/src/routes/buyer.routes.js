@@ -57,6 +57,63 @@ router.get('/bids', async (req, res, next) => {
 // Storage consent (leg 2 — this buyer's local storage, post-sale)
 // ---------------------------------------------------------------------
 
+router.get('/orders', async (req, res, next) => {
+  try {
+    res.json(await buyer.listOrders(me(req)));
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/payments', async (req, res, next) => {
+  try {
+    res.json(await buyer.listPayments(me(req)));
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Direct buyer -> farmer settlement (D-2). BR-19/BR-20 live in the trigger. */
+router.post('/orders/:saleOrderId/pay', async (req, res, next) => {
+  try {
+    res
+      .status(201)
+      .json(await buyer.payOrder(me(req), Number(req.params.saleOrderId), req.body));
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * "Drive it straight to me." One of the two ways an order's transport
+ * request becomes claimable by a driver; the other is accepting a leg-2
+ * storage allocation. Until one of them happens the trip has no
+ * destination and is not offered to anyone.
+ */
+router.post('/orders/:saleOrderId/delivery-preference', async (req, res, next) => {
+  try {
+    res.json(await buyer.setDeliveryDirect(me(req), Number(req.params.saleOrderId)));
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/reviews', async (req, res, next) => {
+  try {
+    res.json(await buyer.listReviews(me(req)));
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/reviews', async (req, res, next) => {
+  try {
+    res.status(201).json(await buyer.createReview(me(req), req.body));
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get('/storage/proposals', async (req, res, next) => {
   try {
     res.json(await buyer.listStorageProposals(me(req)));
@@ -69,6 +126,33 @@ router.post('/storage/proposals/:allocationId/respond', async (req, res, next) =
   try {
     res.json(
       await buyer.respondToStorageProposal(
+        me(req),
+        Number(req.params.allocationId),
+        req.body.decision,
+        req.body
+      )
+    );
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Ask a manager for space, rather than waiting to be offered it. The
+// customer picks the warehouse and unit from /reference/warehouses.
+router.post('/storage/requests', async (req, res, next) => {
+  try {
+    res.status(201).json(await buyer.requestStorageAllocation(me(req), req.body));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Settle a manager's counter-offer against this customer's own request.
+// ACCEPT or REJECT only — one negotiation round, no re-counter.
+router.post('/storage/:allocationId/counter/respond', async (req, res, next) => {
+  try {
+    res.json(
+      await buyer.respondToStorageCounter(
         me(req),
         Number(req.params.allocationId),
         req.body.decision

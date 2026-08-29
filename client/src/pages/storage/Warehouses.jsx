@@ -56,14 +56,34 @@ export default function Warehouses() {
         method: 'POST',
         body: { capacity: Number(capacity) },
       });
-      // The unit number came from the database, not from this form —
-      // worth showing, because that is the weak entity's partial key
-      // being generated per warehouse.
       setNotice(
         `Unit ${res.unitNo} created in warehouse ${res.warehouseId}. ` +
           `The number was assigned by trg_storage_unit_no, not by you.`
       );
       setUnitForm({ ...unitForm, [warehouseId]: '' });
+      await load();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+    async function toggleMaintenance(warehouseId, unit) {
+    const inMaintenance = unit.unitStatus !== 'MAINTENANCE';
+    setError('');
+    setNotice('');
+    setBusy(true);
+    try {
+      const res = await api(
+        `/storage/warehouses/${warehouseId}/units/${unit.unitNo}/maintenance`,
+        { method: 'PATCH', body: { inMaintenance } }
+      );
+      setNotice(
+        inMaintenance
+          ? `Unit ${res.unitNo} is out of service — nothing can be allocated into it.`
+          : `Unit ${res.unitNo} is back in service, re-derived as ${res.status} from what it holds.`
+      );
       await load();
     } catch (e) {
       setError(e.message);
@@ -133,7 +153,7 @@ export default function Warehouses() {
             <section key={w.warehouseId} className="boxed">
               <div className="row">
                 <div>
-                  <h2 style={{ marginTop: 0 }}>
+                  <h2>
                     #{w.warehouseId} {w.warehouseName}
                   </h2>
                   <p className="muted">
@@ -158,6 +178,7 @@ export default function Warehouses() {
                       <th className="num">Batches</th>
                       <th>Status</th>
                       <th>Alert</th>
+                      <th />
                     </tr>
                   </thead>
                   <tbody>
@@ -182,6 +203,21 @@ export default function Warehouses() {
                           <span className={`tag tag-alert-${u.alertLevel.toLowerCase()}`}>
                             {u.alertLevel}
                           </span>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="small ghost"
+                            disabled={busy}
+                            onClick={() => toggleMaintenance(w.warehouseId, u)}
+                            title={
+                              u.unitStatus === 'MAINTENANCE'
+                                ? 'Return this unit to service'
+                                : 'Take this unit out of service — only possible while empty'
+                            }
+                          >
+                            {u.unitStatus === 'MAINTENANCE' ? 'Back in service' : 'Maintenance'}
+                          </button>
                         </td>
                       </tr>
                     ))}

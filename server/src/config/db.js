@@ -79,6 +79,58 @@ async function query(sql, binds = {}, options = {}) {
 }
 
 /**
+ * Call a PL/SQL procedure whose last argument is an OUT SYS_REFCURSOR,
+ * and drain it to plain rows. The reporting package
+ * (database/08_plsql_layer.sql) returns every report this way.
+ *
+ * The result set MUST be closed explicitly — unlike a plain execute(),
+ * a ref cursor holds a server-side cursor open until it is, and leaking
+ * them exhausts OPEN_CURSORS after a few hundred report calls.
+ *
+ * Read-only by convention, like query(): nothing here commits.
+ */
+async function callCursor(plsql, binds = {}, { batchSize = 200, maxRows = 20000 } = {}) {
+  const connection = await getPool().getConnection();
+  let resultSet = null;
+  try {
+    const result = await connection.execute(
+      plsql,
+      { ...binds, cursor: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR } },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    resultSet = result.outBinds.cursor;
+
+    // Drain in batches rather than one getRows(batchSize) call: a single
+    // capped fetch silently returns only the first N rows, which for a
+    // report is worse than failing — the numbers just quietly come out
+    // wrong. maxRows is a real ceiling, and hitting it is reported to
+    // the caller rather than swallowed.
+    const rows = [];
+    let truncated = false;
+    for (;;) {
+      const batch = await resultSet.getRows(batchSize);
+      if (batch.length === 0) break;
+      rows.push(...batch);
+      if (rows.length >= maxRows) {
+        truncated = true;
+        break;
+      }
+    }
+    return { rows, truncated };
+  } finally {
+    if (resultSet) {
+      try {
+        await resultSet.close();
+      } catch {
+        // Closing the connection below frees it regardless; a failure
+        // here must not mask a real error from getRows().
+      }
+    }
+    await connection.close();
+  }
+}
+
+/**
  * Run `work` inside one explicit transaction: commit if it returns,
  * roll back if it throws. This is the only way multi-statement writes
  * should reach the database (PRD §9.10) — registration, storage
@@ -109,4 +161,4 @@ async function close() {
   pool = null;
 }
 
-module.exports = { initialize, getPool, query, withTransaction, close };
+module.exports = { initialize, getPool, query, callCursor, withTransaction, close };

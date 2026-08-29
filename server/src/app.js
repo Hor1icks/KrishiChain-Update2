@@ -10,6 +10,8 @@ const referenceRoutes = require('./routes/reference.routes');
 const farmerRoutes = require('./routes/farmer.routes');
 const buyerRoutes = require('./routes/buyer.routes');
 const storageRoutes = require('./routes/storage.routes');
+const transportRoutes = require('./routes/transport.routes');
+const adminRoutes = require('./routes/admin.routes');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -38,9 +40,8 @@ app.use('/api/reference', referenceRoutes);
 app.use('/api/farmer', farmerRoutes);
 app.use('/api/buyer', buyerRoutes);
 app.use('/api/storage', storageRoutes);
-
-// Still to come:
-//   /api/transport, /api/admin
+app.use('/api/transport', transportRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
