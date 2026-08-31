@@ -33,6 +33,32 @@ dependencies on the front end are `react`, `react-dom` and `react-router`.
 
 ## Running it
 
+### With the script
+
+`start.sh` starts the database container, waits until it accepts connections,
+installs anything missing, brings up the API and the front end, and prints the
+two URLs.
+
+```bash
+./start.sh
+```
+
+| Option | Effect |
+|---|---|
+| `--rebuild` | Rebuild the schema from empty before starting. This wipes all data. |
+| `--no-db` | Skip the container, for an Oracle instance running somewhere else. |
+| `--help` | Usage. |
+
+Ctrl+C stops both servers. The database container is left running, because a
+cold start takes about half a minute. Server output goes to `logs/api.log` and
+`logs/client.log`.
+
+The script needs `server/.env`. On a first run it copies `server/.env.example`
+into place and stops, so you can point `ORACLE_CLIENT_DIR` at your Instant
+Client directory before trying again.
+
+### By hand
+
 Oracle XE 11.2 must be reachable first. This project runs it in Docker:
 
 ```bash
@@ -48,18 +74,30 @@ through `./db.sh`:
 ./db.sh database/03_insert_data.sql
 ./db.sh database/04_views.sql
 ./db.sh database/08_plsql_layer.sql
+./db.sh database/09_feedback_fixes.sql
+./db.sh database/10_object_types.sql
+./db.sh database/12_transport_one_personnel.sql
 ```
 
-`database/00_reset.sql` drops everything first if you want a genuinely clean
-build. `03_insert_data.sql` wipes every table before re-seeding, so never run
-it just to look at the data.
+Put `database/00_reset.sql` in front of that list for a genuinely clean build.
+`03_insert_data.sql` wipes every table before re-seeding, so never run it just
+to look at the data. `05_advanced_queries.sql`, `11_sequence_index_demo.sql`
+and `99_inspect_data.sql` are read-only and are not part of the build.
+`06_storage_workflow.sql` and `07_bid_storage_transport_notifications.sql` are
+historical migration records, already folded into `01_create_tables.sql`.
 
-Then the two servers:
+Then the two servers, in separate terminals:
 
 ```bash
-cd server && npm install && cp .env.example .env && npm start   # :5000
-cd client && npm install && npm run dev                         # :5173
+cd server && npm install && cp .env.example .env
+LD_LIBRARY_PATH=/path/to/instantclient_19_26 npm start    # :5000
+
+cd client && npm install && npm run dev                   # :5173
 ```
+
+`LD_LIBRARY_PATH` has to be set before Node starts; setting it from inside the
+process is too late. The script reads the path out of `server/.env` and exports
+it for you.
 
 Sign in with any seeded account; they all share the password `Demo@1234`.
 `abdul.karim@krishichain.bd` is a farmer with an open auction and awardable
@@ -69,15 +107,9 @@ bids, which is the most interesting starting point.
 
 **node-oracledb must run in Thick mode.** The default Thin mode requires
 Oracle Database 12.1 or later and cannot reach 11.2 at all. If the API dies
-with `DPI-1047`, the Instant Client is not on the library path:
-
-```bash
-cd server
-LD_LIBRARY_PATH=/path/to/instantclient_19_26 node src/server.js
-```
-
-A `DPI-1047` is almost never a missing file. It is usually an architecture
-mismatch between XE, the Instant Client and Node.
+with `DPI-1047`, the Instant Client is not on the library path. A `DPI-1047` is
+almost never a missing file; it is usually an architecture mismatch between XE,
+the Instant Client and Node.
 
 **Quote the password in `.env`.** An unquoted `#` starts a comment, so
 `DB_PASSWORD=Krishi#2026` silently becomes `Krishi` and you get `ORA-01017`.
@@ -136,6 +168,8 @@ assigning transport, and delivery with payment.
 ## Layout
 
 ```
+start.sh     brings up the database, the API and the front end
+db.sh        runs SQL against the container without a local client
 database/    schema, seed data, views, the PL/SQL layer, migrations
 server/      Express API
 client/      React front end, 28 pages across five role modules

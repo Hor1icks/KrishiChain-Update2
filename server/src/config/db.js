@@ -34,9 +34,9 @@ function enableThickMode() {
     if (err.message.includes('DPI-1047')) {
       throw new Error(
         `Could not load Oracle Instant Client from "${oracleClientDir}".\n` +
-          `DPI-1047 is almost always an ARCHITECTURE MISMATCH, not a missing file.\n` +
-          `Check XE, Instant Client and Node.js are all the same bitness ` +
-          `(this Node is ${process.arch}).`
+        `DPI-1047 is almost always an ARCHITECTURE MISMATCH, not a missing file.\n` +
+        `Check XE, Instant Client and Node.js are all the same bitness ` +
+        `(this Node is ${process.arch}).`
       );
     }
     throw err;
@@ -107,7 +107,7 @@ async function callCursor(plsql, binds = {}, { batchSize = 200, maxRows = 20000 
     // the caller rather than swallowed.
     const rows = [];
     let truncated = false;
-    for (;;) {
+    for (; ;) {
       const batch = await resultSet.getRows(batchSize);
       if (batch.length === 0) break;
       rows.push(...batch);
