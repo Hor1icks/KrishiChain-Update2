@@ -372,8 +372,8 @@ async function createWarehouse(managerId, payload) {
 
   return withTransaction(async (connection) => {
     const result = await connection.execute(
-      `INSERT INTO WAREHOUSE (WarehouseName, Address, District, Capacity, ManagerID, StorageFeePerKgRate)
-       VALUES (:warehouseName, :address, :district, :capacity, :managerId, :rate)
+      `INSERT INTO WAREHOUSE (WarehouseID, WarehouseName, Address, District, Capacity, ManagerID, StorageFeePerKgRate)
+       VALUES ((SELECT NVL(MAX(WarehouseID), 0) + 1 FROM WAREHOUSE), :warehouseName, :address, :district, :capacity, :managerId, :rate)
        RETURNING WarehouseID INTO :warehouseId`,
       {
         warehouseName: payload.warehouseName,
@@ -412,8 +412,8 @@ async function addUnit(managerId, warehouseId, payload) {
     await assertManagesWarehouse(connection, managerId, warehouseId);
 
     const result = await connection.execute(
-      `INSERT INTO STORAGE_UNIT (WarehouseID, Capacity, Status)
-       VALUES (:warehouseId, :capacity, 'EMPTY')
+      `INSERT INTO STORAGE_UNIT (UnitNo, WarehouseID, Capacity, Status)
+       VALUES (pkg_krishi_rules.next_unit_no(:warehouseId), :warehouseId, :capacity, 'EMPTY')
        RETURNING UnitNo INTO :unitNo`,
       {
         warehouseId,
@@ -807,10 +807,12 @@ async function propose(managerId, payload) {
 
     const inserted = await connection.execute(
       `INSERT INTO STORES (
+         AllocationID,
          BatchID, WarehouseID, UnitNo, ManagerID, QuantityStored,
          RequestedByFarmerID, RequestedByBuyerID, SaleOrderID,
          MinimumStorageDays, StorageFeePerKgSnapshot, AllocationStatus, ProposedBy
        ) VALUES (
+         (SELECT NVL(MAX(AllocationID), 0) + 1 FROM STORES),
          :batchId, :warehouseId, :unitNo, :managerId, :quantity,
          :requestedByFarmerId, :requestedByBuyerId, :saleOrderId,
          :minimumStorageDays, :rate, 'PENDING_ACCEPT', 'MANAGER'
@@ -911,10 +913,12 @@ async function requestAllocation(customerType, customerId, payload) {
 
     const inserted = await connection.execute(
       `INSERT INTO STORES (
+         AllocationID,
          BatchID, WarehouseID, UnitNo, ManagerID, QuantityStored,
          RequestedByFarmerID, RequestedByBuyerID, SaleOrderID,
          MinimumStorageDays, StorageFeePerKgSnapshot, AllocationStatus, ProposedBy
        ) VALUES (
+         (SELECT NVL(MAX(AllocationID), 0) + 1 FROM STORES),
          :batchId, :warehouseId, :unitNo, :managerId, :quantity,
          :requestedByFarmerId, :requestedByBuyerId, :saleOrderId,
          :minimumStorageDays, :rate, 'PENDING_ACCEPT', 'CUSTOMER'
@@ -1242,8 +1246,8 @@ async function payFee(customerType, customerId, allocationId, payload) {
 
     const reference = `SF-${Date.now()}-${allocationId}`;
     const result = await connection.execute(
-      `INSERT INTO PAYMENT (PaymentType, AllocationID, Amount, PaymentMethod, TransactionReference, PaymentStatus)
-       VALUES ('STORAGE', :allocationId, :amount, :paymentMethod, :reference, 'COMPLETED')
+      `INSERT INTO PAYMENT (PaymentID, PaymentType, AllocationID, Amount, PaymentMethod, TransactionReference, PaymentStatus)
+       VALUES ((SELECT NVL(MAX(PaymentID), 0) + 1 FROM PAYMENT), 'STORAGE', :allocationId, :amount, :paymentMethod, :reference, 'COMPLETED')
        RETURNING PaymentID INTO :storagePaymentId`,
       {
         allocationId,

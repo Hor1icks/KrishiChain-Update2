@@ -152,8 +152,8 @@ async function createFarm(farmerId, payload) {
 
   return withTransaction(async (connection) => {
     const result = await connection.execute(
-      `INSERT INTO FARM (FarmerID, FarmName, Area, SoilType, IrrigationType, Location, District)
-       VALUES (:farmerId, :farmName, :area, :soilType, :irrigationType, :location, :district)
+      `INSERT INTO FARM (FarmID, FarmerID, FarmName, Area, SoilType, IrrigationType, Location, District)
+       VALUES ((SELECT NVL(MAX(FarmID), 0) + 1 FROM FARM), :farmerId, :farmName, :area, :soilType, :irrigationType, :location, :district)
        RETURNING FarmID INTO :farmId`,
       {
         farmerId,
@@ -298,10 +298,12 @@ async function createBatch(farmerId, payload) {
 
     const result = await connection.execute(
       `INSERT INTO HARVEST_BATCH (
+         BatchID,
          FarmID, CropID, AratID, HarvestDate, TotalQuantity,
          QualityGrade, MoisturePercentage, MinimumPrice,
          BiddingStartTime, BiddingEndTime, Status, MinimumBidQuantity
        ) VALUES (
+         (SELECT NVL(MAX(BatchID), 0) + 1 FROM HARVEST_BATCH),
          :farmId, :cropId, :aratId, :harvestDate, :totalQuantity,
          :qualityGrade, :moisturePercentage, :minimumPrice,
          :biddingStartTime, :biddingEndTime, :status, :minimumBidQuantity
@@ -498,8 +500,8 @@ async function awardBid(farmerId, bidId, payload = {}) {
     // --- 4. SALE_ORDER (the aggregation) ---------------------------
     // TotalAmount is virtual — never inserted.
     const orderResult = await connection.execute(
-      `INSERT INTO SALE_ORDER (BidID, AcceptedQuantity, AcceptedPricePerKg, PaymentTerms)
-       VALUES (:bidId, :qty, :price, :paymentTerms)
+      `INSERT INTO SALE_ORDER (SaleOrderID, BidID, AcceptedQuantity, AcceptedPricePerKg, PaymentTerms)
+       VALUES ((SELECT NVL(MAX(SaleOrderID), 0) + 1 FROM SALE_ORDER), :bidId, :qty, :price, :paymentTerms)
        RETURNING SaleOrderID INTO :saleOrderId`,
       {
         bidId,
@@ -523,8 +525,8 @@ async function awardBid(farmerId, bidId, payload = {}) {
     const buyer = buyerAddress.rows[0];
 
     const transportResult = await connection.execute(
-      `INSERT INTO TRANSPORT_REQUEST (SaleOrderID, PickupLocation, DeliveryLocation)
-       VALUES (:saleOrderId, :pickup, :delivery)
+      `INSERT INTO TRANSPORT_REQUEST (TransportID, SaleOrderID, PickupLocation, DeliveryLocation)
+       VALUES ((SELECT NVL(MAX(TransportID), 0) + 1 FROM TRANSPORT_REQUEST), :saleOrderId, :pickup, :delivery)
        RETURNING TransportID INTO :transportId`,
       {
         saleOrderId,

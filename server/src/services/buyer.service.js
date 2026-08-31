@@ -312,6 +312,11 @@ async function placeBid(buyerId, payload) {
       // end up with two ACTIVE bids on the same batch.
     }
 
+    await connection.execute(
+      `BEGIN pkg_krishi_rules.check_bid_min_qty(:batchId, :qty); END;`,
+      { batchId, qty: requestedQuantity }
+    );
+
     // --- 1. Displace the standing bid --------------------------------
     await connection.execute(
       `UPDATE BID SET Status = 'OUTBID' WHERE BatchID = :batchId AND Status = 'ACTIVE'`,
@@ -320,8 +325,8 @@ async function placeBid(buyerId, payload) {
 
     // --- 2. The new standing bid -------------------------------------
     const inserted = await connection.execute(
-      `INSERT INTO BID (BatchID, BuyerID, BidPricePerKg, RequestedQuantity, Status, PreviousBidID)
-       VALUES (:batchId, :buyerId, :price, :qty, 'ACTIVE', :previousBidId)
+      `INSERT INTO BID (BidID, BatchID, BuyerID, BidPricePerKg, RequestedQuantity, Status, PreviousBidID)
+       VALUES ((SELECT NVL(MAX(BidID), 0) + 1 FROM BID), :batchId, :buyerId, :price, :qty, 'ACTIVE', :previousBidId)
        RETURNING BidID INTO :bidId`,
       {
         batchId,
@@ -678,11 +683,16 @@ async function payOrder(buyerId, saleOrderId, payload) {
     const order = orderResult.rows[0];
     if (order.BUYERID !== buyerId) throw ApiError.forbidden('That is not your order.');
 
+    await connection.execute(
+      `BEGIN pkg_krishi_rules.check_payment_allowed(:saleOrderId, :amount); END;`,
+      { saleOrderId, amount }
+    );
+
     const reference = `PAY-${Date.now()}-${saleOrderId}`;
     const inserted = await connection.execute(
-      `INSERT INTO PAYMENT (SaleOrderID, BuyerID, FarmerID, Amount,
+      `INSERT INTO PAYMENT (PaymentID, SaleOrderID, BuyerID, FarmerID, Amount,
                             PaymentMethod, TransactionReference, PaymentStatus)
-       VALUES (:saleOrderId, :buyerId, :farmerId, :amount,
+       VALUES ((SELECT NVL(MAX(PaymentID), 0) + 1 FROM PAYMENT), :saleOrderId, :buyerId, :farmerId, :amount,
                :method, :reference, 'COMPLETED')
        RETURNING PaymentID INTO :paymentId`,
       {
@@ -783,8 +793,8 @@ async function createReview(buyerId, payload) {
       // NOT :comment — COMMENT is an Oracle reserved word, and using it as
       // a bind name fails with ORA-01745 before the statement even runs.
       const inserted = await connection.execute(
-        `INSERT INTO REVIEW (SaleOrderID, Rating, ReviewComment)
-         VALUES (:saleOrderId, :rating, :reviewComment)
+        `INSERT INTO REVIEW (ReviewID, SaleOrderID, Rating, ReviewComment)
+         VALUES ((SELECT NVL(MAX(ReviewID), 0) + 1 FROM REVIEW), :saleOrderId, :rating, :reviewComment)
          RETURNING ReviewID INTO :reviewId`,
         {
           saleOrderId,

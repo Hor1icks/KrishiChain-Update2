@@ -300,9 +300,14 @@ async function claim(personnelId, payload) {
     const totalCapacity = alreadyAssigned + vehicle.CAPACITY;
 
 
+    await connection.execute(
+      `BEGIN pkg_krishi_rules.check_one_personnel(:transportId, :personnelId); END;`,
+      { transportId, personnelId }
+    );
+
     const assignment = await connection.execute(
-      `INSERT INTO ASSIGNED_TO (TransportID, VehicleID, PersonnelID, AssignmentStatus)
-       VALUES (:transportId, :vehicleId, :personnelId, 'ACTIVE')
+      `INSERT INTO ASSIGNED_TO (AssignmentID, TransportID, VehicleID, PersonnelID, AssignmentStatus)
+       VALUES ((SELECT NVL(MAX(AssignmentID), 0) + 1 FROM ASSIGNED_TO), :transportId, :vehicleId, :personnelId, 'ACTIVE')
        RETURNING AssignmentID INTO :assignmentId`,
       {
         transportId,
@@ -430,10 +435,16 @@ async function complete(personnelId, transportId, payload = {}) {
     if (outstanding > 0 && trip.PAYMENTTERMS === 'ON_DELIVERY') {
       const method = payload.paymentMethod || 'CASH';
       const reference = `COD-${Date.now()}-${trip.SALEORDERID}`;
+
+      await connection.execute(
+        `BEGIN pkg_krishi_rules.check_payment_allowed(:saleOrderId, :amount); END;`,
+        { saleOrderId: trip.SALEORDERID, amount: outstanding }
+      );
+
       const inserted = await connection.execute(
-        `INSERT INTO PAYMENT (SaleOrderID, BuyerID, FarmerID, Amount,
+        `INSERT INTO PAYMENT (PaymentID, SaleOrderID, BuyerID, FarmerID, Amount,
                               PaymentMethod, TransactionReference, PaymentStatus)
-         VALUES (:saleOrderId, :buyerId, :farmerId, :amount,
+         VALUES ((SELECT NVL(MAX(PaymentID), 0) + 1 FROM PAYMENT), :saleOrderId, :buyerId, :farmerId, :amount,
                  :method, :reference, 'COMPLETED')
          RETURNING PaymentID INTO :paymentId`,
         {

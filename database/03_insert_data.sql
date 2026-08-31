@@ -373,11 +373,14 @@ INSERT INTO STORAGE_UNIT (WarehouseID, UnitNo, Capacity, Status) VALUES (4, 2, 3
 INSERT INTO STORAGE_UNIT (WarehouseID, UnitNo, Capacity, Status) VALUES (5, 1, 25000.000, 'PARTIAL');
 INSERT INTO STORAGE_UNIT (WarehouseID, UnitNo, Capacity, Status) VALUES (5, 2, 25000.000, 'MAINTENANCE');
 
--- UnitNo deliberately OMITTED here so trg_storage_unit_no assigns it.
+-- UnitNo is the weak-entity partial key: it restarts at 1 for every
+-- warehouse, so it is derived from the rows already in that warehouse.
 -- Warehouse 1 already has units 1 and 2, so this row must come out as
 -- unit 3 -- the live proof that the partial key is generated per
 -- warehouse and not from a global counter. Nothing references it.
-INSERT INTO STORAGE_UNIT (WarehouseID, Capacity, Status) VALUES (1, 45000.000, 'EMPTY');
+INSERT INTO STORAGE_UNIT (WarehouseID, UnitNo, Capacity, Status)
+VALUES (1, (SELECT NVL(MAX(UnitNo), 0) + 1 FROM STORAGE_UNIT WHERE WarehouseID = 1),
+        45000.000, 'EMPTY');
 
 -- Ternary #1: HARVEST_BATCH x STORAGE_UNIT x STORAGE_MANAGER. The
 -- manager column is the accountability link -- who authorized the
@@ -772,66 +775,6 @@ INSERT INTO NOTIFICATION (NotificationID, UserID, Type, Title, Message, RelatedE
  (5, 21, 'TRANSPORT_ASSIGNED', 'You are assigned to trip 4',       'Collect from the farm gate and update the delivery status as the trip progresses.',   'TRANSPORT_REQUEST', 4, 'Y', SYSTIMESTAMP - INTERVAL '20' DAY);
 
 COMMIT;
-
--- =====================================================================
--- SECTION 12 — RE-SYNC SEQUENCES
---
--- Every ID above was supplied literally, so all 17 sequences are still
--- sitting at 1 and the first row the application inserts would collide
--- with a seeded PK. 11g has no ALTER SEQUENCE ... RESTART, so the fix is
--- the classic three-step: bump INCREMENT BY to the gap, burn one
--- NEXTVAL, put INCREMENT BY back to 1.
---
--- Safe to re-run: if a sequence is already past the seeded maximum the
--- procedure leaves it alone. Each re-run does burn one value per
--- sequence (the probe NEXTVAL), so application-generated IDs start a
--- little above 26/6/8/... rather than exactly there. Gaps are harmless
--- -- surrogate keys only have to be unique, not consecutive.
--- =====================================================================
-
-DECLARE
-  PROCEDURE sync_seq (p_sequence IN VARCHAR2,
-                      p_table    IN VARCHAR2,
-                      p_column   IN VARCHAR2) IS
-    v_max      NUMBER;
-    v_current  NUMBER;
-    v_gap      NUMBER;
-    v_dummy    NUMBER;
-  BEGIN
-    EXECUTE IMMEDIATE 'SELECT NVL(MAX(' || p_column || '), 0) FROM ' || p_table INTO v_max;
-    EXECUTE IMMEDIATE 'SELECT ' || p_sequence || '.NEXTVAL FROM dual' INTO v_current;
-
-    v_gap := v_max - v_current;
-
-    IF v_gap > 0 THEN
-      EXECUTE IMMEDIATE 'ALTER SEQUENCE ' || p_sequence || ' INCREMENT BY ' || v_gap;
-      EXECUTE IMMEDIATE 'SELECT ' || p_sequence || '.NEXTVAL FROM dual' INTO v_dummy;
-      EXECUTE IMMEDIATE 'ALTER SEQUENCE ' || p_sequence || ' INCREMENT BY 1';
-    END IF;
-
-    DBMS_OUTPUT.PUT_LINE(RPAD(p_sequence, 26) || ' -> next value ' || (GREATEST(v_max, v_current) + 1));
-  END sync_seq;
-BEGIN
-  sync_seq('seq_user_id',          'USERS',             'UserID');
-  sync_seq('seq_crop_category_id', 'CROP_CATEGORY',     'CategoryID');
-  sync_seq('seq_crop_id',          'CROP',              'CropID');
-  sync_seq('seq_farm_id',          'FARM',              'FarmID');
-  sync_seq('seq_arat_id',          'VIRTUAL_ARAT',      'AratID');
-  sync_seq('seq_batch_id',         'HARVEST_BATCH',     'BatchID');
-  sync_seq('seq_warehouse_id',     'WAREHOUSE',         'WarehouseID');
-  sync_seq('seq_allocation_id',    'STORES',            'AllocationID');
-  sync_seq('seq_bid_id',           'BID',               'BidID');
-  sync_seq('seq_sale_order_id',    'SALE_ORDER',        'SaleOrderID');
-  sync_seq('seq_payment_id',       'PAYMENT',           'PaymentID');
-  sync_seq('seq_vehicle_id',       'VEHICLE',           'VehicleID');
-  sync_seq('seq_transport_id',     'TRANSPORT_REQUEST', 'TransportID');
-  sync_seq('seq_assignment_id',    'ASSIGNED_TO',       'AssignmentID');
-  sync_seq('seq_bazar_id',         'PHYSICAL_BAZAR',    'BazarID');
-  sync_seq('seq_review_id',        'REVIEW',            'ReviewID');
-  sync_seq('seq_complaint_id',     'COMPLAINT',         'ComplaintID');
-  sync_seq('seq_notification_id',  'NOTIFICATION',      'NotificationID');
-END;
-/
 
 -- =====================================================================
 -- SECTION 13 — VERIFICATION

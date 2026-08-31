@@ -81,9 +81,8 @@ fi
 
 if [ "$REBUILD" -eq 1 ]; then
   say "Rebuilding the schema (this wipes all data)"
-  for f in 00_reset 01_create_tables 02_sequences_triggers 03_insert_data \
-           04_views 08_plsql_layer 09_feedback_fixes 10_object_types \
-           12_transport_one_personnel; do
+  for f in 00_reset 01_create_tables 02_business_rules 03_insert_data \
+           04_views 05_plsql_layer; do
     [ -f "$ROOT/database/$f.sql" ] || continue
     echo "  $f.sql"
     # SQL*Plus exits 0 even when a statement fails, so check the output.

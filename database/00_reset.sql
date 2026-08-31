@@ -12,9 +12,6 @@
 -- before parents, so the drops would mostly succeed without CASCADE
 -- CONSTRAINTS; it is there so a half-created schema still resets.
 --
--- Sequences are dropped too, at the end. Triggers go with their tables.
--- Without dropping the sequences, re-running 02_sequences_triggers.sql
--- reports ORA-00955 on all 18 CREATE SEQUENCE statements.
 -- =====================================================================
 
 DROP TABLE NOTIFICATION         CASCADE CONSTRAINTS PURGE;
@@ -45,15 +42,6 @@ DROP TABLE FARMER               CASCADE CONSTRAINTS PURGE;
 DROP TABLE USER_PHONE           CASCADE CONSTRAINTS PURGE;
 DROP TABLE USERS                CASCADE CONSTRAINTS PURGE;
 
--- Sequences have no CASCADE, and DROP SEQUENCE on a missing one raises
--- ORA-02289, so they are dropped by name from the data dictionary.
-BEGIN
-  FOR s IN (SELECT sequence_name FROM user_sequences) LOOP
-    EXECUTE IMMEDIATE 'DROP SEQUENCE ' || s.sequence_name;
-  END LOOP;
-END;
-/
-
 -- Types go last: a table with a column of that type must be gone first.
 -- FORCE drops the type even if something still claims a dependency.
 BEGIN
@@ -64,6 +52,5 @@ END;
 /
 
 SELECT COUNT(*) AS tables_remaining    FROM user_tables;
-SELECT COUNT(*) AS sequences_remaining FROM user_sequences;
 SELECT COUNT(*) AS types_remaining     FROM user_types;
 SELECT COUNT(*) AS recycle_bin_objects FROM recyclebin;

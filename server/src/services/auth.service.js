@@ -169,9 +169,11 @@ async function register(payload) {
         // Address is a t_address object column, so the six parts are
         // passed to the type's constructor rather than to six columns.
         `INSERT INTO USERS (
+           UserID,
            FirstName, MiddleName, LastName, Email, PasswordHash, Gender,
            DateOfBirth, Address, Role
          ) VALUES (
+           (SELECT NVL(MAX(UserID), 0) + 1 FROM USERS),
            :firstName, :middleName, :lastName, :email, :passwordHash, :gender,
            TO_DATE(:dateOfBirth, 'YYYY-MM-DD'),
            t_address(:houseNo, :road, :village, :upazila, :district, :postalCode),
