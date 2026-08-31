@@ -77,7 +77,9 @@ router.get('/payments', async (req, res, next) => {
 /** Hands back a hosted checkout URL for the buyer's browser to follow. */
 router.post('/orders/:saleOrderId/pay/online', async (req, res, next) => {
   try {
-    res.json(await gateway.beginCheckout(me(req), Number(req.params.saleOrderId)));
+    res.json(
+      await gateway.beginCheckout(me(req), Number(req.params.saleOrderId), req.body.amount)
+    );
   } catch (err) {
     next(err);
   }
@@ -195,7 +197,12 @@ router.get('/storage/fees', async (req, res, next) => {
 router.post('/storage/:allocationId/pay/online', async (req, res, next) => {
   try {
     res.json(
-      await gateway.beginStorageCheckout('BUYER', me(req), Number(req.params.allocationId))
+      await gateway.beginStorageCheckout(
+        'BUYER',
+        me(req),
+        Number(req.params.allocationId),
+        req.body.amount
+      )
     );
   } catch (err) {
     next(err);

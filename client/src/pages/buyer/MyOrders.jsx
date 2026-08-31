@@ -8,6 +8,7 @@ export default function MyOrders() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [paying, setPaying] = useState(null);
+  const [payAmount, setPayAmount] = useState('');
   const [busy, setBusy] = useState(false);
   const [onlinePayment, setOnlinePayment] = useState(false);
 
@@ -32,7 +33,7 @@ export default function MyOrders() {
     try {
       const { redirectUrl } = await api(
         `/buyer/orders/${paying.saleOrderId}/pay/online`,
-        { method: 'POST' }
+        { method: 'POST', body: { amount: Number(payAmount) } }
       );
       window.location.href = redirectUrl;
     } catch (e) {
@@ -179,7 +180,10 @@ export default function MyOrders() {
                         <button
                           type="button"
                           className="small"
-                          onClick={() => setPaying(o)}
+                          onClick={() => {
+                            setPaying(o);
+                            setPayAmount(outstanding.toFixed(2));
+                          }}
                         >
                           Pay
                         </button>
@@ -199,7 +203,9 @@ export default function MyOrders() {
         </table>
       )}
 
-      {paying && (
+      {paying && (() => {
+        const dueNow = Number(paying.totalAmount) - Number(paying.amountPaid || 0);
+        return (
         <div className="boxed confirm">
           <h3>Pay order #{paying.saleOrderId}</h3>
           <p className="muted">
@@ -217,23 +223,33 @@ export default function MyOrders() {
             </div>
             <div className="stat">
               <span className="stat-label">Due now</span>
-              <span className="stat-value">
-                {taka(Number(paying.totalAmount) - Number(paying.amountPaid || 0))}
-              </span>
+              <span className="stat-value">{taka(dueNow)}</span>
             </div>
           </div>
 
           {onlinePayment ? (
             <>
+              <label>
+                Amount to pay now
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  max={dueNow}
+                  value={payAmount}
+                  onChange={(e) => setPayAmount(e.target.value)}
+                />
+              </label>
               <p className="note">
-                You choose how to pay on the next screen. You will come back here when
-                it is done.
+                Pay all of it or part of it — the rest stays outstanding and can be
+                settled later. You choose how to pay on the next screen, and come back
+                here when it is done.
               </p>
               <button
                 type="button"
                 className="gateway-button"
                 onClick={payOnline}
-                disabled={busy}
+                disabled={busy || !(Number(payAmount) > 0) || Number(payAmount) > dueNow}
               >
                 <span>{busy ? 'Opening' : 'Pay with'}</span>
                 <img src="/sslcommerz.png" alt="SSLCommerz" />
@@ -251,7 +267,8 @@ export default function MyOrders() {
             </button>
           </div>
         </div>
-      )}
+        );
+      })()}
 
     </div>
   );

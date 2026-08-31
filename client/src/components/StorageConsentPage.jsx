@@ -20,6 +20,7 @@ export default function StorageConsentPage({ base, title, intro, legNote }) {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [paying, setPaying] = useState(null);
+  const [payAmount, setPayAmount] = useState('');
   const [onlinePayment, setOnlinePayment] = useState(false);
   const [params, setParams] = useSearchParams();
   const outcome = params.get('status');
@@ -163,7 +164,7 @@ export default function StorageConsentPage({ base, title, intro, legNote }) {
     try {
       const { redirectUrl } = await api(
         `${base}/storage/${paying.allocationId}/pay/online`,
-        { method: 'POST' }
+        { method: 'POST', body: { amount: Number(payAmount) } }
       );
       window.location.href = redirectUrl;
     } catch (e) {
@@ -607,7 +608,10 @@ export default function StorageConsentPage({ base, title, intro, legNote }) {
                         <button
                           type="button"
                           className="small"
-                          onClick={() => setPaying(h)}
+                          onClick={() => {
+                            setPaying(h);
+                            setPayAmount(Number(owed).toFixed(2));
+                          }}
                         >
                           Pay fee
                         </button>
@@ -621,7 +625,9 @@ export default function StorageConsentPage({ base, title, intro, legNote }) {
         </table>
       )}
 
-      {paying && (
+      {paying && (() => {
+        const dueNow = Number(paying.storageFee || 0) - Number(paying.paidSoFar || 0);
+        return (
         <div className="boxed confirm">
           <h3>Pay storage fee — allocation #{paying.allocationId}</h3>
           <p className="muted">
@@ -639,19 +645,34 @@ export default function StorageConsentPage({ base, title, intro, legNote }) {
             </div>
             <div className="stat">
               <span className="stat-label">Due now</span>
-              <span className="stat-value">
-                {taka(Number(paying.storageFee || 0) - Number(paying.paidSoFar || 0))}
-              </span>
+              <span className="stat-value">{taka(dueNow)}</span>
             </div>
           </div>
 
           {onlinePayment ? (
             <>
+              <label>
+                Amount to pay now
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  max={dueNow}
+                  value={payAmount}
+                  onChange={(e) => setPayAmount(e.target.value)}
+                />
+              </label>
               <p className="note">
-                You choose how to pay on the next screen. You will come back here when
+                Pay all of it or part of it — the rest stays owing and can be settled
+                later. You choose how to pay on the next screen, and come back here when
                 it is done.
               </p>
-              <button type="button" className="gateway-button" onClick={pay} disabled={busy}>
+              <button
+                type="button"
+                className="gateway-button"
+                onClick={pay}
+                disabled={busy || !(Number(payAmount) > 0) || Number(payAmount) > dueNow}
+              >
                 <span>{busy ? 'Opening' : 'Pay with'}</span>
                 <img src="/sslcommerz.png" alt="SSLCommerz" />
               </button>
@@ -668,7 +689,8 @@ export default function StorageConsentPage({ base, title, intro, legNote }) {
             </button>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

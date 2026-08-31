@@ -76,6 +76,11 @@ method you want, because bKash, Nagad, cards and internet banking are all
 chosen on SSLCommerz's own screen. The one exception is cash physically
 handed to a driver on delivery, which he records as a witness.
 
+The payer sets how much to settle now — all of it, or part, with the rest
+left outstanding for later. That figure is checked on the server, not in the
+browser, and the same number is both reserved and sent to the gateway, so the
+two can never disagree.
+
 The amount is reserved as a `PENDING` payment before the session opens, so a
 balance cannot be paid twice, and settlement is confirmed by calling the
 gateway's validation API — the redirect body itself is never trusted.

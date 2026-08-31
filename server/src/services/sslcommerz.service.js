@@ -37,12 +37,35 @@ async function post(path, fields) {
 async function nothingLeftToPay(connection, column, id, noun) {
   const pending = await connection.execute(
     `SELECT COUNT(*) AS Pending FROM PAYMENT
-      WHERE ${column} = :id AND PaymentStatus = 'PENDING'`,
+      WHERE ${column} = :id
+        AND PaymentStatus = 'PENDING'
+        AND PaymentMethod = 'SSLCOMMERZ'`,
     { id }
   );
   return Number(pending.rows[0].PENDING) > 0
     ? `A checkout for this ${noun} is already open. Finish or cancel it on the gateway, then try again.`
     : `This ${noun} is already settled.`;
+}
+
+/**
+ * A buyer may settle less than the whole balance -- part now, the rest on
+ * delivery. Whatever they ask for is checked here, not in the browser,
+ * and it is what gets charged: the gateway is told this figure and the
+ * reservation is written for it, so the two can never disagree.
+ */
+function amountToCharge(requested, outstanding, noun) {
+  if (requested === undefined || requested === null || requested === '') return outstanding;
+
+  const amount = Number(requested);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw ApiError.badRequest('Enter an amount greater than zero.');
+  }
+  if (Number(amount.toFixed(2)) > Number(outstanding.toFixed(2))) {
+    throw ApiError.businessRule(
+      `That is more than the ${noun} still owes. The most you can pay now is ${outstanding.toFixed(2)}.`
+    );
+  }
+  return Number(amount.toFixed(2));
 }
 
 function requireGateway() {
@@ -53,7 +76,7 @@ function requireGateway() {
   }
 }
 
-async function beginCheckout(buyerId, saleOrderId) {
+async function beginCheckout(buyerId, saleOrderId, requestedAmount) {
   requireGateway();
 
   const { tranId, amount, order } = await withTransaction(async (connection) => {
@@ -91,9 +114,11 @@ async function beginCheckout(buyerId, saleOrderId) {
       throw ApiError.businessRule(await nothingLeftToPay(connection, 'SaleOrderID', saleOrderId, 'order'));
     }
 
+    const amount = amountToCharge(requestedAmount, outstanding, 'order');
+
     await connection.execute(
       `BEGIN pkg_krishi_rules.check_payment_allowed(:saleOrderId, :amount); END;`,
-      { saleOrderId, amount: outstanding }
+      { saleOrderId, amount }
     );
 
     const reference = `SSLCZ-${saleOrderId}-${Date.now()}`;
@@ -103,10 +128,10 @@ async function beginCheckout(buyerId, saleOrderId) {
        VALUES ((SELECT NVL(MAX(PaymentID), 0) + 1 FROM PAYMENT),
                :saleOrderId, :buyerId, :farmerId, :amount,
                'SSLCOMMERZ', :reference, 'PENDING')`,
-      { saleOrderId, buyerId, farmerId: row.FARMERID, amount: outstanding, reference }
+      { saleOrderId, buyerId, farmerId: row.FARMERID, amount, reference }
     );
 
-    return { tranId: reference, amount: outstanding, order: row };
+    return { tranId: reference, amount, order: row };
   });
 
   return openSession({
@@ -125,7 +150,7 @@ async function beginCheckout(buyerId, saleOrderId) {
  * allocation rather than a sale order, so PAYMENT carries AllocationID
  * and the SALE columns stay null -- CK_PAYMENT_TYPE_SHAPE enforces that.
  */
-async function beginStorageCheckout(customerType, customerId, allocationId) {
+async function beginStorageCheckout(customerType, customerId, allocationId, requestedAmount) {
   requireGateway();
 
   const { tranId, amount, detail } = await withTransaction(async (connection) => {
@@ -142,16 +167,18 @@ async function beginStorageCheckout(customerType, customerId, allocationId) {
       throw ApiError.businessRule(await nothingLeftToPay(connection, 'AllocationID', allocationId, 'storage fee'));
     }
 
+    const amount = amountToCharge(requestedAmount, outstanding, 'storage fee');
+
     const reference = `SSLCZ-S${customerType === 'FARMER' ? 'F' : 'B'}${allocationId}-${Date.now()}`;
     await connection.execute(
       `INSERT INTO PAYMENT (PaymentID, PaymentType, AllocationID, Amount,
                             PaymentMethod, TransactionReference, PaymentStatus)
        VALUES ((SELECT NVL(MAX(PaymentID), 0) + 1 FROM PAYMENT),
                'STORAGE', :allocationId, :amount, 'SSLCOMMERZ', :reference, 'PENDING')`,
-      { allocationId, amount: outstanding, reference }
+      { allocationId, amount, reference }
     );
 
-    return { tranId: reference, amount: outstanding, detail: alloc };
+    return { tranId: reference, amount, detail: alloc };
   });
 
   return openSession({

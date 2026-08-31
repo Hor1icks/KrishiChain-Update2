@@ -182,7 +182,12 @@ router.get('/storage/fees', async (req, res, next) => {
 router.post('/storage/:allocationId/pay/online', async (req, res, next) => {
   try {
     res.json(
-      await gateway.beginStorageCheckout('FARMER', me(req), Number(req.params.allocationId))
+      await gateway.beginStorageCheckout(
+        'FARMER',
+        me(req),
+        Number(req.params.allocationId),
+        req.body.amount
+      )
     );
   } catch (err) {
     next(err);
