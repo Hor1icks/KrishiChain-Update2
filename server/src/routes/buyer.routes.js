@@ -74,17 +74,6 @@ router.get('/payments', async (req, res, next) => {
   }
 });
 
-/** Direct buyer -> farmer settlement (D-2). */
-router.post('/orders/:saleOrderId/pay', async (req, res, next) => {
-  try {
-    res
-      .status(201)
-      .json(await buyer.payOrder(me(req), Number(req.params.saleOrderId), req.body));
-  } catch (err) {
-    next(err);
-  }
-});
-
 /** Hands back a hosted checkout URL for the buyer's browser to follow. */
 router.post('/orders/:saleOrderId/pay/online', async (req, res, next) => {
   try {
@@ -208,14 +197,6 @@ router.post('/storage/:allocationId/pay/online', async (req, res, next) => {
     res.json(
       await gateway.beginStorageCheckout('BUYER', me(req), Number(req.params.allocationId))
     );
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.post('/storage/:allocationId/pay', async (req, res, next) => {
-  try {
-    res.status(201).json(await buyer.payStorageFee(me(req), Number(req.params.allocationId), req.body));
   } catch (err) {
     next(err);
   }

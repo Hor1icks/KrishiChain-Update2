@@ -648,12 +648,12 @@ export default function StorageConsentPage({ base, title, intro, legNote }) {
           {onlinePayment ? (
             <>
               <p className="note">
-                Card, mobile banking and internet banking are all handled on the next
-                screen. You will come back here when it is done.
+                You choose how to pay on the next screen. You will come back here when
+                it is done.
               </p>
               <button type="button" className="gateway-button" onClick={pay} disabled={busy}>
-                <img src="/sslcommerz.png" alt="Pay with SSLCommerz" />
-                <span>{busy ? 'Opening the gateway…' : 'Pay now'}</span>
+                <span>{busy ? 'Opening' : 'Pay with'}</span>
+                <img src="/sslcommerz.png" alt="SSLCommerz" />
               </button>
             </>
           ) : (

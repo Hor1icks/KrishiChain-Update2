@@ -189,14 +189,6 @@ router.post('/storage/:allocationId/pay/online', async (req, res, next) => {
   }
 });
 
-router.post('/storage/:allocationId/pay', async (req, res, next) => {
-  try {
-    res.status(201).json(await farmer.payStorageFee(me(req), Number(req.params.allocationId), req.body));
-  } catch (err) {
-    next(err);
-  }
-});
-
 router.get('/storage', async (req, res, next) => {
   try {
     res.json(await farmer.listMyStorage(me(req)));
