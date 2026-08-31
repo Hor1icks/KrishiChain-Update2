@@ -12,6 +12,7 @@ const buyerRoutes = require('./routes/buyer.routes');
 const storageRoutes = require('./routes/storage.routes');
 const transportRoutes = require('./routes/transport.routes');
 const adminRoutes = require('./routes/admin.routes');
+const paymentRoutes = require('./routes/payments.routes');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -42,6 +43,7 @@ app.use('/api/buyer', buyerRoutes);
 app.use('/api/storage', storageRoutes);
 app.use('/api/transport', transportRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/payments', paymentRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

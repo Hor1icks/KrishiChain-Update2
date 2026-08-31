@@ -10,6 +10,7 @@ export default function MyOrders() {
   const [paying, setPaying] = useState(null);
   const [form, setForm] = useState({ amount: '', paymentMethod: 'BKASH' });
   const [busy, setBusy] = useState(false);
+  const [onlinePayment, setOnlinePayment] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -21,7 +22,25 @@ export default function MyOrders() {
 
   useEffect(() => {
     load();
+    api('/reference/features')
+      .then((f) => setOnlinePayment(f.onlinePayment))
+      .catch(() => setOnlinePayment(false));
   }, [load]);
+
+  async function payOnline() {
+    setError('');
+    setBusy(true);
+    try {
+      const { redirectUrl } = await api(
+        `/buyer/orders/${paying.saleOrderId}/pay/online`,
+        { method: 'POST' }
+      );
+      window.location.href = redirectUrl;
+    } catch (e) {
+      setError(e.message);
+      setBusy(false);
+    }
+  }
 
   async function pay(event) {
     event.preventDefault();
@@ -237,6 +256,11 @@ export default function MyOrders() {
             <button type="submit" disabled={busy}>
               {busy ? 'Sending…' : 'Send payment'}
             </button>
+            {onlinePayment && (
+              <button type="button" className="ghost" onClick={payOnline} disabled={busy}>
+                Pay the full balance by card
+              </button>
+            )}
             <button type="button" className="ghost" onClick={() => setPaying(null)}>
               Cancel
             </button>

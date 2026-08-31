@@ -33,4 +33,20 @@ module.exports = {
     secret: required('JWT_SECRET'),
     expiresIn: required('JWT_EXPIRES_IN', '8h'),
   },
+
+  // Optional: online card payments stay switched off until a sandbox
+  // store is configured, and the buyer only sees cash settlement.
+  sslcommerz: {
+    storeId: process.env.SSLCZ_STORE_ID || '',
+    storePassword: process.env.SSLCZ_STORE_PASSWORD || '',
+    sandbox: (process.env.SSLCZ_SANDBOX ?? 'true') !== 'false',
+    get enabled() {
+      return Boolean(this.storeId && this.storePassword);
+    },
+    get baseUrl() {
+      return this.sandbox
+        ? 'https://sandbox.sslcommerz.com'
+        : 'https://securepay.sslcommerz.com';
+    },
+  },
 };

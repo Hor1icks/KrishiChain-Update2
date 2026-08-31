@@ -36,6 +36,12 @@ class ApiError extends Error {
   static businessRule(message, details) {
     return new ApiError(422, message, details);
   }
+
+  // 502 - we reached an upstream service and it failed us, which is not
+  // the caller's fault and should not read as one.
+  static badGateway(message = 'An upstream service is unavailable.') {
+    return new ApiError(502, message);
+  }
 }
 
 module.exports = ApiError;

@@ -14,12 +14,19 @@ const { query } = require('../config/db');
 const storage = require('../services/storage.service');
 const { authenticate } = require('../middleware/authenticate');
 const { DISTRICTS } = require('../utils/districts');
+const gateway = require('../services/sslcommerz.service');
 
 const router = express.Router();
 // Districts are needed by the registration form, which by definition has
 // no token yet, so this one sits above the authenticate middleware.
 router.get('/districts', (_req, res) => {
   res.json(DISTRICTS);
+});
+
+// Lets the buyer's payment page hide the online option when no sandbox
+// store is configured, rather than offering a button that always fails.
+router.get('/features', (_req, res) => {
+  res.json({ onlinePayment: gateway.enabled() });
 });
 
 router.use(authenticate);
