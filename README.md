@@ -184,19 +184,11 @@ db.sh        runs SQL against the container without a local client
 database/    schema, seed data, views, the PL/SQL layer
 server/      Express API
 client/      React front end, 28 pages across five role modules
-KrishiChainV1/   standalone demo build used for Project Update-1
 Phase1/      one-time environment setup and connectivity checks
-ER/          entity-relationship and schema diagrams
-docs/        supporting notes
 ```
 
-`CHANGES_AFTER_UPDATE1.md` lists everything done since the Update-1
-assessment, with the queries and pages to check each change against. Start
-there if you are reviewing recent work.
-
-`KrishiChainV1/` is frozen. It is a copy of the front end with the network
-layer replaced by recorded fixtures, so it runs with no backend and no
-database. It was built for one presentation and is not maintained.
+`UPDATE2.md` maps each technique the coursework asks for to the page that
+exercises it. Start there if you are reviewing this build.
 
 ---
 
