@@ -5,37 +5,37 @@ import NotificationBell from './NotificationBell';
 
 const NAV = {
   FARMER: [
-    { to: '/farmer', label: 'Dashboard', ready: true, end: true },
-    { to: '/farmer/farms', label: 'My Farms', ready: true },
-    { to: '/farmer/batches', label: 'My Batches', ready: true },
-    { to: '/farmer/batches/new', label: 'New Batch', ready: true },
-    { to: '/farmer/orders', label: 'My Orders', ready: true },
-    { to: '/farmer/payments', label: 'Payment History', ready: true },
-    { to: '/farmer/storage', label: 'Storage Requests', ready: true },
+    { to: '/farmer', label: 'Dashboard', end: true },
+    { to: '/farmer/farms', label: 'My Farms' },
+    { to: '/farmer/batches', label: 'My Batches' },
+    { to: '/farmer/batches/new', label: 'New Batch' },
+    { to: '/farmer/orders', label: 'My Orders' },
+    { to: '/farmer/payments', label: 'Payment History' },
+    { to: '/farmer/storage', label: 'Storage Requests' },
   ],
   BUYER: [
-    { to: '/buyer', label: 'Dashboard', ready: true, end: true },
-    { to: '/buyer/browse', label: 'Browse Listings', ready: true },
-    { to: '/buyer/bids', label: 'My Bids', ready: true },
-    { to: '/buyer/orders', label: 'My Orders', ready: true },
-    { to: '/buyer/payments', label: 'Payments', ready: true },
-    { to: '/buyer/storage', label: 'My Storage', ready: true },
-    { to: '/buyer/reviews', label: 'Reviews', ready: true },
+    { to: '/buyer', label: 'Dashboard', end: true },
+    { to: '/buyer/browse', label: 'Browse Listings' },
+    { to: '/buyer/bids', label: 'My Bids' },
+    { to: '/buyer/orders', label: 'My Orders' },
+    { to: '/buyer/payments', label: 'Payments' },
+    { to: '/buyer/storage', label: 'My Storage' },
+    { to: '/buyer/reviews', label: 'Reviews' },
   ],
   ADMIN: [
-    { to: '/admin', label: 'Dashboard', ready: true, end: true },
-    { to: '/admin/prices', label: 'Daily Prices', ready: true },
-    { to: '/admin/users', label: 'Manage Users', ready: true },
-    { to: '/admin/complaints', label: 'Complaints', ready: true },
-    { to: '/admin/reports', label: 'Reports', ready: true },
+    { to: '/admin', label: 'Dashboard', end: true },
+    { to: '/admin/prices', label: 'Daily Prices' },
+    { to: '/admin/users', label: 'Manage Users' },
+    { to: '/admin/complaints', label: 'Complaints' },
+    { to: '/admin/reports', label: 'Reports' },
   ],
   STORAGE_MANAGER: [
-    { to: '/storage', label: 'Dashboard', ready: true, end: true },
-    { to: '/storage/warehouses', label: 'Warehouses & Units', ready: true },
-    { to: '/storage/allocations', label: 'Allocations', ready: true },
+    { to: '/storage', label: 'Dashboard', end: true },
+    { to: '/storage/warehouses', label: 'Warehouses & Units' },
+    { to: '/storage/allocations', label: 'Allocations' },
   ],
   TRANSPORT_PERSONNEL: [
-    { to: '/transport', label: 'My Assignments', ready: true, end: true },
+    { to: '/transport', label: 'My Assignments', end: true },
   ],
 };
 
@@ -55,28 +55,20 @@ export default function NavBar() {
         <Brand />
 
         <ul className="nav-links">
-          {items.map((item) =>
-            item.ready ? (
-              <li key={item.label}>
-                <Link to={item.to} className={isActive(item) ? 'active' : ''}>
-                  {item.label}
-                </Link>
-              </li>
-            ) : (
-              <li key={item.label}>
-                <span className="disabled" title="Planned for Update-2 — not built yet">
-                  {item.label} <em>Phase 2</em>
-                </span>
-              </li>
-            )
-          )}
+          {items.map((item) => (
+            <li key={item.label}>
+              <Link to={item.to} className={isActive(item) ? 'active' : ''}>
+                {item.label}
+              </Link>
+            </li>
+          ))}
         </ul>
 
         <div className="nav-user">
           <NotificationBell />
-          <span className="muted">
+          <Link to="/profile" className="muted">
             {user.firstName} · {user.role}
-          </span>
+          </Link>
           <button type="button" className="small" onClick={logout}>
             Sign out
           </button>

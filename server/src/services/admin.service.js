@@ -163,7 +163,24 @@ async function getDashboard() {
       ORDER BY c.CropName`
   );
 
-  return { summary: counts.rows[0], unsoldBatches: unsold.rows, unpaidOrders: unpaid.rows, byCrop: byCrop.rows };
+  const inFlight = await query(
+    `SELECT SaleOrderID AS "saleOrderId", TransportID AS "transportId",
+            CropName AS "cropName", FarmerName AS "farmerName",
+            NVL(BusinessName, BuyerName) AS "buyerName",
+            DeliveryStatus AS "deliveryStatus", VehicleNo AS "vehicleNo",
+            DriverName AS "driverName", DaysSinceRequest AS "daysSinceRequest",
+            PaymentEligibility AS "paymentEligibility"
+       FROM V_PENDING_DELIVERY
+      ORDER BY DaysSinceRequest DESC, SaleOrderID`
+  );
+
+  return {
+    summary: counts.rows[0],
+    unsoldBatches: unsold.rows,
+    unpaidOrders: unpaid.rows,
+    byCrop: byCrop.rows,
+    inFlight: inFlight.rows,
+  };
 }
 
 /**

@@ -44,6 +44,42 @@ export default function AdminDashboard() {
         <Stat label="Prices logged today" value={number(s.pricesLoggedToday)} />
       </div>
 
+      <h2>Still in transit</h2>
+      {data.inFlight.length === 0 ? (
+        <p className="muted">Nothing is in transit.</p>
+      ) : (
+        <table>
+          <thead>
+            <tr>
+              <th>Order</th>
+              <th>Crop</th>
+              <th>Buyer</th>
+              <th>Carrier</th>
+              <th>Vehicle</th>
+              <th className="num">Days waiting</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.inFlight.map((t) => (
+              <tr key={t.saleOrderId}>
+                <td>#{t.saleOrderId}</td>
+                <td>{t.cropName}</td>
+                <td>{t.buyerName}</td>
+                <td>{t.driverName || <span className="muted">unassigned</span>}</td>
+                <td>{t.vehicleNo || <span className="muted">—</span>}</td>
+                <td className="num">{number(t.daysSinceRequest)}</td>
+                <td>
+                  <span className={`tag tag-${String(t.deliveryStatus).toLowerCase()}`}>
+                    {t.deliveryStatus}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
       <h2>Delivered but not paid</h2>
       {data.unpaidOrders.length === 0 ? (
         <p className="muted">Every delivered order is settled.</p>

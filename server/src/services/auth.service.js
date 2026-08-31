@@ -315,6 +315,7 @@ async function getProfile(userId) {
     district: row.DISTRICT,
     upazila: row.UPAZILA,
     village: row.VILLAGE,
+    fullAddress: row.FULLADDRESS,
     registrationDate: row.REGISTRATIONDATE,
     status: row.STATUS,
     role: row.ROLE,

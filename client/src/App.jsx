@@ -5,7 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import NavBar from './components/NavBar';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import DashboardPage from './pages/DashboardPage';
+import ProfilePage from './pages/ProfilePage';
 import FarmerDashboard from './pages/farmer/FarmerDashboard';
 import MyFarms from './pages/farmer/MyFarms';
 import MyBatches from './pages/farmer/MyBatches';
@@ -59,7 +59,7 @@ function RoleHome() {
   if (user?.role === 'STORAGE_MANAGER') return <Navigate to="/storage" replace />;
   if (user?.role === 'TRANSPORT_PERSONNEL') return <Navigate to="/transport" replace />;
   if (user?.role === 'ADMIN') return <Navigate to="/admin" replace />;
-  return <DashboardPage />;
+  return <Navigate to="/profile" replace />;
 }
 
 export default function App() {
@@ -78,6 +78,15 @@ export default function App() {
                 element={
                   <ProtectedRoute>
                     <RoleHome />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <ProfilePage />
                   </ProtectedRoute>
                 }
               />
