@@ -1136,3 +1136,37 @@ button.link:hover:not(:disabled) {
     margin-top: 2rem;
   }
 }
+
+/* The gateway owns the payment methods, so the button carries their
+   mark rather than listing bKash, Nagad and the rest as if we took them. */
+.gateway-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  max-width: 26rem;
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+}
+
+.gateway-button img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.gateway-button span {
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.gateway-button:hover:not(:disabled) {
+  background: var(--sage-pale);
+  border-color: var(--forest);
+  color: var(--ink);
+}

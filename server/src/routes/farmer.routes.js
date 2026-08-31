@@ -2,6 +2,7 @@
 
 const express = require('express');
 const farmer = require('../services/farmer.service');
+const gateway = require('../services/sslcommerz.service');
 const { authenticate, requireRole } = require('../middleware/authenticate');
 
 const router = express.Router();
@@ -173,6 +174,16 @@ router.post('/storage/:allocationId/release/respond', async (req, res, next) => 
 router.get('/storage/fees', async (req, res, next) => {
   try {
     res.json(await farmer.listStorageFees(me(req)));
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/storage/:allocationId/pay/online', async (req, res, next) => {
+  try {
+    res.json(
+      await gateway.beginStorageCheckout('FARMER', me(req), Number(req.params.allocationId))
+    );
   } catch (err) {
     next(err);
   }

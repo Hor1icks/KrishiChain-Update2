@@ -8,7 +8,6 @@ export default function MyOrders() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [paying, setPaying] = useState(null);
-  const [form, setForm] = useState({ amount: '', paymentMethod: 'BKASH' });
   const [busy, setBusy] = useState(false);
   const [onlinePayment, setOnlinePayment] = useState(false);
 
@@ -38,32 +37,6 @@ export default function MyOrders() {
       window.location.href = redirectUrl;
     } catch (e) {
       setError(e.message);
-      setBusy(false);
-    }
-  }
-
-  async function pay(event) {
-    event.preventDefault();
-    setError('');
-    setNotice('');
-    setBusy(true);
-    try {
-      const res = await api(`/buyer/orders/${paying.saleOrderId}/pay`, {
-        method: 'POST',
-        body: { amount: Number(form.amount), paymentMethod: form.paymentMethod },
-      });
-      setNotice(
-        res.outstanding > 0
-          ? `${taka(res.amount)} sent to the farmer. ${taka(res.outstanding)} still outstanding on order #${res.saleOrderId}.`
-          : `Order #${res.saleOrderId} settled in full — ${taka(res.totalPaid)} paid.` +
-            (res.orderCompleted ? ' The order is now complete.' : '')
-      );
-      setPaying(null);
-      setForm({ amount: '', paymentMethod: 'BKASH' });
-      await load();
-    } catch (e) {
-      setError(e.message);
-    } finally {
       setBusy(false);
     }
   }
@@ -198,10 +171,7 @@ export default function MyOrders() {
                         <button
                           type="button"
                           className="small"
-                          onClick={() => {
-                            setPaying(o);
-                            setForm({ amount: String(outstanding), paymentMethod: 'BKASH' });
-                          }}
+                          onClick={() => setPaying(o)}
                         >
                           Pay
                         </button>
@@ -218,55 +188,59 @@ export default function MyOrders() {
       )}
 
       {paying && (
-        <form onSubmit={pay} className="boxed confirm">
+        <div className="boxed confirm">
           <h3>Pay order #{paying.saleOrderId}</h3>
           <p className="muted">
             {paying.cropName} · {number(paying.acceptedQuantity)} kg from {paying.farmerName}.
-            Money goes straight to the farmer.
           </p>
-          <div className="grid">
-            <label>
-              Amount
-              <input
-                type="number"
-                step="0.01"
-                min="0.01"
-                value={form.amount}
-                onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                required
-              />
-            </label>
-            <label>
-              Method
-              <select
-                value={form.paymentMethod}
-                onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}
-              >
-                <option value="BKASH">bKash</option>
-                <option value="NAGAD">Nagad</option>
-                <option value="BANK_TRANSFER">Bank transfer</option>
-                <option value="CASH">Cash</option>
-              </select>
-            </label>
+
+          <div className="stats">
+            <div className="stat">
+              <span className="stat-label">Order total</span>
+              <span className="stat-value">{taka(paying.totalAmount)}</span>
+            </div>
+            <div className="stat">
+              <span className="stat-label">Already paid</span>
+              <span className="stat-value">{taka(paying.amountPaid)}</span>
+            </div>
+            <div className="stat">
+              <span className="stat-label">Due now</span>
+              <span className="stat-value">
+                {taka(Number(paying.totalAmount) - Number(paying.amountPaid || 0))}
+              </span>
+            </div>
           </div>
-          <p className="note">
-            A payment cannot take the total above the {taka(paying.totalAmount)} order value.
-          </p>
-          <div className="actions">
-            <button type="submit" disabled={busy}>
-              {busy ? 'Sending…' : 'Send payment'}
-            </button>
-            {onlinePayment && (
-              <button type="button" className="ghost" onClick={payOnline} disabled={busy}>
-                Pay the full balance by card
+
+          {onlinePayment ? (
+            <>
+              <p className="note">
+                Card, mobile banking and internet banking are all handled on the next
+                screen. You will come back here when it is done.
+              </p>
+              <button
+                type="button"
+                className="gateway-button"
+                onClick={payOnline}
+                disabled={busy}
+              >
+                <img src="/sslcommerz.png" alt="Pay with SSLCommerz" />
+                <span>{busy ? 'Opening the gateway…' : 'Pay now'}</span>
               </button>
-            )}
+            </>
+          ) : (
+            <p className="error">
+              Online payment is not configured, so this order cannot be paid yet.
+            </p>
+          )}
+
+          <div className="actions">
             <button type="button" className="ghost" onClick={() => setPaying(null)}>
               Cancel
             </button>
           </div>
-        </form>
+        </div>
       )}
+
     </div>
   );
 }

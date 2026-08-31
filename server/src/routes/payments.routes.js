@@ -10,32 +10,29 @@ const router = express.Router();
 // here trusts the body: the outcome is re-read from the gateway.
 router.use(express.urlencoded({ extended: false }));
 
-function finish(res, result) {
-  res.redirect(303, gateway.resultRedirect(result));
+// The buyer's browser is sitting on this request, so it always ends in a
+// redirect back to the app. Reporting a 500 here would strand them on an
+// API URL looking at JSON.
+function handle(work) {
+  return async (req, res) => {
+    let result;
+    try {
+      result = await work({ ...req.query, ...req.body });
+    } catch (err) {
+      console.error(`[sslcommerz] ${req.path} failed: ${err.stack || err.message}`);
+      result = { settled: false, saleOrderId: null, reason: 'error' };
+    }
+    res.redirect(303, gateway.resultRedirect(result));
+  };
 }
 
-router.post('/sslcommerz/success', async (req, res, next) => {
-  try {
-    finish(res, await gateway.completeCheckout(req.body));
-  } catch (err) {
-    next(err);
-  }
-});
+router.post('/sslcommerz/success', handle((body) => gateway.completeCheckout(body)));
+router.post('/sslcommerz/fail', handle((body) => gateway.abandonCheckout(body, 'declined')));
+router.post('/sslcommerz/cancel', handle((body) => gateway.abandonCheckout(body, 'cancelled')));
 
-router.post('/sslcommerz/fail', async (req, res, next) => {
-  try {
-    finish(res, await gateway.abandonCheckout(req.body, 'declined'));
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.post('/sslcommerz/cancel', async (req, res, next) => {
-  try {
-    finish(res, await gateway.abandonCheckout(req.body, 'cancelled'));
-  } catch (err) {
-    next(err);
-  }
-});
+// SSLCommerz sends some buyers back with GET rather than POST.
+router.get('/sslcommerz/success', handle((body) => gateway.completeCheckout(body)));
+router.get('/sslcommerz/fail', handle((body) => gateway.abandonCheckout(body, 'declined')));
+router.get('/sslcommerz/cancel', handle((body) => gateway.abandonCheckout(body, 'cancelled')));
 
 module.exports = router;

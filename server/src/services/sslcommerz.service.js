@@ -3,7 +3,7 @@
 const { sslcommerz, clientOrigin, port } = require('../config/env');
 const { query, withTransaction } = require('../config/db');
 const ApiError = require('../utils/ApiError');
-const oracledb = require('oracledb');
+const storage = require('./storage.service');
 
 const API_BASE = `http://localhost:${port}/api/payments/sslcommerz`;
 
@@ -32,12 +32,29 @@ async function post(path, fields) {
  * hosted checkout page. Reserving first means BR-19 already counts this
  * attempt, so a buyer cannot open two checkout pages and pay twice.
  */
-async function beginCheckout(buyerId, saleOrderId) {
+// "Already settled" is misleading when the balance is actually held by a
+// checkout someone walked away from, which is the common case in a demo.
+async function nothingLeftToPay(connection, column, id, noun) {
+  const pending = await connection.execute(
+    `SELECT COUNT(*) AS Pending FROM PAYMENT
+      WHERE ${column} = :id AND PaymentStatus = 'PENDING'`,
+    { id }
+  );
+  return Number(pending.rows[0].PENDING) > 0
+    ? `A checkout for this ${noun} is already open. Finish or cancel it on the gateway, then try again.`
+    : `This ${noun} is already settled.`;
+}
+
+function requireGateway() {
   if (!sslcommerz.enabled) {
     throw ApiError.badRequest(
       'Online payment is not configured. Set SSLCZ_STORE_ID and SSLCZ_STORE_PASSWORD in server/.env.'
     );
   }
+}
+
+async function beginCheckout(buyerId, saleOrderId) {
+  requireGateway();
 
   const { tranId, amount, order } = await withTransaction(async (connection) => {
     const result = await connection.execute(
@@ -70,7 +87,9 @@ async function beginCheckout(buyerId, saleOrderId) {
       { saleOrderId }
     );
     const outstanding = Number(row.TOTALAMOUNT) - Number(paid.rows[0].PAID);
-    if (outstanding <= 0) throw ApiError.businessRule('This order is already settled.');
+    if (outstanding <= 0) {
+      throw ApiError.businessRule(await nothingLeftToPay(connection, 'SaleOrderID', saleOrderId, 'order'));
+    }
 
     await connection.execute(
       `BEGIN pkg_krishi_rules.check_payment_allowed(:saleOrderId, :amount); END;`,
@@ -90,6 +109,63 @@ async function beginCheckout(buyerId, saleOrderId) {
     return { tranId: reference, amount: outstanding, order: row };
   });
 
+  return openSession({
+    tranId,
+    amount,
+    productName: `${order.CROPNAME} — order #${saleOrderId}`,
+    customerName: order.BUYERNAME,
+    customerEmail: order.BUYEREMAIL,
+    customerAddress: order.BUYERADDRESS,
+    extra: { saleOrderId },
+  });
+}
+
+/**
+ * Storage fees settle through the same gateway. They hang off an
+ * allocation rather than a sale order, so PAYMENT carries AllocationID
+ * and the SALE columns stay null -- CK_PAYMENT_TYPE_SHAPE enforces that.
+ */
+async function beginStorageCheckout(customerType, customerId, allocationId) {
+  requireGateway();
+
+  const { tranId, amount, detail } = await withTransaction(async (connection) => {
+    const alloc = await storage.loadAllocationForPayment(connection, customerType, customerId, allocationId);
+
+    const paid = await connection.execute(
+      `SELECT NVL(SUM(Amount), 0) AS Paid FROM PAYMENT
+        WHERE PaymentType = 'STORAGE' AND AllocationID = :allocationId
+          AND PaymentStatus IN ('PENDING', 'COMPLETED')`,
+      { allocationId }
+    );
+    const outstanding = Number(alloc.STORAGEFEE || 0) - Number(paid.rows[0].PAID);
+    if (outstanding <= 0) {
+      throw ApiError.businessRule(await nothingLeftToPay(connection, 'AllocationID', allocationId, 'storage fee'));
+    }
+
+    const reference = `SSLCZ-S${customerType === 'FARMER' ? 'F' : 'B'}${allocationId}-${Date.now()}`;
+    await connection.execute(
+      `INSERT INTO PAYMENT (PaymentID, PaymentType, AllocationID, Amount,
+                            PaymentMethod, TransactionReference, PaymentStatus)
+       VALUES ((SELECT NVL(MAX(PaymentID), 0) + 1 FROM PAYMENT),
+               'STORAGE', :allocationId, :amount, 'SSLCOMMERZ', :reference, 'PENDING')`,
+      { allocationId, amount: outstanding, reference }
+    );
+
+    return { tranId: reference, amount: outstanding, detail: alloc };
+  });
+
+  return openSession({
+    tranId,
+    amount,
+    productName: `Storage fee — allocation #${allocationId}`,
+    customerName: detail.CUSTOMERNAME,
+    customerEmail: detail.CUSTOMEREMAIL,
+    customerAddress: detail.WAREHOUSENAME,
+    extra: { allocationId },
+  });
+}
+
+async function openSession({ tranId, amount, productName, customerName, customerEmail, customerAddress, extra }) {
   const session = await post('/gwprocess/v4/api.php', {
     store_id: sslcommerz.storeId,
     store_passwd: sslcommerz.storePassword,
@@ -99,12 +175,12 @@ async function beginCheckout(buyerId, saleOrderId) {
     success_url: `${API_BASE}/success`,
     fail_url: `${API_BASE}/fail`,
     cancel_url: `${API_BASE}/cancel`,
-    product_name: `${order.CROPNAME} — order #${saleOrderId}`,
+    product_name: productName,
     product_category: 'Agriculture',
     product_profile: 'physical-goods',
-    cus_name: order.BUYERNAME,
-    cus_email: order.BUYEREMAIL,
-    cus_add1: order.BUYERADDRESS || 'N/A',
+    cus_name: customerName,
+    cus_email: customerEmail,
+    cus_add1: customerAddress || 'N/A',
     cus_city: 'Dhaka',
     cus_country: 'Bangladesh',
     cus_phone: '01700000000',
@@ -119,7 +195,7 @@ async function beginCheckout(buyerId, saleOrderId) {
     );
   }
 
-  return { saleOrderId, amount, transactionId: tranId, redirectUrl: session.GatewayPageURL };
+  return { ...extra, amount, transactionId: tranId, redirectUrl: session.GatewayPageURL };
 }
 
 async function markFailed(tranId) {
@@ -148,17 +224,28 @@ async function completeCheckout(body) {
     `&store_id=${encodeURIComponent(sslcommerz.storeId)}` +
     `&store_passwd=${encodeURIComponent(sslcommerz.storePassword)}&format=json`;
 
-  const response = await fetch(url);
-  const validation = await response.json();
+  // The validator answers with an empty body often enough that parsing it
+  // as JSON unconditionally turns a declined payment into a 500.
+  let validation = null;
+  try {
+    const response = await fetch(url);
+    const text = await response.text();
+    validation = text.trim() ? JSON.parse(text) : null;
+    if (!validation) {
+      console.error(`[sslcommerz] empty validation response for ${tranId} (HTTP ${response.status})`);
+    }
+  } catch (err) {
+    console.error(`[sslcommerz] validation failed for ${tranId}: ${err.message}`);
+  }
 
-  if (!['VALID', 'VALIDATED'].includes(validation.status)) {
+  if (!validation || !['VALID', 'VALIDATED'].includes(validation.status)) {
     await markFailed(tranId);
-    return { settled: false, saleOrderId: orderIdFrom(tranId), reason: 'not-validated' };
+    return { settled: false, ...targetFromRef(tranId), reason: 'not-validated' };
   }
 
   return withTransaction(async (connection) => {
     const pending = await connection.execute(
-      `SELECT PaymentID, SaleOrderID, Amount, PaymentStatus
+      `SELECT PaymentID, PaymentType, SaleOrderID, AllocationID, Amount, PaymentStatus
          FROM PAYMENT
         WHERE TransactionReference = :tranId
           FOR UPDATE`,
@@ -166,9 +253,12 @@ async function completeCheckout(body) {
     );
     if (!pending.rows.length) throw ApiError.notFound('That transaction is not on record.');
     const payment = pending.rows[0];
+    const where = targetFromRef(tranId);
 
+    // A repeated callback must not double-settle. The reference is
+    // UNIQUE, so this row is the whole transaction.
     if (payment.PAYMENTSTATUS === 'COMPLETED') {
-      return { settled: true, saleOrderId: payment.SALEORDERID, alreadySettled: true };
+      return { settled: true, ...where, alreadySettled: true };
     }
 
     // The gateway is authoritative on what was actually charged.
@@ -177,65 +267,74 @@ async function completeCheckout(body) {
         `UPDATE PAYMENT SET PaymentStatus = 'FAILED' WHERE PaymentID = :id`,
         { id: payment.PAYMENTID }
       );
-      return { settled: false, saleOrderId: payment.SALEORDERID, reason: 'amount-mismatch' };
+      return { settled: false, ...where, reason: 'amount-mismatch' };
     }
 
     await connection.execute(
-      `UPDATE PAYMENT
-          SET PaymentStatus = 'COMPLETED',
-              TransactionReference = :reference
-        WHERE PaymentID = :id`,
-      {
-        id: payment.PAYMENTID,
-        reference: `${tranId} | ${validation.bank_tran_id || valId}`,
-      }
+      `UPDATE PAYMENT SET PaymentStatus = 'COMPLETED' WHERE PaymentID = :id`,
+      { id: payment.PAYMENTID }
     );
 
-    const settled = await connection.execute(
-      `SELECT so.TotalAmount,
-              NVL((SELECT SUM(p.Amount) FROM PAYMENT p
-                    WHERE p.SaleOrderID = so.SaleOrderID
-                      AND p.PaymentType = 'SALE'
-                      AND p.PaymentStatus IN ('PENDING','COMPLETED')), 0) AS Paid
-         FROM SALE_ORDER so
-        WHERE so.SaleOrderID = :saleOrderId`,
-      { saleOrderId: payment.SALEORDERID }
-    );
-    const row = settled.rows[0];
-    if (Number(row.PAID) >= Number(row.TOTALAMOUNT)) {
-      await connection.execute(
-        `UPDATE SALE_ORDER SET Status = 'COMPLETED'
-          WHERE SaleOrderID = :saleOrderId AND Status <> 'CANCELLED'`,
+    if (payment.PAYMENTTYPE === 'SALE') {
+      const settled = await connection.execute(
+        `SELECT so.TotalAmount,
+                NVL((SELECT SUM(p.Amount) FROM PAYMENT p
+                      WHERE p.SaleOrderID = so.SaleOrderID
+                        AND p.PaymentType = 'SALE'
+                        AND p.PaymentStatus IN ('PENDING','COMPLETED')), 0) AS Paid
+           FROM SALE_ORDER so
+          WHERE so.SaleOrderID = :saleOrderId`,
         { saleOrderId: payment.SALEORDERID }
       );
+      const row = settled.rows[0];
+      if (Number(row.PAID) >= Number(row.TOTALAMOUNT)) {
+        await connection.execute(
+          `UPDATE SALE_ORDER SET Status = 'COMPLETED'
+            WHERE SaleOrderID = :saleOrderId AND Status <> 'CANCELLED'`,
+          { saleOrderId: payment.SALEORDERID }
+        );
+      }
     }
 
-    return { settled: true, saleOrderId: payment.SALEORDERID, amount: Number(payment.AMOUNT) };
+    return { settled: true, ...where, amount: Number(payment.AMOUNT) };
   });
 }
 
 async function abandonCheckout(body, outcome) {
-  if (body.tran_id) await markFailed(body.tran_id);
-  return { settled: false, saleOrderId: orderIdFrom(body.tran_id), reason: outcome };
+  const tranId = body.tran_id;
+  if (tranId) await markFailed(tranId);
+  return { settled: false, ...targetFromRef(tranId), reason: outcome };
 }
 
-function orderIdFrom(tranId) {
-  const parts = String(tranId || '').split('-');
-  return parts.length > 1 ? Number(parts[1]) : null;
+// The reference says what was paid and by whom, so the browser can be
+// sent to the right page even when no row could be read back:
+//   SSLCZ-4-1788163857107     buyer, sale order 4
+//   SSLCZ-SB12-1788163857107  buyer, storage allocation 12
+//   SSLCZ-SF12-1788163857107  farmer, storage allocation 12
+function targetFromRef(tranId) {
+  const part = String(tranId || '').split('-')[1] || '';
+  const storageMatch = part.match(/^S([FB])(\d+)$/);
+  if (storageMatch) {
+    return {
+      page: storageMatch[1] === 'F' ? '/farmer/storage' : '/buyer/storage',
+      key: 'allocation',
+      id: Number(storageMatch[2]),
+    };
+  }
+  return { page: '/buyer/payments', key: 'order', id: Number(part) || null };
 }
 
 function resultRedirect(result) {
-  const params = new URLSearchParams({
-    status: result.settled ? 'paid' : 'failed',
-    order: String(result.saleOrderId ?? ''),
-  });
+  const params = new URLSearchParams({ status: result.settled ? 'paid' : 'failed' });
+  if (result.id) params.set(result.key || 'order', String(result.id));
   if (result.reason) params.set('reason', result.reason);
-  return `${clientOrigin}/buyer/payments?${params.toString()}`;
+  return `${clientOrigin}${result.page || '/buyer/payments'}?${params.toString()}`;
 }
 
 module.exports = {
   enabled: () => sslcommerz.enabled,
   beginCheckout,
+  beginStorageCheckout,
   completeCheckout,
   abandonCheckout,
   resultRedirect,

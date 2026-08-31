@@ -203,6 +203,16 @@ router.get('/storage/fees', async (req, res, next) => {
   }
 });
 
+router.post('/storage/:allocationId/pay/online', async (req, res, next) => {
+  try {
+    res.json(
+      await gateway.beginStorageCheckout('BUYER', me(req), Number(req.params.allocationId))
+    );
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post('/storage/:allocationId/pay', async (req, res, next) => {
   try {
     res.status(201).json(await buyer.payStorageFee(me(req), Number(req.params.allocationId), req.body));

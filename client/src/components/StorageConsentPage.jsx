@@ -1,6 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { api } from '../api/client';
 import { date, number, taka } from '../utils/format';
+
+const GATEWAY_MESSAGE = {
+  cancelled: 'You cancelled the payment, so nothing was charged.',
+  declined: 'The payment was declined. Nothing was charged.',
+  'amount-mismatch':
+    'The amount the gateway reported did not match the fee, so the payment was rejected.',
+  'not-validated': 'The gateway could not confirm that payment. Nothing was charged.',
+  error: 'Something went wrong settling that payment. Nothing was charged.',
+};
 
 export default function StorageConsentPage({ base, title, intro, legNote }) {
   const [proposals, setProposals] = useState(null);
@@ -9,7 +19,9 @@ export default function StorageConsentPage({ base, title, intro, legNote }) {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [paying, setPaying] = useState(null);
-  const [payForm, setPayForm] = useState({ amount: '', paymentMethod: 'BKASH' });
+  const [onlinePayment, setOnlinePayment] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const outcome = params.get('status');
   const [busy, setBusy] = useState(false);
 
   const [countering, setCountering] = useState(null);
@@ -50,6 +62,9 @@ export default function StorageConsentPage({ base, title, intro, legNote }) {
 
   useEffect(() => {
     load();
+    api('/reference/features')
+      .then((f) => setOnlinePayment(f.onlinePayment))
+      .catch(() => setOnlinePayment(false));
   }, [load]);
 
   const storableOptions = useMemo(() => {
@@ -141,27 +156,17 @@ export default function StorageConsentPage({ base, title, intro, legNote }) {
     }
   }
 
-  async function pay(event) {
-    event.preventDefault();
+  async function pay() {
     setError('');
-    setNotice('');
     setBusy(true);
     try {
-      const res = await api(`${base}/storage/${paying.allocationId}/pay`, {
-        method: 'POST',
-        body: { amount: Number(payForm.amount), paymentMethod: payForm.paymentMethod },
-      });
-      setNotice(
-        res.fullyPaid
-          ? `Allocation #${res.allocationId} is fully paid — ${taka(res.totalPaid)} of ${taka(res.owed)}.`
-          : `${taka(res.amount)} paid. ${taka(res.owed - res.totalPaid)} still owing on allocation #${res.allocationId}.`
+      const { redirectUrl } = await api(
+        `${base}/storage/${paying.allocationId}/pay/online`,
+        { method: 'POST' }
       );
-      setPaying(null);
-      setPayForm({ amount: '', paymentMethod: 'BKASH' });
-      await load();
+      window.location.href = redirectUrl;
     } catch (e) {
       setError(e.message);
-    } finally {
       setBusy(false);
     }
   }
@@ -179,6 +184,18 @@ export default function StorageConsentPage({ base, title, intro, legNote }) {
     <div className="page">
       <h1>{title}</h1>
       <p className="muted">{intro}</p>
+
+      {outcome && (
+        <p className={outcome === 'paid' ? 'success' : 'error'}>
+          {outcome === 'paid'
+            ? `Storage fee for allocation #${params.get('allocation')} is paid.`
+            : GATEWAY_MESSAGE[params.get('reason')] ||
+              `The storage fee for allocation #${params.get('allocation')} was not paid.`}{' '}
+          <button type="button" className="ghost small" onClick={() => setParams({})}>
+            Dismiss
+          </button>
+        </p>
+      )}
 
       {error && <p className="error">{error}</p>}
       {notice && <p className="success">{notice}</p>}
@@ -589,10 +606,7 @@ export default function StorageConsentPage({ base, title, intro, legNote }) {
                         <button
                           type="button"
                           className="small"
-                          onClick={() => {
-                            setPaying(h);
-                            setPayForm({ amount: String(owed), paymentMethod: 'BKASH' });
-                          }}
+                          onClick={() => setPaying(h)}
                         >
                           Pay fee
                         </button>
@@ -607,48 +621,52 @@ export default function StorageConsentPage({ base, title, intro, legNote }) {
       )}
 
       {paying && (
-        <form onSubmit={pay} className="boxed confirm">
+        <div className="boxed confirm">
           <h3>Pay storage fee — allocation #{paying.allocationId}</h3>
           <p className="muted">
             {paying.cropName} · {number(paying.quantityStored)} kg at {paying.warehouseName}.
           </p>
-          <div className="grid">
-            <label>
-              Amount
-              <input
-                type="number"
-                step="0.01"
-                min="0.01"
-                value={payForm.amount}
-                onChange={(e) => setPayForm({ ...payForm, amount: e.target.value })}
-                required
-              />
-            </label>
-            <label>
-              Method
-              <select
-                value={payForm.paymentMethod}
-                onChange={(e) => setPayForm({ ...payForm, paymentMethod: e.target.value })}
-              >
-                <option value="BKASH">bKash</option>
-                <option value="NAGAD">Nagad</option>
-                <option value="BANK_TRANSFER">Bank transfer</option>
-                <option value="CASH">Cash</option>
-              </select>
-            </label>
+
+          <div className="stats">
+            <div className="stat">
+              <span className="stat-label">Fee owed</span>
+              <span className="stat-value">{taka(paying.storageFee)}</span>
+            </div>
+            <div className="stat">
+              <span className="stat-label">Already paid</span>
+              <span className="stat-value">{taka(paying.paidSoFar)}</span>
+            </div>
+            <div className="stat">
+              <span className="stat-label">Due now</span>
+              <span className="stat-value">
+                {taka(Number(paying.storageFee || 0) - Number(paying.paidSoFar || 0))}
+              </span>
+            </div>
           </div>
-          <p className="note">
-            Paying more than the fee is refused — the total owed is {taka(paying.storageFee)}.
-          </p>
+
+          {onlinePayment ? (
+            <>
+              <p className="note">
+                Card, mobile banking and internet banking are all handled on the next
+                screen. You will come back here when it is done.
+              </p>
+              <button type="button" className="gateway-button" onClick={pay} disabled={busy}>
+                <img src="/sslcommerz.png" alt="Pay with SSLCommerz" />
+                <span>{busy ? 'Opening the gateway…' : 'Pay now'}</span>
+              </button>
+            </>
+          ) : (
+            <p className="error">
+              Online payment is not configured, so this fee cannot be paid yet.
+            </p>
+          )}
+
           <div className="actions">
-            <button type="submit" disabled={busy}>
-              {busy ? 'Paying…' : 'Pay'}
-            </button>
             <button type="button" className="ghost" onClick={() => setPaying(null)}>
               Cancel
             </button>
           </div>
-        </form>
+        </div>
       )}
     </div>
   );

@@ -70,11 +70,15 @@ BR-19 is simpler as a procedure than it was as a trigger. Summing `PAYMENT`
 from a row trigger on `PAYMENT` raises `ORA-04091: table is mutating`, which
 is why it had to be a compound trigger. A procedure has no such problem.
 
-**Card payment.** Buyers can settle an order through SSLCommerz's sandbox
-checkout. The amount is reserved as a `PENDING` payment before the session
-opens, so a balance cannot be paid twice, and settlement is confirmed by
-calling the gateway's validation API — the redirect body itself is never
-trusted.
+**All payment goes through SSLCommerz.** Sale orders and storage fees both
+settle on the gateway's hosted checkout; the application never asks which
+method you want, because bKash, Nagad, cards and internet banking are all
+chosen on SSLCommerz's own screen. The one exception is cash physically
+handed to a driver on delivery, which he records as a witness.
+
+The amount is reserved as a `PENDING` payment before the session opens, so a
+balance cannot be paid twice, and settlement is confirmed by calling the
+gateway's validation API — the redirect body itself is never trusted.
 
 **Build chain.** `00_reset` → `01_create_tables` → `02_business_rules` →
 `03_insert_data` → `04_views` → `05_plsql_layer`. `06_advanced_queries` and

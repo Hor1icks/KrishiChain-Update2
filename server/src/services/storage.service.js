@@ -127,6 +127,33 @@ function assertIsCustomer(allocation, customerType, customerId) {
  * other one. Enforced here rather than by hiding a button, so a direct
  * API call cannot let a manager accept their own proposal.
  */
+/**
+ * The allocation a customer is about to pay for, with the names the
+ * payment gateway wants on the checkout page. Shared with
+ * sslcommerz.service so the ownership and status rules are stated once.
+ */
+async function loadAllocationForPayment(connection, customerType, customerId, allocationId) {
+  const allocation = await loadAllocation(connection, allocationId);
+  assertIsCustomer(allocation, customerType, customerId);
+
+  if (!['ACTIVE', 'PENDING_RELEASE'].includes(allocation.ALLOCATIONSTATUS)) {
+    throw ApiError.businessRule('Accept the storage terms before paying its fee.');
+  }
+
+  const who = await connection.execute(
+    `SELECT u.FirstName || ' ' || u.LastName AS CustomerName,
+            u.Email                          AS CustomerEmail,
+            w.WarehouseName
+       FROM STORES s
+       JOIN WAREHOUSE w ON w.WarehouseID = s.WarehouseID
+       JOIN USERS u     ON u.UserID = NVL(s.RequestedByFarmerID, s.RequestedByBuyerID)
+      WHERE s.AllocationID = :allocationId`,
+    { allocationId }
+  );
+
+  return { ...allocation, ...(who.rows[0] || {}) };
+}
+
 function assertIsResponder(allocation, responderType, responderId) {
   if (allocation.PROPOSEDBY === 'MANAGER') {
     if (responderType === 'MANAGER') {
@@ -1349,4 +1376,5 @@ module.exports = {
   respondToRelease,
   listFeesForCustomer,
   payFee,
+  loadAllocationForPayment,
 };

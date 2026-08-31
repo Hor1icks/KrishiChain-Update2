@@ -14,7 +14,6 @@ export default function Assignments() {
   const [claiming, setClaiming] = useState(null);
   const [vehicleId, setVehicleId] = useState('');
   const [delivering, setDelivering] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('CASH');
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
@@ -85,7 +84,7 @@ export default function Assignments() {
     try {
       const res = await api(`/transport/assignments/${delivering.transportId}/deliver`, {
         method: 'POST',
-        body: { paymentMethod },
+        body: { paymentMethod: 'CASH' },
       });
       setNotice(
         res.payment
@@ -321,19 +320,11 @@ export default function Assignments() {
           {collectsCash ? (
             <>
               <p className="muted">
-                Terms are on delivery, so you collect <strong>{taka(outstanding)}</strong> at the
-                door. It is recorded as a payment from the buyer straight to the farmer — you only
-                witness it.
+                Terms are on delivery, so you collect <strong>{taka(outstanding)}</strong> in
+                cash at the door. It is recorded as a payment from the buyer straight to the
+                farmer — you only witness it. Anything the buyer wants to pay by card or mobile
+                banking they settle themselves, through the gateway on their payments page.
               </p>
-              <label>
-                Payment method
-                <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-                  <option value="CASH">Cash</option>
-                  <option value="BKASH">bKash</option>
-                  <option value="NAGAD">Nagad</option>
-                  <option value="BANK_TRANSFER">Bank transfer</option>
-                </select>
-              </label>
             </>
           ) : (
             <p className="muted">

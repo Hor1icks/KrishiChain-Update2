@@ -9,6 +9,7 @@ const RETURN_MESSAGE = {
   'amount-mismatch':
     'The amount the gateway reported did not match the order, so the payment was rejected.',
   'not-validated': 'The gateway could not confirm that payment. Nothing was charged.',
+  error: 'Something went wrong settling that payment. Nothing was charged.',
 };
 
 export default function Payments() {
