@@ -33,10 +33,6 @@ call the endpoint, confirm the earlier statements left nothing behind, then drop
 `ENABLE NOVALIDATE` is required — a plain `ADD CONSTRAINT` fails with `ORA-02293` against existing
 rows.
 
-Running decision/status log: `context.md`. Read it before making design calls — it records what
-was decided and why, including several deltas from the PRD and ER blueprint. It predates this
-branch, so where it describes sequences or triggers, this file wins.
-
 ## What the update2 branch removes
 
 The coursework for Update-2 grades seven techniques — function, subquery, view, abstract datatype,
