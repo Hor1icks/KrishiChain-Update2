@@ -70,21 +70,16 @@ through `./db.sh`:
 
 ```bash
 ./db.sh database/01_create_tables.sql
-./db.sh database/02_sequences_triggers.sql
+./db.sh database/02_business_rules.sql
 ./db.sh database/03_insert_data.sql
 ./db.sh database/04_views.sql
-./db.sh database/08_plsql_layer.sql
-./db.sh database/09_feedback_fixes.sql
-./db.sh database/10_object_types.sql
-./db.sh database/12_transport_one_personnel.sql
+./db.sh database/05_plsql_layer.sql
 ```
 
 Put `database/00_reset.sql` in front of that list for a genuinely clean build.
 `03_insert_data.sql` wipes every table before re-seeding, so never run it just
-to look at the data. `05_advanced_queries.sql`, `11_sequence_index_demo.sql`
-and `99_inspect_data.sql` are read-only and are not part of the build.
-`06_storage_workflow.sql` and `07_bid_storage_transport_notifications.sql` are
-historical migration records, already folded into `01_create_tables.sql`.
+to look at the data. `06_advanced_queries.sql` and `99_inspect_data.sql` are
+read-only and are not part of the build.
 
 Then the two servers, in separate terminals:
 
@@ -118,14 +113,21 @@ the Instant Client and Node.
 
 ## The database
 
-27 tables, 41 foreign keys, 190 check constraints, 6 views, 22 triggers,
-18 sequences, 81 indexes, 2 PL/SQL packages and one object type.
+27 tables, 41 foreign keys, 190 check constraints, 6 views, 3 PL/SQL packages
+and one object type.
 
 Oracle 11g shapes most of the design decisions. There are no `IDENTITY`
-columns, so every surrogate key is a sequence paired with a `BEFORE INSERT`
-trigger. There is no `FETCH FIRST n ROWS`, so row-limiting uses `ROWNUM` inside
-an inline view. Text that may hold Bengali is `VARCHAR2(n CHAR)` rather than
-byte semantics.
+columns, so a new row derives its own key from the table it is going into:
+
+```sql
+INSERT INTO BID (BidID, BatchID, ...)
+VALUES ((SELECT NVL(MAX(BidID), 0) + 1 FROM BID), :batchId, ...)
+RETURNING BidID INTO :bidId;
+```
+
+There is no `FETCH FIRST n ROWS`, so row-limiting uses `ROWNUM` inside an
+inline view. Text that may hold Bengali is `VARCHAR2(n CHAR)` rather than byte
+semantics.
 
 The schema is built around five ER constructs that the coursework grades:
 
@@ -155,13 +157,22 @@ displaced, so an entire bidding war is one chain inside one table.
 
 Business rules live in the database wherever they can: a bid must clear the
 batch minimum and beat the standing bid, payments may not exceed the order
-total, an on-delivery order cannot be paid before it is delivered. Rules that
-compare two tables are enforced by triggers, and the errors they raise are
-surfaced to the user rather than swallowed.
+total, an on-delivery order cannot be paid before it is delivered. Anything
+comparable within one row is a `CHECK` constraint. Rules that have to read a
+second table live in `pkg_krishi_rules`, called from the service layer inside
+the same transaction, and the errors they raise reach the user intact rather
+than being flattened into a generic failure.
 
 Six workflows are multi-statement transactions that commit or roll back as a
 unit: registration, storage allocation, placing a bid, awarding a winning bid,
 assigning transport, and delivery with payment.
+
+Buyers can settle an order in cash or through SSLCommerz's hosted checkout.
+The card flow reserves the amount as a `PENDING` payment before opening the
+session, so the balance cannot be paid twice, and confirms settlement by
+calling the gateway's validation API rather than trusting the redirect it
+receives. Leave `SSLCZ_STORE_ID` blank in `server/.env` and the card option
+disappears.
 
 ---
 
@@ -170,7 +181,7 @@ assigning transport, and delivery with payment.
 ```
 start.sh     brings up the database, the API and the front end
 db.sh        runs SQL against the container without a local client
-database/    schema, seed data, views, the PL/SQL layer, migrations
+database/    schema, seed data, views, the PL/SQL layer
 server/      Express API
 client/      React front end, 28 pages across five role modules
 KrishiChainV1/   standalone demo build used for Project Update-1
