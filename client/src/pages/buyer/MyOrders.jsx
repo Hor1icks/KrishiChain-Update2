@@ -93,6 +93,14 @@ export default function MyOrders() {
       {error && <p className="error">{error}</p>}
       {notice && <p className="success">{notice}</p>}
 
+      {orders.some((o) => Number(o.checkoutHeld) > 0) && (
+        <p className="note">
+          A payment you started is still open at the gateway, so its amount is held and
+          shows as paid. Finish or cancel it there, or it is released automatically after
+          30 minutes.
+        </p>
+      )}
+
       {orders.length === 0 ? (
         <p className="muted">
           You have not won anything yet. <Link to="/buyer/browse">Browse open auctions</Link>.
@@ -175,6 +183,10 @@ export default function MyOrders() {
                         >
                           Pay
                         </button>
+                      ) : Number(o.checkoutHeld) > 0 ? (
+                        <span className="muted small" title="A checkout is open at the gateway">
+                          Checkout open
+                        </span>
                       ) : outstanding > 0 ? (
                         <span className="muted small">Pay on delivery</span>
                       ) : null}

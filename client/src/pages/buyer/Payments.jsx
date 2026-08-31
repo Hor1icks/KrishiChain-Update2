@@ -10,6 +10,7 @@ const RETURN_MESSAGE = {
     'The amount the gateway reported did not match the order, so the payment was rejected.',
   'not-validated': 'The gateway could not confirm that payment. Nothing was charged.',
   error: 'Something went wrong settling that payment. Nothing was charged.',
+  expired: 'That checkout had already expired. Start a new one.',
 };
 
 export default function Payments() {

@@ -23,6 +23,7 @@
 
 const oracledb = require('oracledb');
 const storage = require('./storage.service');
+const { releaseAbandoned } = require('./checkoutReservations');
 const { query, withTransaction } = require('../config/db');
 const ApiError = require('../utils/ApiError');
 
@@ -476,7 +477,8 @@ function respondToStorageRelease(buyerId, allocationId, decision) {
   return storage.respondToRelease('BUYER', buyerId, allocationId, decision);
 }
 
-function listStorageFees(buyerId) {
+async function listStorageFees(buyerId) {
+  await releaseAbandoned();
   return storage.listFeesForCustomer('BUYER', buyerId);
 }
 
@@ -485,6 +487,7 @@ function payStorageFee(buyerId, allocationId, payload) {
 }
 
 async function listMyStorage(buyerId) {
+  await releaseAbandoned();
   const result = await query(
     `SELECT s.AllocationID     AS "allocationId",
             s.BatchID          AS "batchId",
@@ -521,6 +524,7 @@ async function listMyStorage(buyerId) {
 
 /** Everything this buyer has won, with its delivery and payment state. */
 async function listOrders(buyerId) {
+  await releaseAbandoned();
   const result = await query(
     `SELECT so.SaleOrderID AS "saleOrderId",
             so.OrderDate   AS "orderDate",
@@ -540,6 +544,10 @@ async function listOrders(buyerId) {
             NVL((SELECT SUM(p.Amount) FROM PAYMENT p
                   WHERE p.SaleOrderID = so.SaleOrderID
                     AND p.PaymentStatus IN ('PENDING','COMPLETED')), 0) AS "amountPaid",
+            NVL((SELECT SUM(p.Amount) FROM PAYMENT p
+                  WHERE p.SaleOrderID = so.SaleOrderID
+                    AND p.PaymentMethod = 'SSLCOMMERZ'
+                    AND p.PaymentStatus = 'PENDING'), 0) AS "checkoutHeld",
             (SELECT r.ReviewID FROM REVIEW r WHERE r.SaleOrderID = so.SaleOrderID) AS "reviewId"
        FROM SALE_ORDER so
        JOIN BID b            ON b.BidID    = so.BidID

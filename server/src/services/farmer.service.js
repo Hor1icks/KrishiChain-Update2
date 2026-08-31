@@ -25,6 +25,7 @@ const oracledb = require('oracledb');
 const { query, withTransaction } = require('../config/db');
 const ApiError = require('../utils/ApiError');
 const storage = require('./storage.service');
+const { releaseAbandoned } = require('./checkoutReservations');
 
 // ---------------------------------------------------------------------
 // Ownership guards
@@ -623,7 +624,8 @@ function respondToStorageRelease(farmerId, allocationId, decision) {
   return storage.respondToRelease('FARMER', farmerId, allocationId, decision);
 }
 
-function listStorageFees(farmerId) {
+async function listStorageFees(farmerId) {
+  await releaseAbandoned();
   return storage.listFeesForCustomer('FARMER', farmerId);
 }
 
@@ -633,6 +635,7 @@ function payStorageFee(farmerId, allocationId, payload) {
 
 /** All this farmer's storage allocations, any status, for a history view. */
 async function listMyStorage(farmerId) {
+  await releaseAbandoned();
   const result = await query(
     `SELECT s.AllocationID     AS "allocationId",
             s.BatchID          AS "batchId",

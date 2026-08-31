@@ -261,6 +261,15 @@ async function completeCheckout(body) {
       return { settled: true, ...where, alreadySettled: true };
     }
 
+    // Only a live reservation may be settled. A row already released as
+    // abandoned means this checkout expired and its balance may since
+    // have been reserved by another attempt; settling it now would
+    // record the money twice.
+    if (payment.PAYMENTSTATUS !== 'PENDING') {
+      console.error(`[sslcommerz] ${tranId} came back ${payment.PAYMENTSTATUS}, not PENDING`);
+      return { settled: false, ...where, reason: 'expired' };
+    }
+
     // The gateway is authoritative on what was actually charged.
     if (Number(validation.amount) !== Number(payment.AMOUNT)) {
       await connection.execute(
