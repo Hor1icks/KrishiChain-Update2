@@ -13,6 +13,7 @@ const express = require('express');
 const { query } = require('../config/db');
 const storage = require('../services/storage.service');
 const { authenticate } = require('../middleware/authenticate');
+const param = require('../utils/params');
 const { DISTRICTS } = require('../utils/districts');
 const gateway = require('../services/sslcommerz.service');
 
@@ -94,7 +95,7 @@ router.get('/warehouses', async (_req, res, next) => {
 
 router.get('/warehouses/:warehouseId/units', async (req, res, next) => {
   try {
-    res.json(await storage.listAllUnitsPublic(Number(req.params.warehouseId)));
+    res.json(await storage.listAllUnitsPublic(param.id(req.params.warehouseId, 'warehouseId')));
   } catch (err) {
     next(err);
   }

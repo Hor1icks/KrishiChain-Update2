@@ -401,7 +401,22 @@ async function awardBid(farmerId, bidId, payload = {}) {
   }
 
   return withTransaction(async (connection) => {
-    // --- Load the bid, its batch, and prove ownership in one hop ------
+    // Which batch this bid belongs to, so it can be locked first. Every
+    // value the award decision rests on is read *after* the lock: two
+    // farmers awarding different bids on one batch at the same moment
+    // would otherwise both pass their guards against the state they saw
+    // before either lock was taken, and oversell the batch.
+    const owner = await connection.execute(
+      `SELECT b.BatchID FROM BID b WHERE b.BidID = :bidId`,
+      { bidId }
+    );
+    if (!owner.rows.length) throw ApiError.notFound('No such bid.');
+
+    await connection.execute(
+      `SELECT BatchID FROM HARVEST_BATCH WHERE BatchID = :batchId FOR UPDATE`,
+      { batchId: owner.rows[0].BATCHID }
+    );
+
     const bidResult = await connection.execute(
       `SELECT b.BidID, b.BatchID, b.BuyerID, b.BidPricePerKg, b.RequestedQuantity,
               b.Status AS BidStatus,
@@ -420,12 +435,6 @@ async function awardBid(farmerId, bidId, payload = {}) {
     if (bid.FARMERID !== farmerId) {
       throw ApiError.notFound('No such bid.');
     }
-
-    // --- Lock the batch so a concurrent award cannot interleave ------
-    await connection.execute(
-      `SELECT BatchID FROM HARVEST_BATCH WHERE BatchID = :batchId FOR UPDATE`,
-      { batchId: bid.BATCHID }
-    );
 
     // --- Guards -----------------------------------------------------
     if (bid.BIDSTATUS !== 'ACTIVE') {
@@ -450,10 +459,15 @@ async function awardBid(farmerId, bidId, payload = {}) {
     }
 
     // --- 1. Winning bid --------------------------------------------
-    await connection.execute(
-      `UPDATE BID SET Status = 'WON' WHERE BidID = :bidId`,
+    // Guarded on ACTIVE and checked, so the transition is the thing that
+    // decides the race rather than the read above it.
+    const won = await connection.execute(
+      `UPDATE BID SET Status = 'WON' WHERE BidID = :bidId AND Status = 'ACTIVE'`,
       { bidId }
     );
+    if (won.rowsAffected !== 1) {
+      throw ApiError.businessRule('That bid was awarded or withdrawn a moment ago.');
+    }
 
     // --- 2. Everyone else loses ------------------------------------
     const outbid = await connection.execute(

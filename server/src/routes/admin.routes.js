@@ -2,7 +2,9 @@
 
 const express = require('express');
 const admin = require('../services/admin.service');
+const authService = require('../services/auth.service');
 const { authenticate, requireRole } = require('../middleware/authenticate');
+const param = require('../utils/params');
 
 const router = express.Router();
 
@@ -29,6 +31,20 @@ router.get('/users', async (req, res, next) => {
 router.get('/prices', async (req, res, next) => {
   try {
     res.json(await admin.listDailyPrices({ cropId: req.query.cropId, aratId: req.query.aratId }));
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * Staff accounts are created here rather than claimed from the public
+ * sign-up form, since an admin or a storage manager holds authority over
+ * other people's records.
+ */
+router.post('/users', async (req, res, next) => {
+  try {
+    const { userId, role } = await authService.register(req.body, { allowStaffRoles: true });
+    res.status(201).json({ userId, role, message: `${role} account created.` });
   } catch (err) {
     next(err);
   }
@@ -74,7 +90,7 @@ router.get('/complaints', async (req, res, next) => {
 router.patch('/complaints/:complaintId', async (req, res, next) => {
   try {
     res.json(
-      await admin.updateComplaint(me(req), Number(req.params.complaintId), req.body.status)
+      await admin.updateComplaint(me(req), param.id(req.params.complaintId, 'complaintId'), req.body.status)
     );
   } catch (err) {
     next(err);

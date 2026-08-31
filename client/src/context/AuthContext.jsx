@@ -1,11 +1,19 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { api, tokenStore } from '../api/client';
+import { api, tokenStore, setUnauthorizedHandler } from '../api/client';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // One place decides what an expired session does, rather than every
+  // page discovering it separately and leaving the user on a screen they
+  // are no longer entitled to.
+  useEffect(() => {
+    setUnauthorizedHandler(() => setUser(null));
+    return () => setUnauthorizedHandler(null);
+  }, []);
 
   useEffect(() => {
     if (!tokenStore.get()) {

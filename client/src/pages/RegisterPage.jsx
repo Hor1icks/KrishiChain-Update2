@@ -36,6 +36,9 @@ const ROLE_FIELDS = {
   ],
 };
 
+// Staff accounts are created by an admin, not claimed here.
+const SELF_SERVICE_ROLES = ['FARMER', 'BUYER'];
+
 const ROLE_LABELS = {
   FARMER: 'Farmer',
   BUYER: 'Buyer',
@@ -93,7 +96,7 @@ export default function RegisterPage() {
         <label>
           I am a…
           <select value={role} onChange={(e) => setRole(e.target.value)}>
-            {Object.keys(ROLE_FIELDS).map((r) => (
+            {SELF_SERVICE_ROLES.map((r) => (
               <option key={r} value={r}>
                 {ROLE_LABELS[r]}
               </option>

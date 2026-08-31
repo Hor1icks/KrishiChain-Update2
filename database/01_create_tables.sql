@@ -589,7 +589,11 @@ CREATE TABLE BAZAR_DAILY_RECORD (
   CropID             NUMBER(10)    NOT NULL,
   TransactionVolume  NUMBER(12,3)  DEFAULT 0 NOT NULL,
   Revenue            NUMBER(14,2)  DEFAULT 0 NOT NULL,
-  CONSTRAINT PK_BAZAR_DAILY_RECORD PRIMARY KEY (BazarID, RecordDate),
+  -- CropID belongs in the key: a bazar trades several crops on the same
+  -- day, and without it the second crop of the day is a PK violation.
+  -- The weak-entity reading is unchanged -- the partial key is
+  -- (RecordDate, CropID), still identified by the owning bazar.
+  CONSTRAINT PK_BAZAR_DAILY_RECORD PRIMARY KEY (BazarID, RecordDate, CropID),
   CONSTRAINT FK_BDR_BAZAR FOREIGN KEY (BazarID)
     REFERENCES PHYSICAL_BAZAR (BazarID) ON DELETE CASCADE,
   CONSTRAINT FK_BDR_CROP FOREIGN KEY (CropID) REFERENCES CROP (CropID),

@@ -8,7 +8,7 @@ const router = express.Router();
 
 /** Lets the register page build its role dropdown from one source of truth. */
 router.get('/roles', (_req, res) => {
-  res.json({ roles: authService.ROLES });
+  res.json({ roles: authService.SELF_SERVICE_ROLES });
 });
 
 router.post('/register', async (req, res, next) => {
@@ -21,7 +21,6 @@ router.post('/register', async (req, res, next) => {
 });
 
 router.post('/login', async (req, res, next) => {
-  console.log(res);
   try {
     const { user, token } = await authService.login(req.body.email, req.body.password);
     res.json({ user, token });

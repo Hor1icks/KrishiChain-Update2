@@ -44,9 +44,12 @@ const SUBCLASS = {
   STORAGE_MANAGER: {
     table: 'STORAGE_MANAGER',
     pk: 'ManagerID',
-    columns: ['EmployeeID'],
-    fields: ['employeeId'],
-    required: ['employeeId'],
+    // Designation and HireDate are NOT NULL on the table, so they have
+    // to be collected here or the insert cannot succeed at all.
+    columns: ['EmployeeID', 'Designation', 'HireDate', 'ShiftSchedule', 'CertificationNo'],
+    fields: ['employeeId', 'designation', 'hireDate', 'shiftSchedule', 'certificationNo'],
+    required: ['employeeId', 'designation', 'hireDate'],
+    dateColumns: ['HireDate'],
   },
   TRANSPORT_PERSONNEL: {
     table: 'TRANSPORT_PERSONNEL',
@@ -58,6 +61,24 @@ const SUBCLASS = {
 };
 
 const ROLES = Object.keys(SUBCLASS);
+
+/**
+ * Anyone may sign up as a farmer or a buyer. Staff roles carry authority
+ * over other people's data -- an admin can read every account, a manager
+ * can move anyone's stock -- so they are created by an existing admin,
+ * not claimed from the sign-up form.
+ */
+const SELF_SERVICE_ROLES = ['FARMER', 'BUYER'];
+
+const MIN_PASSWORD_LENGTH = 8;
+
+function assertPasswordPolicy(password) {
+  if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
+    throw ApiError.badRequest(
+      `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`
+    );
+  }
+}
 
 /**
  * Turn Oracle's constraint names into messages a user can act on.
@@ -119,10 +140,11 @@ function assertPresent(payload, fields) {
  * data model rests on. withTransaction() commits once at the end or rolls
  * back everything.
  */
-async function register(payload) {
+async function register(payload, { allowStaffRoles = false } = {}) {
   const role = String(payload.role || '').toUpperCase();
-  if (!ROLES.includes(role)) {
-    throw ApiError.badRequest(`Role must be one of: ${ROLES.join(', ')}.`);
+  const permitted = allowStaffRoles ? ROLES : SELF_SERVICE_ROLES;
+  if (!permitted.includes(role)) {
+    throw ApiError.badRequest(`Role must be one of: ${permitted.join(', ')}.`);
   }
 
   assertPresent(payload, [
@@ -135,6 +157,8 @@ async function register(payload) {
     'district',
     'upazila',
   ]);
+
+  assertPasswordPolicy(payload.password);
 
   if (!DISTRICTS.includes(payload.district)) {
     throw ApiError.badRequest(`"${payload.district}" is not a district of Bangladesh.`);
@@ -207,9 +231,14 @@ async function register(payload) {
         subclassBinds[`v${i}`] = payload[field] ?? null;
       });
 
+      // A date column takes a JS Date, not the 'YYYY-MM-DD' string a form
+      // sends, which would fail with ORA-01858.
+      const placeholder = (column, i) =>
+        spec.dateColumns?.includes(column) ? `TO_DATE(:v${i}, 'YYYY-MM-DD')` : `:v${i}`;
+
       await connection.execute(
         `INSERT INTO ${spec.table} (${spec.pk}, ${spec.columns.join(', ')})
-         VALUES (:id, ${spec.fields.map((_, i) => `:v${i}`).join(', ')})`,
+         VALUES (:id, ${spec.columns.map(placeholder).join(', ')})`,
         subclassBinds
       );
 
@@ -323,4 +352,4 @@ async function getProfile(userId) {
   };
 }
 
-module.exports = { register, login, getProfile, ROLES };
+module.exports = { register, login, getProfile, ROLES, SELF_SERVICE_ROLES };

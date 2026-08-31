@@ -4,6 +4,7 @@ const express = require('express');
 const buyer = require('../services/buyer.service');
 const gateway = require('../services/sslcommerz.service');
 const { authenticate, requireRole } = require('../middleware/authenticate');
+const param = require('../utils/params');
 
 const router = express.Router();
 
@@ -31,7 +32,7 @@ router.get('/batches', async (req, res, next) => {
 
 router.get('/batches/:batchId', async (req, res, next) => {
   try {
-    res.json(await buyer.getBatch(me(req), Number(req.params.batchId)));
+    res.json(await buyer.getBatch(me(req), param.id(req.params.batchId, 'batchId')));
   } catch (err) {
     next(err);
   }
@@ -78,7 +79,7 @@ router.get('/payments', async (req, res, next) => {
 router.post('/orders/:saleOrderId/pay/online', async (req, res, next) => {
   try {
     res.json(
-      await gateway.beginCheckout(me(req), Number(req.params.saleOrderId), req.body.amount)
+      await gateway.beginCheckout(me(req), param.id(req.params.saleOrderId, 'saleOrderId'), req.body.amount)
     );
   } catch (err) {
     next(err);
@@ -93,7 +94,7 @@ router.post('/orders/:saleOrderId/pay/online', async (req, res, next) => {
  */
 router.post('/orders/:saleOrderId/delivery-preference', async (req, res, next) => {
   try {
-    res.json(await buyer.setDeliveryDirect(me(req), Number(req.params.saleOrderId)));
+    res.json(await buyer.setDeliveryDirect(me(req), param.id(req.params.saleOrderId, 'saleOrderId')));
   } catch (err) {
     next(err);
   }
@@ -128,7 +129,7 @@ router.post('/storage/proposals/:allocationId/respond', async (req, res, next) =
     res.json(
       await buyer.respondToStorageProposal(
         me(req),
-        Number(req.params.allocationId),
+        param.id(req.params.allocationId, 'allocationId'),
         req.body.decision,
         req.body
       )
@@ -155,7 +156,7 @@ router.post('/storage/:allocationId/counter/respond', async (req, res, next) => 
     res.json(
       await buyer.respondToStorageCounter(
         me(req),
-        Number(req.params.allocationId),
+        param.id(req.params.allocationId, 'allocationId'),
         req.body.decision
       )
     );
@@ -166,7 +167,7 @@ router.post('/storage/:allocationId/counter/respond', async (req, res, next) => 
 
 router.post('/storage/:allocationId/release', async (req, res, next) => {
   try {
-    res.json(await buyer.requestStorageRelease(me(req), Number(req.params.allocationId)));
+    res.json(await buyer.requestStorageRelease(me(req), param.id(req.params.allocationId, 'allocationId')));
   } catch (err) {
     next(err);
   }
@@ -177,7 +178,7 @@ router.post('/storage/:allocationId/release/respond', async (req, res, next) => 
     res.json(
       await buyer.respondToStorageRelease(
         me(req),
-        Number(req.params.allocationId),
+        param.id(req.params.allocationId, 'allocationId'),
         req.body.decision
       )
     );
@@ -200,7 +201,7 @@ router.post('/storage/:allocationId/pay/online', async (req, res, next) => {
       await gateway.beginStorageCheckout(
         'BUYER',
         me(req),
-        Number(req.params.allocationId),
+        param.id(req.params.allocationId, 'allocationId'),
         req.body.amount
       )
     );

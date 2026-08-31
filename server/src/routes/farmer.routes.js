@@ -4,6 +4,7 @@ const express = require('express');
 const farmer = require('../services/farmer.service');
 const gateway = require('../services/sslcommerz.service');
 const { authenticate, requireRole } = require('../middleware/authenticate');
+const param = require('../utils/params');
 
 const router = express.Router();
 
@@ -57,7 +58,7 @@ router.post('/batches', async (req, res, next) => {
 
 router.get('/batches/:batchId', async (req, res, next) => {
   try {
-    res.json(await farmer.getBatch(me(req), Number(req.params.batchId)));
+    res.json(await farmer.getBatch(me(req), param.id(req.params.batchId, 'batchId')));
   } catch (err) {
     next(err);
   }
@@ -65,7 +66,7 @@ router.get('/batches/:batchId', async (req, res, next) => {
 
 router.get('/batches/:batchId/bids', async (req, res, next) => {
   try {
-    res.json(await farmer.listBidsForBatch(me(req), Number(req.params.batchId)));
+    res.json(await farmer.listBidsForBatch(me(req), param.id(req.params.batchId, 'batchId')));
   } catch (err) {
     next(err);
   }
@@ -74,7 +75,7 @@ router.get('/batches/:batchId/bids', async (req, res, next) => {
 // The demo centrepiece — PRD §9.10 transaction #4.
 router.post('/bids/:bidId/award', async (req, res, next) => {
   try {
-    res.status(201).json(await farmer.awardBid(me(req), Number(req.params.bidId), req.body));
+    res.status(201).json(await farmer.awardBid(me(req), param.id(req.params.bidId, 'bidId'), req.body));
   } catch (err) {
     next(err);
   }
@@ -113,7 +114,7 @@ router.post('/storage/proposals/:allocationId/respond', async (req, res, next) =
     res.json(
       await farmer.respondToStorageProposal(
         me(req),
-        Number(req.params.allocationId),
+        param.id(req.params.allocationId, 'allocationId'),
         req.body.decision,
         req.body
       )
@@ -140,7 +141,7 @@ router.post('/storage/:allocationId/counter/respond', async (req, res, next) => 
     res.json(
       await farmer.respondToStorageCounter(
         me(req),
-        Number(req.params.allocationId),
+        param.id(req.params.allocationId, 'allocationId'),
         req.body.decision
       )
     );
@@ -151,7 +152,7 @@ router.post('/storage/:allocationId/counter/respond', async (req, res, next) => 
 
 router.post('/storage/:allocationId/release', async (req, res, next) => {
   try {
-    res.json(await farmer.requestStorageRelease(me(req), Number(req.params.allocationId)));
+    res.json(await farmer.requestStorageRelease(me(req), param.id(req.params.allocationId, 'allocationId')));
   } catch (err) {
     next(err);
   }
@@ -162,7 +163,7 @@ router.post('/storage/:allocationId/release/respond', async (req, res, next) => 
     res.json(
       await farmer.respondToStorageRelease(
         me(req),
-        Number(req.params.allocationId),
+        param.id(req.params.allocationId, 'allocationId'),
         req.body.decision
       )
     );
@@ -185,7 +186,7 @@ router.post('/storage/:allocationId/pay/online', async (req, res, next) => {
       await gateway.beginStorageCheckout(
         'FARMER',
         me(req),
-        Number(req.params.allocationId),
+        param.id(req.params.allocationId, 'allocationId'),
         req.body.amount
       )
     );

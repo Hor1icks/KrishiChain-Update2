@@ -366,20 +366,27 @@ CREATE OR REPLACE PACKAGE BODY pkg_krishi_reports AS
                             p_cursor OUT SYS_REFCURSOR)
   IS
   BEGIN
+    -- Both halves of PAYMENT, not just the sale half. A storage payment
+    -- has SaleOrderID, BuyerID and FarmerID NULL by design -- that is
+    -- what CK_PAYMENT_TYPE_SHAPE demands -- so joining through
+    -- SALE_ORDER silently discarded every one of them from a report
+    -- named after the whole table.
     OPEN p_cursor FOR
       SELECT p.PaymentID,
+             p.PaymentType,
              p.PaymentDate,
              p.SaleOrderID,
+             NULL                               AS AllocationID,
              c.CropName,
-             bu.FirstName || ' ' || bu.LastName AS BuyerName,
-             fu.FirstName || ' ' || fu.LastName AS FarmerName,
+             bu.FirstName || ' ' || bu.LastName AS PayerName,
+             fu.FirstName || ' ' || fu.LastName AS PayeeName,
              p.Amount,
              p.PaymentMethod,
              p.PaymentStatus,
              p.TransactionReference,
-             so.TotalAmount                     AS OrderTotal,
+             so.TotalAmount                     AS AmountDue,
              so.PaymentTerms,
-             pkg_krishi_metrics.fn_order_outstanding(p.SaleOrderID) AS OrderOutstanding
+             pkg_krishi_metrics.fn_order_outstanding(p.SaleOrderID) AS Outstanding
         FROM PAYMENT p
         JOIN SALE_ORDER so    ON so.SaleOrderID = p.SaleOrderID
         JOIN BID b            ON b.BidID        = so.BidID
@@ -387,9 +394,43 @@ CREATE OR REPLACE PACKAGE BODY pkg_krishi_reports AS
         JOIN CROP c           ON c.CropID       = hb.CropID
         JOIN USERS bu         ON bu.UserID      = p.BuyerID
         JOIN USERS fu         ON fu.UserID      = p.FarmerID
-       WHERE (p_from IS NULL OR p.PaymentDate >= p_from)
+       WHERE p.PaymentType = 'SALE'
+         AND (p_from IS NULL OR p.PaymentDate >= p_from)
          AND (p_to   IS NULL OR p.PaymentDate <= p_to)
-       ORDER BY p.PaymentDate DESC, p.PaymentID;
+
+      UNION ALL
+
+      SELECT p.PaymentID,
+             p.PaymentType,
+             p.PaymentDate,
+             NULL                               AS SaleOrderID,
+             p.AllocationID,
+             c.CropName,
+             cu.FirstName || ' ' || cu.LastName AS PayerName,
+             w.WarehouseName                    AS PayeeName,
+             p.Amount,
+             p.PaymentMethod,
+             p.PaymentStatus,
+             p.TransactionReference,
+             s.StorageFee                       AS AmountDue,
+             NULL                               AS PaymentTerms,
+             s.StorageFee - NVL((SELECT SUM(sp.Amount)
+                                   FROM PAYMENT sp
+                                  WHERE sp.AllocationID = p.AllocationID
+                                    AND sp.PaymentType = 'STORAGE'
+                                    AND sp.PaymentStatus IN ('PENDING','COMPLETED')), 0)
+                                                AS Outstanding
+        FROM PAYMENT p
+        JOIN STORES s         ON s.AllocationID = p.AllocationID
+        JOIN WAREHOUSE w      ON w.WarehouseID  = s.WarehouseID
+        JOIN HARVEST_BATCH hb ON hb.BatchID     = s.BatchID
+        JOIN CROP c           ON c.CropID       = hb.CropID
+        JOIN USERS cu         ON cu.UserID      = NVL(s.RequestedByFarmerID, s.RequestedByBuyerID)
+       WHERE p.PaymentType = 'STORAGE'
+         AND (p_from IS NULL OR p.PaymentDate >= p_from)
+         AND (p_to   IS NULL OR p.PaymentDate <= p_to)
+
+       ORDER BY PaymentDate DESC, PaymentID;
   END payment_report;
 
   -- -------------------------------------------------------------------

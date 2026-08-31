@@ -730,6 +730,10 @@ INSERT INTO BAZAR_DAILY_RECORD (BazarID, RecordDate, CropID, TransactionVolume, 
 INSERT INTO BAZAR_DAILY_RECORD (BazarID, RecordDate, CropID, TransactionVolume, Revenue) VALUES (2, TRUNC(SYSDATE) - 2, 2, 15600.000, 288600.00);
 INSERT INTO BAZAR_DAILY_RECORD (BazarID, RecordDate, CropID, TransactionVolume, Revenue) VALUES (2, TRUNC(SYSDATE) - 1, 3,  4300.000, 415950.00);
 INSERT INTO BAZAR_DAILY_RECORD (BazarID, RecordDate, CropID, TransactionVolume, Revenue) VALUES (3, TRUNC(SYSDATE) - 1, 1, 12750.000, 428400.00);
+
+-- Bazar 1 traded two crops on the same day. Only the three-column key
+-- allows this row; under (BazarID, RecordDate) it is a PK violation.
+INSERT INTO BAZAR_DAILY_RECORD (BazarID, RecordDate, CropID, TransactionVolume, Revenue) VALUES (1, TRUNC(SYSDATE) - 1, 3,  6400.000, 619200.00);
 INSERT INTO BAZAR_DAILY_RECORD (BazarID, RecordDate, CropID, TransactionVolume, Revenue) VALUES (4, TRUNC(SYSDATE) - 1, 3,  6100.000, 592700.00);
 INSERT INTO BAZAR_DAILY_RECORD (BazarID, RecordDate, CropID, TransactionVolume, Revenue) VALUES (5, TRUNC(SYSDATE) - 1, 5,  8900.000, 620200.00);
 

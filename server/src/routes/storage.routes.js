@@ -3,6 +3,7 @@
 const express = require('express');
 const storage = require('../services/storage.service');
 const { authenticate, requireRole } = require('../middleware/authenticate');
+const param = require('../utils/params');
 
 const router = express.Router();
 
@@ -37,7 +38,7 @@ router.post('/warehouses', async (req, res, next) => {
 router.put('/warehouses/:warehouseId/rate', async (req, res, next) => {
   try {
     res.json(
-      await storage.setStorageFeeRate(me(req), Number(req.params.warehouseId), req.body.rate)
+      await storage.setStorageFeeRate(me(req), param.id(req.params.warehouseId, 'warehouseId'), req.body.rate)
     );
   } catch (err) {
     next(err);
@@ -56,7 +57,7 @@ router.post('/warehouses/:warehouseId/units', async (req, res, next) => {
   try {
     res
       .status(201)
-      .json(await storage.addUnit(me(req), Number(req.params.warehouseId), req.body));
+      .json(await storage.addUnit(me(req), param.id(req.params.warehouseId, 'warehouseId'), req.body));
   } catch (err) {
     next(err);
   }
@@ -69,9 +70,9 @@ router.patch('/warehouses/:warehouseId/units/:unitNo/maintenance', async (req, r
     res.json(
       await storage.setUnitMaintenance(
         me(req),
-        Number(req.params.warehouseId),
-        Number(req.params.unitNo),
-        Boolean(req.body.inMaintenance)
+        param.id(req.params.warehouseId, 'warehouseId'),
+        param.id(req.params.unitNo, 'unitNo'),
+        param.bool(req.body.inMaintenance, 'inMaintenance')
       )
     );
   } catch (err) {
@@ -131,7 +132,7 @@ router.post('/requests/:allocationId/respond', async (req, res, next) => {
       await storage.respondToProposal(
         'MANAGER',
         me(req),
-        Number(req.params.allocationId),
+        param.id(req.params.allocationId, 'allocationId'),
         req.body.decision,
         req.body
       )
@@ -149,7 +150,7 @@ router.post('/allocations/:allocationId/counter/respond', async (req, res, next)
       await storage.respondToCounter(
         'MANAGER',
         me(req),
-        Number(req.params.allocationId),
+        param.id(req.params.allocationId, 'allocationId'),
         req.body.decision
       )
     );
@@ -162,7 +163,7 @@ router.post('/allocations/:allocationId/counter/respond', async (req, res, next)
 // who must approve it, unless the minimum term is already fulfilled).
 router.post('/allocations/:allocationId/release', async (req, res, next) => {
   try {
-    res.json(await storage.requestRelease('MANAGER', me(req), Number(req.params.allocationId)));
+    res.json(await storage.requestRelease('MANAGER', me(req), param.id(req.params.allocationId, 'allocationId')));
   } catch (err) {
     next(err);
   }
@@ -175,7 +176,7 @@ router.post('/allocations/:allocationId/release/respond', async (req, res, next)
       await storage.respondToRelease(
         'MANAGER',
         me(req),
-        Number(req.params.allocationId),
+        param.id(req.params.allocationId, 'allocationId'),
         req.body.decision
       )
     );

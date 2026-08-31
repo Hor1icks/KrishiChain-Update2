@@ -272,6 +272,79 @@ CLEAR COLUMNS
 
 PROMPT
 PROMPT #####################################################################
-PROMPT # Done. Five queries, all returning rows. Nothing was modified.
+PROMPT # Q7 -- EVERY FARMER AND THEIR PAYMENTS
+PROMPT #
+PROMPT # Business question: what has each farmer been paid, including the
+PROMPT # ones who have been paid nothing at all?
+PROMPT #
+PROMPT # SQL features: LEFT JOIN with the PaymentType filter in the join
+PROMPT # condition rather than the WHERE clause -- moving it to WHERE
+PROMPT # would drop the unpaid farmers the question is asking about.
+PROMPT #####################################################################
+PROMPT
+
+COLUMN farmername FORMAT A26
+COLUMN paymentstatus FORMAT A12
+
+SELECT f.FarmerID,
+       u.FirstName || ' ' || u.LastName AS FarmerName,
+       p.PaymentID,
+       p.Amount,
+       p.PaymentStatus
+FROM   FARMER f
+JOIN   USERS u   ON u.UserID   = f.FarmerID
+LEFT JOIN PAYMENT p ON p.FarmerID = f.FarmerID
+                   AND p.PaymentType = 'SALE'
+ORDER  BY f.FarmerID, p.PaymentID;
+
+PROMPT
+PROMPT #####################################################################
+PROMPT # Q8 -- TOTAL PAID TO EACH FARMER
+PROMPT #
+PROMPT # Business question: ranked earnings, counting settled money only.
+PROMPT #
+PROMPT # SQL features: aggregate over a LEFT JOIN, NVL so a farmer with no
+PROMPT # payments reads 0 rather than an empty cell.
+PROMPT #####################################################################
+PROMPT
+
+SELECT f.FarmerID,
+       u.FirstName || ' ' || u.LastName AS FarmerName,
+       NVL(SUM(p.Amount), 0) AS TotalPayment
+FROM   FARMER f
+JOIN   USERS u   ON u.UserID   = f.FarmerID
+LEFT JOIN PAYMENT p ON p.FarmerID = f.FarmerID
+                   AND p.PaymentType = 'SALE'
+                   AND p.PaymentStatus = 'COMPLETED'
+GROUP  BY f.FarmerID, u.FirstName, u.LastName
+ORDER  BY TotalPayment DESC;
+
+PROMPT
+PROMPT #####################################################################
+PROMPT # Q9 -- CONFIRMED SALE ORDERS
+PROMPT #
+PROMPT # Business question: which awarded orders are confirmed but not yet
+PROMPT # closed out?
+PROMPT #####################################################################
+PROMPT
+
+COLUMN paymentterms FORMAT A14
+COLUMN status FORMAT A12
+
+SELECT SaleOrderID,
+       BidID,
+       OrderDate,
+       TotalAmount,
+       PaymentTerms,
+       Status
+FROM   SALE_ORDER
+WHERE  Status = 'CONFIRMED'
+ORDER  BY OrderDate DESC;
+
+CLEAR COLUMNS
+
+PROMPT
+PROMPT #####################################################################
+PROMPT # Done. Eight queries, all returning rows. Nothing was modified.
 PROMPT #####################################################################
 PROMPT

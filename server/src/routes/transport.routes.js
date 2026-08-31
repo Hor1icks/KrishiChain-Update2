@@ -3,6 +3,7 @@
 const express = require('express');
 const transport = require('../services/transport.service');
 const { authenticate, requireRole } = require('../middleware/authenticate');
+const param = require('../utils/params');
 
 const router = express.Router();
 
@@ -56,7 +57,7 @@ router.post('/assignments', async (req, res, next) => {
 
 router.post('/assignments/:transportId/advance', async (req, res, next) => {
   try {
-    res.json(await transport.advance(me(req), Number(req.params.transportId)));
+    res.json(await transport.advance(me(req), param.id(req.params.transportId, 'transportId')));
   } catch (err) {
     next(err);
   }
@@ -65,7 +66,7 @@ router.post('/assignments/:transportId/advance', async (req, res, next) => {
 /** PRD §9.10 transaction #6 — the last of the six. */
 router.post('/assignments/:transportId/deliver', async (req, res, next) => {
   try {
-    res.json(await transport.complete(me(req), Number(req.params.transportId), req.body));
+    res.json(await transport.complete(me(req), param.id(req.params.transportId, 'transportId'), req.body));
   } catch (err) {
     next(err);
   }
