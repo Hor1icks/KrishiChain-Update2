@@ -1,6 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { NotificationProvider } from './context/NotificationContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import NavBar from './components/NavBar';
 import LoginPage from './pages/LoginPage';
@@ -66,7 +65,6 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <NotificationProvider>
           <NavBar />
           <main className="app">
             <Routes>
@@ -124,7 +122,6 @@ export default function App() {
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </main>
-        </NotificationProvider>
       </AuthProvider>
     </BrowserRouter>
   );

@@ -85,6 +85,10 @@ The amount is reserved as a `PENDING` payment before the session opens, so a
 balance cannot be paid twice, and settlement is confirmed by calling the
 gateway's validation API — the redirect body itself is never trusted.
 
+**Notifications.** The bell is in the nav and opens to "Will be implemented".
+The `NOTIFICATION` table and its seed rows exist; nothing is wired to them
+yet, pending a decision on which events are worth notifying about.
+
 **Build chain.** `00_reset` → `01_create_tables` → `02_business_rules` →
 `03_insert_data` → `04_views` → `05_plsql_layer`. `06_advanced_queries` and
 `07_update2_demo` are read-only.
