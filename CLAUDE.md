@@ -73,14 +73,15 @@ cd client && npm run build                                      # only real "doe
 
 No lint or test tooling has been chosen — don't invent lint/test commands.
 
-`server/.env` gotcha: **quote the password.** An unquoted `#` starts a comment in a `.env` file,
-so `DB_PASSWORD=Krishi#2026` parses as `Krishi` and yields `ORA-01017`.
+`server/.env` gotcha: **quote the password if it contains a `#`.** Unquoted, `#` starts a comment
+in a `.env` file, so e.g. `DB_PASSWORD=Example#2026` parses as `Example` and yields `ORA-01017`.
 
 SQL files are run in SQL Developer (F5 = Run Script, not Ctrl+Enter — several files contain
-PL/SQL blocks terminated with `/`) or SQL*Plus:
+PL/SQL blocks terminated with `/`), through `./db.sh` (reads the connection out of `server/.env`,
+nothing hardcoded), or SQL*Plus directly with whatever password `krishichain` actually has:
 
 ```
-sqlplus krishichain/"Krishi#2026"@localhost:1521/XE @database/99_inspect_data.sql
+./db.sh database/99_inspect_data.sql
 ```
 
 The build chain is `00` → `01` → `02` → `03` → `04` → `05`, which is exactly what

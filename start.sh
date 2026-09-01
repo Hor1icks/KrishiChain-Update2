@@ -61,15 +61,26 @@ if [ "$SKIP_DB" -eq 0 ]; then
   command -v docker >/dev/null || fail "docker is not installed, or use --no-db"
 
   if ! docker ps --format '{{.Names}}' | grep -qx "$CONTAINER"; then
-    docker ps -a --format '{{.Names}}' | grep -qx "$CONTAINER" ||
-      fail "No container named '$CONTAINER'. Create it first, or use --no-db."
-    say "Starting Oracle XE"
-    docker start "$CONTAINER" >/dev/null || fail "Could not start $CONTAINER"
+    if docker ps -a --format '{{.Names}}' | grep -qx "$CONTAINER"; then
+      say "Starting Oracle XE"
+      docker start "$CONTAINER" >/dev/null || fail "Could not start $CONTAINER"
+    else
+      [ -f "$ROOT/Dockerfile" ] || fail "No container named '$CONTAINER', and no Dockerfile to build one from. Create the container first, or use --no-db."
+      say "No '$CONTAINER' container yet — building it from Dockerfile"
+      echo "First boot builds the whole schema and seeds it; this takes a few minutes."
+      (cd "$ROOT" && docker build -t krishichain-oracle .) ||
+        fail "docker build failed. Full output above."
+      docker run -d --name "$CONTAINER" -p 1521:1521 \
+        -e ORACLE_PASSWORD=OracleDemo2026 -e NLS_LANG=.AL32UTF8 \
+        -v krishichain-oradata:/u01/app/oracle/oradata \
+        krishichain-oracle >/dev/null ||
+        fail "docker run failed to start $CONTAINER."
+    fi
   fi
 
   printf 'Waiting for the database'
   ready=0
-  for _ in $(seq 1 60); do
+  for _ in $(seq 1 150); do
     if "$ROOT/db.sh" -q "SELECT 'up' FROM dual" 2>/dev/null | grep -q '^up$'; then
       ready=1; break
     fi

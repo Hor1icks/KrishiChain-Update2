@@ -9,27 +9,56 @@
  * Thick mode loads and reaches XE before anyone writes application code.
  *
  * SETUP
- *   1. npm init -y && npm install oracledb dotenv
+ *   1. npm init -y && npm install oracledb
  *   2. Install Oracle Instant Client 19c (Basic or Basic Light).
  *      MUST match your XE build: 64-bit XE -> 64-bit client -> 64-bit Node.
- *   3. Set INSTANT_CLIENT_DIR below (or in .env) to the unzipped folder.
- *   4. node test_connection.js
+ *   3. Set INSTANT_CLIENT_DIR below to the unzipped folder.
+ *   4. Have server/.env set up (cp server/.env.example server/.env and edit
+ *      it) — DB_USER/DB_PASSWORD/DB_CONNECT_STRING are read from there, not
+ *      hardcoded here, so this file never carries a real credential.
+ *   5. node test_connection.js
  */
 
+const fs = require('fs');
+const path = require('path');
 const oracledb = require('oracledb');
 
 // ---------------------------------------------------------------------
-// EDIT THESE FOR YOUR MACHINE
+// EDIT THIS FOR YOUR MACHINE
 // ---------------------------------------------------------------------
 const INSTANT_CLIENT_DIR = 'C:\\oracle\\instantclient_19_26'; // Windows
 // const INSTANT_CLIENT_DIR = '/opt/oracle/instantclient_19_26'; // Linux
+// ---------------------------------------------------------------------
+
+// Small hand-rolled reader instead of the `dotenv` package, so this
+// standalone script needs nothing beyond `oracledb` installed.
+function readEnvValue(envPath, key) {
+  if (!fs.existsSync(envPath)) return undefined;
+  const line = fs
+    .readFileSync(envPath, 'utf8')
+    .split('\n')
+    .find((l) => l.trim().startsWith(`${key}=`));
+  if (!line) return undefined;
+  return line
+    .slice(line.indexOf('=') + 1)
+    .trim()
+    .replace(/^['"]|['"]$/g, '');
+}
+
+const ENV_PATH = path.join(__dirname, '..', 'server', '.env');
 
 const DB = {
-  user: 'krishichain',
-  password: 'Krishi#2026',
-  connectString: 'localhost:1521/XE', // XE's SID is fixed as XE
+  user: readEnvValue(ENV_PATH, 'DB_USER') || 'krishichain',
+  password: readEnvValue(ENV_PATH, 'DB_PASSWORD'),
+  connectString: readEnvValue(ENV_PATH, 'DB_CONNECT_STRING') || 'localhost:1521/XE',
 };
-// ---------------------------------------------------------------------
+
+if (!DB.password) {
+  console.error(`\n  Could not read DB_PASSWORD from ${ENV_PATH}`);
+  console.error('  Create server/.env first: cp server/.env.example server/.env');
+  console.error('  then edit it with the password the krishichain user was created with.\n');
+  process.exit(1);
+}
 
 function fail(step, err) {
   console.error(`\n  FAILED at: ${step}`);

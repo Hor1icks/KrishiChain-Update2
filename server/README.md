@@ -19,9 +19,9 @@ Two things in `.env` that will bite you:
   reach XE 11.2 at all, so Thick mode is mandatory. A `DPI-1047` error means
   the client, XE and Node.js are not all the same bitness — it is almost never
   a missing file.
-- **`DB_PASSWORD` must be quoted.** An unquoted `#` starts a comment in a
-  `.env` file, so `DB_PASSWORD=Krishi#2026` silently becomes `Krishi` and you
-  get `ORA-01017: invalid username/password`.
+- **`DB_PASSWORD` must be quoted if it contains a `#`.** Unquoted, `#` starts
+  a comment in a `.env` file, so e.g. `DB_PASSWORD=Example#2026` silently
+  becomes `Example` and you get `ORA-01017: invalid username/password`.
 
 The API runs on **port 5000**, not 8080 — XE's bundled APEX already holds 8080.
 

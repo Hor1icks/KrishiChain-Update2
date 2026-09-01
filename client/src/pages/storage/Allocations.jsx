@@ -581,6 +581,7 @@ export default function Allocations() {
               <th className="num">Unit</th>
               <th className="num">Quantity</th>
               <th>In</th>
+              <th className="num">Days</th>
               <th>Free to release</th>
               <th className="num">Fee</th>
               <th>Status</th>
@@ -618,6 +619,7 @@ export default function Allocations() {
                   <td className="num">{a.unitNo}</td>
                   <td className="num">{number(a.quantityStored)}</td>
                   <td>{date(a.dateIn)}</td>
+                  <td className="num">{a.dateIn ? number(a.storageDays) : '—'}</td>
                   <td>{a.minimumReleaseDate ? date(a.minimumReleaseDate) : '—'}</td>
                   <td className="num">
                     {taka(a.storageFee)}

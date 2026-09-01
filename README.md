@@ -33,11 +33,91 @@ dependencies on the front end are `react`, `react-dom` and `react-router`.
 
 ## Running it
 
+### New machine, step by step
+
+One-time prerequisites — nothing here is part of this repo, install them
+yourself first:
+
+1. **Git**
+2. **Docker** — Docker Desktop (Mac/Windows) or Docker Engine (Linux)
+3. **Node.js** — no version pinned in this repo, any reasonably recent one
+   works
+4. **Oracle Instant Client 19c** (Basic or Basic Light) — download from
+   Oracle, unzip somewhere stable and not OneDrive-synced, matching your
+   OS/architecture (64-bit unless you specifically know otherwise)
+5. **Windows only:** `start.sh` and `db.sh` are bash scripts — you need WSL
+   or Git Bash to run them. There is no native `.bat` equivalent.
+
+Then:
+
+```bash
+git clone git@github.com:Hor1icks/KrishiChain-Update2.git
+cd KrishiChain-Update2
+./start.sh
+```
+
+First run: no `server/.env` exists yet, so this copies `server/.env.example`
+into place and stops. Open `server/.env` and set `ORACLE_CLIENT_DIR` to your
+unzipped Instant Client folder — that's the only line you actually have to
+change. Everything else already has a working default (`DB_PASSWORD`
+already matches the user the Dockerfile creates). If you want the
+SSLCommerz payment demo working too, fill in `SSLCZ_STORE_ID` /
+`SSLCZ_STORE_PASSWORD`; leave them blank and that one feature just stays
+hidden.
+
+```bash
+./start.sh
+```
+
+Run it again and this is where everything actually happens: no
+`krishichain-oracle` container exists yet, so it builds one from
+`Dockerfile` (schema, PL/SQL layer and seed data bake themselves in
+automatically — a few minutes, first time only), waits for it to come up,
+installs `npm` dependencies in both `client/` and `server/`, then starts the
+API and the front end.
+
+Open **http://localhost:5173** and sign in with any seeded account —
+password `Demo@1234` for all of them. `abdul.karim@krishichain.bd` is a
+farmer with an open auction, the most interesting one to start with.
+
+Every time after that, it's just `./start.sh` — the container already
+exists so it starts in seconds, dependencies are already installed.
+`Ctrl+C` stops both servers; the database container keeps running in the
+background. `./start.sh --rebuild` wipes and rebuilds the schema from empty
+if you ever need a clean slate.
+
+### From nothing, by hand (skipping the script)
+
+There's nothing to create by hand first — `Dockerfile` builds a
+`krishichain-oracle` container from Oracle XE 11.2 with the schema, PL/SQL
+layer and seed data baked in, the same way `./start.sh` does above. To run
+that step directly instead of letting the script do it:
+
+```bash
+docker build -t krishichain-oracle .
+docker run -d --name krishichain-oracle -p 1521:1521 \
+  -e ORACLE_PASSWORD=OracleDemo2026 -e NLS_LANG=.AL32UTF8 \
+  -v krishichain-oradata:/u01/app/oracle/oradata \
+  krishichain-oracle
+```
+
+(or `docker compose up -d --build`, using `docker-compose.yml`, if you have
+the compose plugin — same thing, one command instead of two.)
+
+First boot takes a few minutes (Oracle initializing its data files, then the
+schema build) — `docker logs -f krishichain-oracle` to watch it. After that,
+the built database lives in a named Docker volume, so every later start is a
+normal fast restart, not a rebuild. The user this creates is
+`krishichain` / `KrishiDemo2026` — a disposable password for a disposable
+local container; put that in `server/.env`'s `DB_PASSWORD` (see
+`.env.example`, which already defaults to it).
+
 ### With the script
 
-`start.sh` starts the database container, waits until it accepts connections,
-installs anything missing, brings up the API and the front end, and prints the
-two URLs.
+`start.sh` builds the database container if none exists yet (see above),
+otherwise starts the existing one, waits until it accepts connections,
+installs anything missing, brings up the API and the front end, and prints
+the two URLs.
 
 ```bash
 ./start.sh
@@ -59,7 +139,8 @@ Client directory before trying again.
 
 ### By hand
 
-Oracle XE 11.2 must be reachable first. This project runs it in Docker:
+Oracle XE 11.2 must be reachable first — either already built via the
+Dockerfile above, or:
 
 ```bash
 docker start krishichain-oracle    # wait ~30s on a cold start
@@ -106,8 +187,9 @@ with `DPI-1047`, the Instant Client is not on the library path. A `DPI-1047` is
 almost never a missing file; it is usually an architecture mismatch between XE,
 the Instant Client and Node.
 
-**Quote the password in `.env`.** An unquoted `#` starts a comment, so
-`DB_PASSWORD=Krishi#2026` silently becomes `Krishi` and you get `ORA-01017`.
+**Quote the password in `.env` if it contains a `#`.** Unquoted, `#` starts a
+comment, so e.g. `DB_PASSWORD=Example#2026` silently becomes `Example` and
+you get `ORA-01017`.
 
 ---
 
@@ -179,12 +261,15 @@ disappears.
 ## Layout
 
 ```
-start.sh     brings up the database, the API and the front end
-db.sh        runs SQL against the container without a local client
-database/    schema, seed data, views, the PL/SQL layer
-server/      Express API
-client/      React front end, 28 pages across five role modules
-Phase1/      one-time environment setup and connectivity checks
+start.sh          brings up the database, the API and the front end
+db.sh              runs SQL against the container without a local client
+Dockerfile         builds a krishichain-oracle container with the schema baked in
+docker-compose.yml  the same, as one command, if you have the compose plugin
+docker/            docker/bootstrap.sql — the init script Dockerfile installs
+database/          schema, seed data, views, the PL/SQL layer
+server/            Express API
+client/            React front end, 28 pages across five role modules
+Phase1/            one-time environment setup and connectivity checks
 ```
 
 `UPDATE2.md` maps each technique the coursework asks for to the page that

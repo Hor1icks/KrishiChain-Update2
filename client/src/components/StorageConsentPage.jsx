@@ -609,7 +609,8 @@ export default function StorageConsentPage({ base, title, intro, legNote }) {
                           type="button"
                           className="small"
                           onClick={() => {
-                            setPaying(h);
+                            const fee = fees.find((f) => f.allocationId === h.allocationId);
+                            setPaying({ ...h, paidSoFar: fee?.paidSoFar ?? 0 });
                             setPayAmount(Number(owed).toFixed(2));
                           }}
                         >

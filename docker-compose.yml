@@ -1,0 +1,41 @@
+# Brings up krishichain-oracle from scratch: builds the image in Dockerfile
+# (schema + PL/SQL layer + seed data baked in via docker/bootstrap.sql),
+# starts it, and waits for it to report healthy before anything else in the
+# stack that depends on it proceeds.
+#
+#   docker compose up -d --build
+#
+# First boot takes a few minutes; `docker compose logs -f oracle` to watch.
+# The named volume below persists the built database, so this only happens
+# once — later `docker compose up` (or `docker start krishichain-oracle`,
+# which is what start.sh/db.sh use) is a normal fast restart.
+#
+# Note for THIS machine specifically: it already has a hand-created
+# container and volume both named krishichain-oracle / krishichain-oradata
+# with real data in them (see CLAUDE.md). Do not run this here without
+# first renaming or removing those — it's written for a teammate's clean
+# machine, where no such collision exists.
+services:
+  oracle:
+    build: .
+    container_name: krishichain-oracle
+    environment:
+      # SYS/SYSTEM password, set once on first boot. Same disposable-local-
+      # container caveat as docker/bootstrap.sql's krishichain password —
+      # never a real one.
+      ORACLE_PASSWORD: OracleDemo2026
+      # Required for Bengali text -- see CLAUDE.md's NLS_CHARACTERSET note.
+      NLS_LANG: .AL32UTF8
+    ports:
+      - "1521:1521"
+    volumes:
+      - krishichain-oradata:/u01/app/oracle/oradata
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 120s
+
+volumes:
+  krishichain-oradata:

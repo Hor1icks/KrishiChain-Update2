@@ -15,7 +15,7 @@
 --                   shows it in a proper grid -- nicer for one query
 --
 -- HOW TO RUN IT IN SQL*PLUS
---   sqlplus krishichain/Krishi#2026@localhost:1521/XE @99_inspect_data.sql
+--   ./db.sh database/99_inspect_data.sql
 --
 -- The COLUMN ... FORMAT lines below only control text width in
 -- SQL*Plus / SQL Developer's Script Output. They do nothing to the data.

@@ -58,7 +58,7 @@ export default function Warehouses() {
       });
       setNotice(
         `Unit ${res.unitNo} created in warehouse ${res.warehouseId}. ` +
-          `The number was assigned by trg_storage_unit_no, not by you.`
+          `The number was assigned by pkg_krishi_rules.next_unit_no, not by you.`
       );
       setUnitForm({ ...unitForm, [warehouseId]: '' });
       await load();

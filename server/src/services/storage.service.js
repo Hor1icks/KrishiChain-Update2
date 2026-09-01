@@ -567,7 +567,8 @@ async function listAllocations(managerId) {
             NVL((SELECT SUM(sp.Amount) FROM PAYMENT sp
                   WHERE sp.PaymentType = 'STORAGE'
                     AND sp.AllocationID = s.AllocationID
-                    AND sp.PaymentStatus IN ('PENDING','COMPLETED')), 0) AS "feePaid"
+                    AND sp.PaymentStatus IN ('PENDING','COMPLETED')), 0) AS "feePaid",
+            pkg_krishi_metrics.fn_storage_days(s.AllocationID) AS "storageDays"
        FROM STORES s
        JOIN WAREHOUSE w      ON w.WarehouseID = s.WarehouseID
        JOIN HARVEST_BATCH hb ON hb.BatchID    = s.BatchID

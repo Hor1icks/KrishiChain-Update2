@@ -4,7 +4,7 @@
 --
 -- READ-ONLY. Safe to run any time. Run after 03_insert_data.sql and
 -- 04_views.sql:
---   sqlplus krishichain/"Krishi#2026"@localhost:1521/XE @05_advanced_queries.sql
+--   ./db.sh database/06_advanced_queries.sql
 -- In SQL Developer: open, connect as krishichain, press F5 (Run Script).
 --
 -- WHICH FIVE, AND WHY
