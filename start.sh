@@ -10,6 +10,12 @@
 # running, since starting it again takes about half a minute.
 set -uo pipefail
 
+# Git Bash on Windows (MSYS) rewrites Unix-looking paths passed as docker
+# arguments (e.g. the oradata volume target) into Windows paths before
+# docker sees them. Harmless no-op on macOS/Linux. See db.sh for the exec
+# failure this avoids.
+export MSYS_NO_PATHCONV=1
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONTAINER=krishichain-oracle
 LOGS="$ROOT/logs"

@@ -12,6 +12,13 @@
 # SQL*Plus's own @ command cannot see host paths.
 set -uo pipefail
 
+# Git Bash on Windows (MSYS) rewrites anything that looks like a Unix path
+# -- including $SQLPLUS below -- into a Windows path before docker ever
+# sees it, so `docker exec ... /u01/.../sqlplus` fails with a "no such
+# file" pointing at a mangled C:/Program Files/... path. Harmless no-op on
+# macOS/Linux.
+export MSYS_NO_PATHCONV=1
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONTAINER=krishichain-oracle
 SQLPLUS=/u01/app/oracle/product/11.2.0/xe/bin/sqlplus
