@@ -11,14 +11,6 @@ const { DISTRICTS } = require('../utils/districts');
 
 const SALT_ROUNDS = 10;
 
-/**
- * The specialization from PRD §7 is TOTAL and DISJOINT: every USERS row
- * belongs to exactly one subclass table, and the subclass PK is the same
- * value as USERS.UserID (shared-PK, no discriminator column). This map is
- * the single place that knows which table and which extra columns each
- * role needs — adding a role means adding one entry here, not editing
- * the transaction below.
- */
 const SUBCLASS = {
   FARMER: {
     table: 'FARMER',
@@ -44,8 +36,6 @@ const SUBCLASS = {
   STORAGE_MANAGER: {
     table: 'STORAGE_MANAGER',
     pk: 'ManagerID',
-    // Designation and HireDate are NOT NULL on the table, so they have
-    // to be collected here or the insert cannot succeed at all.
     columns: ['EmployeeID', 'Designation', 'HireDate', 'ShiftSchedule', 'CertificationNo'],
     fields: ['employeeId', 'designation', 'hireDate', 'shiftSchedule', 'certificationNo'],
     required: ['employeeId', 'designation', 'hireDate'],
@@ -62,12 +52,6 @@ const SUBCLASS = {
 
 const ROLES = Object.keys(SUBCLASS);
 
-/**
- * Anyone may sign up as a farmer or a buyer. Staff roles carry authority
- * over other people's data -- an admin can read every account, a manager
- * can move anyone's stock -- so they are created by an existing admin,
- * not claimed from the sign-up form.
- */
 const SELF_SERVICE_ROLES = ['FARMER', 'BUYER'];
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -80,11 +64,6 @@ function assertPasswordPolicy(password) {
   }
 }
 
-/**
- * Turn Oracle's constraint names into messages a user can act on.
- * The PK_/FK_/UQ_/CK_ naming convention from PRD §9.9 exists precisely
- * so violations stay readable — this is where that pays off.
- */
 function translateOracleError(err) {
   const message = err.message || '';
 
@@ -126,20 +105,6 @@ function assertPresent(payload, fields) {
   }
 }
 
-/**
- * REGISTRATION — atomic transaction #1 of the six in PRD §9.10.
- *
- * Three writes that must all succeed or all fail:
- *   1. USERS            (UserID assigned by trg_user_id from seq_user_id;
- *                        11g has no IDENTITY columns)
- *   2. <subclass>       (PK = the UserID just generated)
- *   3. USER_PHONE       (0..n rows — the multivalued attribute)
- *
- * A half-committed registration would leave a USERS row with no subclass
- * row, which silently breaks the total-specialization guarantee the whole
- * data model rests on. withTransaction() commits once at the end or rolls
- * back everything.
- */
 async function register(payload, { allowStaffRoles = false } = {}) {
   const role = String(payload.role || '').toUpperCase();
   const permitted = allowStaffRoles ? ROLES : SELF_SERVICE_ROLES;
@@ -188,10 +153,7 @@ async function register(payload, { allowStaffRoles = false } = {}) {
 
   try {
     return await withTransaction(async (connection) => {
-      // --- 1. USERS -------------------------------------------------
       const userResult = await connection.execute(
-        // Address is a t_address object column, so the six parts are
-        // passed to the type's constructor rather than to six columns.
         `INSERT INTO USERS (
            UserID,
            FirstName, MiddleName, LastName, Email, PasswordHash, Gender,
@@ -225,14 +187,11 @@ async function register(payload, { allowStaffRoles = false } = {}) {
 
       const userId = userResult.outBinds.userId[0];
 
-      // --- 2. Subclass row — same ID as the USERS row above ----------
       const subclassBinds = { id: userId };
       spec.fields.forEach((field, i) => {
         subclassBinds[`v${i}`] = payload[field] ?? null;
       });
 
-      // A date column takes a JS Date, not the 'YYYY-MM-DD' string a form
-      // sends, which would fail with ORA-01858.
       const placeholder = (column, i) =>
         spec.dateColumns?.includes(column) ? `TO_DATE(:v${i}, 'YYYY-MM-DD')` : `:v${i}`;
 
@@ -242,7 +201,6 @@ async function register(payload, { allowStaffRoles = false } = {}) {
         subclassBinds
       );
 
-      // --- 3. USER_PHONE — the multivalued attribute {PhoneNo} -------
       if (phones.length) {
         await connection.executeMany(
           `INSERT INTO USER_PHONE (UserID, PhoneNo) VALUES (:userId, :phoneNo)`,
@@ -281,8 +239,6 @@ async function login(email, password) {
 
   const row = result.rows[0];
 
-  // Hash the supplied password even when the email is unknown, so a
-  // missing account and a wrong password take the same time to answer.
   const hash = row ? row.PASSWORDHASH : '$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinva';
   const ok = await bcrypt.compare(password, hash);
 
@@ -303,12 +259,6 @@ async function login(email, password) {
   return { user, token: signToken(user) };
 }
 
-/**
- * Age is computed here rather than stored: Oracle 11g virtual columns
- * reject non-deterministic expressions like SYSDATE, so USERS./Age/ from
- * the ER diagram cannot be a GENERATED ALWAYS column. Phase 4's
- * 04_views.sql will expose the same calculation as V_USER_PROFILE.
- */
 async function getProfile(userId) {
   const result = await query(
     `SELECT u.UserID, u.FirstName, u.MiddleName, u.LastName, u.Email,

@@ -6,8 +6,6 @@ export const tokenStore = {
   clear: () => localStorage.removeItem(TOKEN_KEY),
 };
 
-// Set by AuthContext so an expired session can clear itself from here,
-// which is the only place that sees every 401.
 let onUnauthorized = null;
 export function setUnauthorizedHandler(fn) {
   onUnauthorized = fn;
@@ -33,8 +31,6 @@ export async function api(path, { method = 'GET', body, auth = true } = {}) {
 
   const text = await response.text();
 
-  // A dev-proxy error page is HTML, and parsing it unconditionally turns
-  // "the API is down" into "Unexpected token '<'".
   let data = null;
   if (text) {
     const isJson = (response.headers.get('content-type') || '').includes('application/json');

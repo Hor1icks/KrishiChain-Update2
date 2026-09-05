@@ -1,18 +1,3 @@
--- =====================================================================
--- KrishiChain | 00_reset.sql
---
--- Drops all 27 tables so 01_create_tables.sql can be run against a
--- genuinely empty schema. Run as krishichain. F5 (Run Script).
---
--- On an already-empty schema every statement reports ORA-00942 (table or
--- view does not exist). That is expected, not a failure.
---
--- CASCADE CONSTRAINTS also drops foreign keys in other tables that point
--- at this one. PURGE skips the recycle bin. The order below is children
--- before parents, so the drops would mostly succeed without CASCADE
--- CONSTRAINTS; it is there so a half-created schema still resets.
---
--- =====================================================================
 
 DROP TABLE NOTIFICATION         CASCADE CONSTRAINTS PURGE;
 DROP TABLE COMPLAINT            CASCADE CONSTRAINTS PURGE;
@@ -42,8 +27,6 @@ DROP TABLE FARMER               CASCADE CONSTRAINTS PURGE;
 DROP TABLE USER_PHONE           CASCADE CONSTRAINTS PURGE;
 DROP TABLE USERS                CASCADE CONSTRAINTS PURGE;
 
--- Types go last: a table with a column of that type must be gone first.
--- FORCE drops the type even if something still claims a dependency.
 BEGIN
   FOR t IN (SELECT type_name FROM user_types) LOOP
     EXECUTE IMMEDIATE 'DROP TYPE ' || t.type_name || ' FORCE';

@@ -63,8 +63,6 @@ router.post('/warehouses/:warehouseId/units', async (req, res, next) => {
   }
 });
 
-// Candidates for each storage leg — any manager can propose against
-// either list, not just ones tied to their own warehouse's district.
 router.patch('/warehouses/:warehouseId/units/:unitNo/maintenance', async (req, res, next) => {
   try {
     res.json(
@@ -104,7 +102,6 @@ router.get('/allocations', async (req, res, next) => {
   }
 });
 
-// PRD §9.10 transaction #2, now split into propose + customer consent.
 router.post('/allocations', async (req, res, next) => {
   try {
     res.status(201).json(await storage.propose(me(req), req.body));
@@ -113,8 +110,6 @@ router.post('/allocations', async (req, res, next) => {
   }
 });
 
-// Everything waiting on THIS manager: customer-initiated requests, and
-// counter-offers the customer sent back against the manager's proposals.
 router.get('/requests', async (req, res, next) => {
   try {
     res.json(await storage.listRequestsForManager(me(req)));
@@ -123,9 +118,6 @@ router.get('/requests', async (req, res, next) => {
   }
 });
 
-// Answer a customer's request: ACCEPT, REJECT or COUNTER (with a
-// counterRatePerKg). Same service call the customer uses against a
-// manager's proposal — who may answer is derived from ProposedBy.
 router.post('/requests/:allocationId/respond', async (req, res, next) => {
   try {
     res.json(
@@ -142,8 +134,6 @@ router.post('/requests/:allocationId/respond', async (req, res, next) => {
   }
 });
 
-// Settle a counter the customer sent back against this manager's own
-// proposal. ACCEPT or REJECT only — one negotiation round, no re-counter.
 router.post('/allocations/:allocationId/counter/respond', async (req, res, next) => {
   try {
     res.json(
@@ -159,8 +149,6 @@ router.post('/allocations/:allocationId/counter/respond', async (req, res, next)
   }
 });
 
-// Manager-initiated release request (the customer is the other party
-// who must approve it, unless the minimum term is already fulfilled).
 router.post('/allocations/:allocationId/release', async (req, res, next) => {
   try {
     res.json(await storage.requestRelease('MANAGER', me(req), param.id(req.params.allocationId, 'allocationId')));
@@ -169,7 +157,6 @@ router.post('/allocations/:allocationId/release', async (req, res, next) => {
   }
 });
 
-// Manager approving/declining a release the CUSTOMER requested early.
 router.post('/allocations/:allocationId/release/respond', async (req, res, next) => {
   try {
     res.json(

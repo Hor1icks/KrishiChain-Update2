@@ -1,41 +1,10 @@
 'use strict';
 
-/**
- * Transport module — the last two of the six PRD §9.10 transactions.
- *
- *   #5 Assign transport   INSERT ASSIGNED_TO + UPDATE VEHICLE.Status
- *                         + UPDATE TRANSPORT_REQUEST -> ASSIGNED
- *   #6 Delivery + payment UPDATE TRANSPORT_REQUEST -> DELIVERED
- *                         + UPDATE SALE_ORDER -> COMPLETED + INSERT PAYMENT
- *
- * WHO ASSIGNS. The PRD names no dispatcher role, and the nav in §11.3
- * gives TRANSPORT_PERSONNEL "My Assignments" — so personnel claim an open
- * request themselves, choosing an available vehicle. That keeps the
- * ternary ASSIGNED_TO (request x vehicle x personnel) honest: all three
- * legs are decided in one act by the person accountable for the trip.
- *
- * WHY #6 IS THE DRIVER'S ACTION AND NOT THE BUYER'S. PaymentTerms
- * 'ON_DELIVERY' is cash on delivery — the money changes hands at the
- * doorstep, which is exactly the moment the driver marks the trip
- * delivered. So the three statements really are one atomic act. Payment
- * is still recorded as buyer -> farmer (D-2, no ARAT commission, no
- * escrow); the driver only witnesses it. ADVANCE orders are paid by the
- * buyer before delivery through buyer.service.js payOrder() instead, and
- * for those #6 records the delivery and completes the order without
- * inserting a second PAYMENT row.
- *
- * BR-19 (no overpayment) and BR-20 (nothing before DELIVERED unless
- * ADVANCE) are enforced by trg_payment_biz_rules, the compound trigger —
- * not re-implemented here. The INSERT below deliberately runs while the
- * TRANSPORT_REQUEST row in the same transaction already reads DELIVERED,
- * which is what lets BR-20 pass for an ON_DELIVERY order.
- */
 
 const oracledb = require('oracledb');
 const { query, withTransaction } = require('../config/db');
 const ApiError = require('../utils/ApiError');
 
-/** Statuses a trip can move through once it has been claimed. */
 const ADVANCEABLE = { ASSIGNED: 'PICKED_UP', PICKED_UP: 'IN_TRANSIT' };
 
 async function loadTrip(connection, transportId) {
@@ -57,10 +26,6 @@ async function loadTrip(connection, transportId) {
   return result.rows[0];
 }
 
-/**
- * The assignment row for a trip, if it is still live. Used to prove the
- * caller is the person actually driving it before letting them move it on.
- */
 async function driverOnTrip(connection, transportId, personnelId) {
   const result = await connection.execute(
     `SELECT COUNT(*) AS N FROM ASSIGNED_TO
@@ -91,19 +56,6 @@ async function assignedCapacity(connection, transportId) {
   return result.rows[0].CAP;
 }
 
-/**
- * Open work: awarded orders whose transport nobody has claimed yet AND
- * whose buyer has settled where the load is actually going.
- *
- * THE DELIVERY GATE. Winning a bid raises a transport request
- * immediately, but at that moment nobody knows the destination: the
- * buyer may want it driven straight to them, or into a warehouse first
- * (leg 2). Until they say which, the trip has no real address, so it is
- * not offered to drivers at all. DeliveryPreference leaves 'PENDING' by
- * exactly two routes — the buyer choosing direct delivery
- * (buyer.service.js setDeliveryDirect) or a leg-2 storage allocation
- * going ACTIVE (storage.service.js finalizeAcceptance).
- */
 async function listOpenRequests() {
   const result = await query(
     `SELECT tr.TransportID      AS "transportId",
@@ -142,7 +94,6 @@ async function listOpenRequests() {
   return result.rows;
 }
 
-/** Vehicles free to be claimed, plus the load they would have to carry. */
 async function listAvailableVehicles() {
   const result = await query(
     `SELECT VehicleID   AS "vehicleId",
@@ -157,7 +108,6 @@ async function listAvailableVehicles() {
   return result.rows;
 }
 
-/** Every trip this driver has ever run, newest first. */
 async function listMyAssignments(personnelId) {
   const result = await query(
     `SELECT a.AssignmentID     AS "assignmentId",
@@ -236,14 +186,6 @@ async function getSummary(personnelId) {
   return result.rows[0];
 }
 
-/**
- * PRD §9.10 transaction #5 — Assign transport.
- *
- * BR-18 (vehicle capacity >= load) has no database backstop, and this is
- * the only place it can be enforced: it compares VEHICLE.Capacity against
- * a quantity that lives two joins away in SALE_ORDER. Listed as still
- * unenforced in context.md's open items until now.
- */
 async function claim(personnelId, payload) {
   const transportId = Number(payload.transportId);
   const vehicleId = Number(payload.vehicleId);
@@ -259,10 +201,6 @@ async function claim(personnelId, payload) {
         `Transport #${transportId} is already ${trip.DELIVERYSTATUS} — nothing to claim.`
       );
     }
-    // Re-checked here and not only in listOpenRequests(): the two calls
-    // are not atomic with each other, so a buyer could still be deciding
-    // when the list was fetched. (Different reason from BR-18's recheck
-    // below, which exists because the vehicle is not known until now.)
     if (!['DIRECT', 'VIA_STORAGE'].includes(trip.DELIVERYPREFERENCE)) {
       throw ApiError.businessRule(
         `The buyer has not settled where order #${trip.SALEORDERID} is going yet — ` +
@@ -284,8 +222,6 @@ async function claim(personnelId, payload) {
       throw ApiError.conflict('This request already has enough capacity on it.');
     }
 
-    // FOR UPDATE so two drivers cannot claim the same vehicle at once —
-    // the same race the storage module guards against on a unit's load.
     const vehicleResult = await connection.execute(
       `SELECT VehicleID, VehicleNo, Capacity, Status FROM VEHICLE
         WHERE VehicleID = :vehicleId FOR UPDATE`,
@@ -317,15 +253,11 @@ async function claim(personnelId, payload) {
       }
     );
 
-    // --- 2. VEHICLE.Status -------------------------------------------
     await connection.execute(
       `UPDATE VEHICLE SET Status = 'ASSIGNED' WHERE VehicleID = :vehicleId`,
       { vehicleId }
     );
 
-    // BR-18 is met by the fleet on the trip, not by any one vehicle, so
-    // the request only leaves PENDING once the assigned capacity covers
-    // the load. Until then it stays claimable by another driver.
     const covered = totalCapacity >= quantity;
     if (covered) {
       await connection.execute(
@@ -349,12 +281,6 @@ async function claim(personnelId, payload) {
   });
 }
 
-/**
- * Move a claimed trip one step along: ASSIGNED -> PICKED_UP -> IN_TRANSIT.
- * Single statement, so no transaction wrapper — DELIVERED is not reachable
- * here, it belongs to complete() below because it drags two other tables
- * with it.
- */
 async function advance(personnelId, transportId) {
   return withTransaction(async (connection) => {
     const trip = await loadTrip(connection, transportId);
@@ -374,8 +300,6 @@ async function advance(personnelId, transportId) {
       { next, transportId }
     );
 
-    // The order follows the goods: once it is physically moving, the
-    // buyer's order should not still read CONFIRMED.
     if (next === 'IN_TRANSIT') {
       await connection.execute(
         `UPDATE SALE_ORDER SET Status = 'IN_TRANSIT'
@@ -388,15 +312,6 @@ async function advance(personnelId, transportId) {
   });
 }
 
-/**
- * PRD §9.10 transaction #6 — Delivery + payment.
- *
- * For an ON_DELIVERY order the driver collects the balance at the door,
- * so all three statements commit together. For an ADVANCE order the buyer
- * has already paid; the PAYMENT insert is skipped and only the delivery
- * and the order status move. Either way the vehicle is released and the
- * assignment closed, or none of it happens.
- */
 async function complete(personnelId, transportId, payload = {}) {
   return withTransaction(async (connection) => {
     const trip = await loadTrip(connection, transportId);
@@ -418,11 +333,6 @@ async function complete(personnelId, transportId, payload = {}) {
     const alreadyPaid = paidResult.rows[0].PAID;
     const outstanding = Number((trip.TOTALAMOUNT - alreadyPaid).toFixed(2));
 
-    // --- 1. TRANSPORT_REQUEST -> DELIVERED ---------------------------
-    // Written FIRST on purpose: BR-20's trigger reads TRANSPORT_REQUEST
-    // when the PAYMENT row lands below, and inside one transaction it
-    // sees this uncommitted value. Reordering these two would make an
-    // ON_DELIVERY payment fail with ORA-20002.
     await connection.execute(
       `UPDATE TRANSPORT_REQUEST
           SET DeliveryStatus = 'DELIVERED', DeliveryDate = TRUNC(SYSDATE)
@@ -430,7 +340,6 @@ async function complete(personnelId, transportId, payload = {}) {
       { transportId }
     );
 
-    // --- 2. PAYMENT (ON_DELIVERY only) -------------------------------
     let payment = null;
     if (outstanding > 0 && trip.PAYMENTTERMS === 'ON_DELIVERY') {
       const method = payload.paymentMethod || 'CASH';
@@ -465,9 +374,6 @@ async function complete(personnelId, transportId, payload = {}) {
       };
     }
 
-    // --- 3. SALE_ORDER -> COMPLETED ----------------------------------
-    // Only once the money is actually all in. An ADVANCE order that was
-    // never fully paid stays IN_TRANSIT rather than quietly completing.
     const settled = payment !== null || outstanding <= 0;
     if (settled) {
       await connection.execute(

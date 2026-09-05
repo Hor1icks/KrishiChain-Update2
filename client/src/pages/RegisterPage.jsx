@@ -36,7 +36,6 @@ const ROLE_FIELDS = {
   ],
 };
 
-// Staff accounts are created by an admin, not claimed here.
 const SELF_SERVICE_ROLES = ['FARMER', 'BUYER'];
 
 const ROLE_LABELS = {

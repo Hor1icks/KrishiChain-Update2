@@ -1,19 +1,6 @@
 #!/usr/bin/env bash
-#
-# Start the whole system: Oracle XE, the API and the front end.
-#
-#   ./start.sh              start everything
-#   ./start.sh --rebuild    drop and rebuild the schema first, then start
-#   ./start.sh --no-db      skip the container (Oracle already running elsewhere)
-#
-# Ctrl+C stops the API and the front end. The database container is left
-# running, since starting it again takes about half a minute.
 set -uo pipefail
 
-# Git Bash on Windows (MSYS) rewrites Unix-looking paths passed as docker
-# arguments (e.g. the oradata volume target) into Windows paths before
-# docker sees them. Harmless no-op on macOS/Linux. See db.sh for the exec
-# failure this avoids.
 export MSYS_NO_PATHCONV=1
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -28,7 +15,14 @@ for arg in "$@"; do
   case "$arg" in
     --rebuild) REBUILD=1 ;;
     --no-db)   SKIP_DB=1 ;;
-    -h|--help) sed -n '3,10p' "$0" | sed 's/^# \?//'; exit 0 ;;
+    -h|--help) cat <<'USAGE'
+Start the whole system: Oracle XE, the API and the front end.
+
+  ./start.sh              start everything
+  ./start.sh --rebuild    drop and rebuild the schema first, then start
+  ./start.sh --no-db      skip the container (Oracle already running elsewhere)
+USAGE
+      exit 0 ;;
     *) echo "Unknown option: $arg  (try --help)" >&2; exit 1 ;;
   esac
 done
@@ -38,15 +32,12 @@ fail() { printf '\n\033[31m%s\033[0m\n' "$*" >&2; exit 1; }
 
 port_busy() { (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null; }
 
-# curl gives a real answer (the API reports whether Oracle is connected);
-# without it, the port being open is the best signal available.
 if command -v curl >/dev/null; then
   api_up() { curl -sf "http://localhost:$API_PORT/api/health" >/dev/null 2>&1; }
 else
   api_up() { port_busy "$API_PORT"; }
 fi
 
-# --- 1. environment file -------------------------------------------------
 if [ ! -f "$ROOT/server/.env" ]; then
   say "Creating server/.env from the example"
   cp "$ROOT/server/.env.example" "$ROOT/server/.env"
@@ -55,14 +46,11 @@ if [ ! -f "$ROOT/server/.env" ]; then
   exit 1
 fi
 
-# node-oracledb needs the Instant Client on the library path before the
-# process starts; setting it inside Node is too late.
 CLIENT_DIR=$(grep -E '^ORACLE_CLIENT_DIR=' "$ROOT/server/.env" | head -1 | cut -d= -f2- | tr -d '"'"'"'' | tr -d '\r')
 [ -n "$CLIENT_DIR" ] || fail "ORACLE_CLIENT_DIR is not set in server/.env"
 [ -d "$CLIENT_DIR" ] || fail "ORACLE_CLIENT_DIR points at a directory that does not exist: $CLIENT_DIR"
 export LD_LIBRARY_PATH="$CLIENT_DIR:${LD_LIBRARY_PATH:-}"
 
-# --- 2. database ---------------------------------------------------------
 if [ "$SKIP_DB" -eq 0 ]; then
   command -v docker >/dev/null || fail "docker is not installed, or use --no-db"
 
@@ -102,9 +90,6 @@ if [ "$REBUILD" -eq 1 ]; then
            04_views 05_plsql_layer; do
     [ -f "$ROOT/database/$f.sql" ] || continue
     echo "  $f.sql"
-    # SQL*Plus exits 0 even when a statement fails, so check the output.
-    # 00_reset is exempt: dropping objects that are not there is how it
-    # behaves on an already-empty schema, and every line is an ORA-00942.
     out=$("$ROOT/db.sh" "$ROOT/database/$f.sql" 2>&1)
     if [ "$f" != "00_reset" ] && grep -qE '^(ORA-|PLS-|SP2-)' <<<"$out"; then
       echo "$out" | grep -E '^(ORA-|PLS-|SP2-)' | head -5
@@ -113,7 +98,6 @@ if [ "$REBUILD" -eq 1 ]; then
   done
 fi
 
-# --- 3. dependencies -----------------------------------------------------
 for part in server client; do
   if [ ! -d "$ROOT/$part/node_modules" ]; then
     say "Installing $part dependencies"
@@ -121,7 +105,6 @@ for part in server client; do
   fi
 done
 
-# --- 4. the two servers --------------------------------------------------
 mkdir -p "$LOGS"
 API_PID=""
 UI_PID=""
@@ -139,8 +122,6 @@ trap stop INT TERM
 port_busy "$API_PORT" && fail "Port $API_PORT is already in use — something is on the API port."
 port_busy "$UI_PORT"  && fail "Port $UI_PORT is already in use — something is on the front-end port."
 
-# exec so $! is the node process itself, not a subshell wrapping it —
-# otherwise Ctrl+C kills the wrapper and leaves the port held.
 say "Starting the API"
 (cd "$ROOT/server" && exec node src/server.js) >"$LOGS/api.log" 2>&1 &
 API_PID=$!

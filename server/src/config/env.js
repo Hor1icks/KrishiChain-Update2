@@ -17,7 +17,6 @@ module.exports = {
   port: Number(required('PORT', 5000)),
   clientOrigin: required('CLIENT_ORIGIN', 'http://localhost:5173'),
 
-  // Thick mode needs this before any connection is opened. See config/db.js.
   oracleClientDir: required('ORACLE_CLIENT_DIR'),
 
   db: {
@@ -34,8 +33,6 @@ module.exports = {
     expiresIn: required('JWT_EXPIRES_IN', '8h'),
   },
 
-  // Optional: online card payments stay switched off until a sandbox
-  // store is configured, and the buyer only sees cash settlement.
   sslcommerz: {
     storeId: process.env.SSLCZ_STORE_ID || '',
     storePassword: process.env.SSLCZ_STORE_PASSWORD || '',

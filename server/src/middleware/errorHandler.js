@@ -6,10 +6,6 @@ function notFound(req, _res, next) {
   next(new ApiError(404, `No route for ${req.method} ${req.originalUrl}`));
 }
 
-/**
- * Constraint names are deliberately readable (PK_/FK_/UQ_/CK_ prefixes)
- * so a violation can be shown to the user rather than swallowed as a 500.
- */
 const CONSTRAINT_TEXT = {
   CK_PAYMENT_TYPE_SHAPE:
     'A sale payment needs an order, a buyer and a farmer; a storage payment needs an allocation and none of those.',
@@ -60,7 +56,6 @@ function fromOracle(message) {
   }
 }
 
-// eslint-disable-next-line no-unused-vars -- Express needs the 4-arg shape
 function errorHandler(err, _req, res, _next) {
   if (err instanceof ApiError) {
     return res.status(err.status).json({

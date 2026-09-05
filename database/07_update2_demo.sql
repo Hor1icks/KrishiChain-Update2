@@ -1,9 +1,3 @@
--- =====================================================================
--- KrishiChain | 07_update2_demo.sql
---
--- One worked example of each technique, in the order they are asked
--- about. Read-only: it selects, calls and catches, but changes nothing.
--- =====================================================================
 
 SET SERVEROUTPUT ON SIZE UNLIMITED
 SET LINESIZE 160 PAGESIZE 100
@@ -124,8 +118,6 @@ DECLARE
 BEGIN
   pkg_krishi_reports.harvest_report(p_cursor => v_cursor);
 
-  -- The report's 17 columns are not known here, so the ref cursor is
-  -- handed to DBMS_SQL and counted rather than fetched into variables.
   v_handle := DBMS_SQL.TO_CURSOR_NUMBER(v_cursor);
   WHILE DBMS_SQL.FETCH_ROWS(v_handle) > 0 LOOP
     v_rows := v_rows + 1;

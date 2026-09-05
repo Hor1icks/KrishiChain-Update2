@@ -1,10 +1,3 @@
--- =====================================================================
--- KrishiChain | 02_business_rules.sql
---
--- Cross-table business rules as callable PL/SQL. Rules that compare two
--- tables cannot be CHECK constraints, so the service layer calls these
--- before the statement they guard.
--- =====================================================================
 
 CREATE OR REPLACE PACKAGE pkg_krishi_rules AS
 
@@ -39,10 +32,6 @@ CREATE OR REPLACE PACKAGE BODY pkg_krishi_rules AS
       RAISE_APPLICATION_ERROR(-20003, 'Batch ' || p_batch_id || ' does not exist.');
   END check_bid_min_qty;
 
-  -- BR-20 decides whether a payment may be taken at all, BR-19 whether
-  -- this one would overshoot the order total. As a pre-insert check the
-  -- sum has to include the incoming amount, which is why this is not a
-  -- straight translation of the old AFTER STATEMENT trigger.
   PROCEDURE check_payment_allowed (p_sale_order_id IN NUMBER, p_amount IN NUMBER) IS
     v_terms           SALE_ORDER.PaymentTerms%TYPE;
     v_delivery_status TRANSPORT_REQUEST.DeliveryStatus%TYPE;

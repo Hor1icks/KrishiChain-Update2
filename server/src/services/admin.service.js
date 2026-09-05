@@ -1,30 +1,9 @@
 'use strict';
 
-/**
- * Admin module — oversight, not participation. Journey J-07: filter users
- * and complaints, change status, log daily market prices, read reports.
- *
- * Admin deliberately cannot bid, award, allocate or deliver. Every write
- * here is either reference data (DAILY_MARKET_PRICE) or a status change on
- * something a real participant created (COMPLAINT). Nothing in this file
- * touches BID, SALE_ORDER or PAYMENT — an admin who could rewrite a sale
- * would make the whole audit trail meaningless.
- */
 
 const { query, callCursor, withTransaction } = require('../config/db');
 const ApiError = require('../utils/ApiError');
 
-/**
- * The six reports are not written here — they live in the database, in
- * pkg_krishi_reports (database/08_plsql_layer.sql), and this file just
- * calls them. Each is one large multi-table query whose shape belongs
- * with the schema rather than restated in JavaScript, and keeping them
- * server-side means SQL Developer and the API return byte-identical
- * results during the demo.
- *
- * Every report takes optional filters; a NULL means "no filter", so any
- * of them can be called bare.
- */
 const REPORTS = {
   harvest: {
     plsql: `BEGIN pkg_krishi_reports.harvest_report(:dateFrom, :dateTo, :cursor); END;`,
@@ -53,15 +32,11 @@ const REPORTS = {
     plsql: `BEGIN pkg_krishi_reports.user_activity_report(:userId, :maxRows, :cursor); END;`,
     binds: (f) => ({
       userId: f.userId ? Number(f.userId) : null,
-      // Not ":limit" — LIMIT is a reserved word and a reserved bind name
-      // fails at parse time with ORA-01745, naming neither the column nor
-      // the offending word. Same class of trap as ":comment".
       maxRows: f.maxRows ? Number(f.maxRows) : 100,
     }),
   },
 };
 
-/** Dates arrive as 'YYYY-MM-DD' strings; Oracle wants real DATEs. */
 function toDate(value) {
   if (!value) return null;
   const parsed = new Date(value);
@@ -87,8 +62,6 @@ async function runReport(name, filters = {}) {
     report: name,
     filters: binds,
     rowCount: rows.length,
-    // Surfaced, not hidden: a report the caller believes is complete but
-    // is not would quietly produce wrong totals.
     truncated,
     rows,
   };
@@ -98,7 +71,6 @@ function listReports() {
   return Object.keys(REPORTS);
 }
 
-/** Stat cards + the four reports J-07 asks for. */
 async function getDashboard() {
   const counts = await query(
     `SELECT
@@ -118,7 +90,6 @@ async function getDashboard() {
      FROM dual`
   );
 
-  // Unsold batches — the anti-join from Q4, surfaced as a report.
   const unsold = await query(
     `SELECT hb.BatchID AS "batchId", c.CropName AS "cropName",
             hb.TotalQuantity AS "totalQuantity", hb.Status AS "status",
@@ -131,7 +102,6 @@ async function getDashboard() {
       ORDER BY hb.BatchID`
   );
 
-  // Payment reconciliation — delivered but not settled (Q7).
   const unpaid = await query(
     `SELECT so.SaleOrderID AS "saleOrderId", so.TotalAmount AS "totalAmount",
             tr.DeliveryDate AS "deliveryDate", so.Status AS "orderStatus",
@@ -151,7 +121,6 @@ async function getDashboard() {
       ORDER BY so.SaleOrderID`
   );
 
-  // Yield by crop — what the platform actually moved.
   const byCrop = await query(
     `SELECT c.CropName AS "cropName",
             COUNT(DISTINCT hb.BatchID) AS "batches",
@@ -183,11 +152,6 @@ async function getDashboard() {
   };
 }
 
-/**
- * Everyone on the platform, with their subclass detail folded in. The
- * five LEFT JOINs are the total/disjoint specialization made visible —
- * exactly one of them matches for any given row.
- */
 async function listUsers(filters = {}) {
   const role = filters.role || null;
   const search = filters.search ? `%${filters.search.toLowerCase()}%` : null;
@@ -228,10 +192,6 @@ async function listUsers(filters = {}) {
   return result.rows;
 }
 
-/**
- * Daily market prices. Row-limited with ROWNUM in an inline view —
- * 11g has no FETCH FIRST.
- */
 async function listDailyPrices(filters = {}) {
   const cropId = filters.cropId ? Number(filters.cropId) : null;
   const aratId = filters.aratId ? Number(filters.aratId) : null;
@@ -260,11 +220,6 @@ async function listDailyPrices(filters = {}) {
   return result.rows;
 }
 
-/**
- * Log a price. BR/T-08: (CropID, AratID, PriceDate) is the primary key,
- * so a second entry for the same crop, arat and day is rejected by the
- * database. Caught here only to turn ORA-00001 into a sentence.
- */
 async function logDailyPrice(adminId, payload) {
   const cropId = Number(payload.cropId);
   const aratId = Number(payload.aratId);
@@ -277,7 +232,6 @@ async function logDailyPrice(adminId, payload) {
   if (!(minPrice > 0) || !(maxPrice > 0)) {
     throw ApiError.badRequest('Minimum and maximum price are required.');
   }
-  // Mirrors CK_DMP_RANGE so the user gets a sentence, not an ORA- code.
   if (!(minPrice <= pricePerKg && pricePerKg <= maxPrice)) {
     throw ApiError.businessRule(
       `The day's price must sit inside its own range: ${minPrice} <= ${pricePerKg} <= ${maxPrice}.`
@@ -343,11 +297,6 @@ async function listComplaints(filters = {}) {
 
 const COMPLAINT_STATUSES = ['OPEN', 'IN_REVIEW', 'RESOLVED', 'REJECTED'];
 
-/**
- * Take ownership of a complaint and move it along. Stamps the admin so
- * "who handled this" is answerable — HandledByAdminID is otherwise never
- * written by anything.
- */
 async function updateComplaint(adminId, complaintId, status) {
   if (!COMPLAINT_STATUSES.includes(status)) {
     throw ApiError.badRequest(`Status must be one of: ${COMPLAINT_STATUSES.join(', ')}.`);

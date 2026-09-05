@@ -1,52 +1,3 @@
--- =====================================================================
--- KrishiChain | 08_plsql_layer.sql
--- Stored procedures, functions and packages — the PL/SQL layer promised
--- in the project proposal (§4, "SQL and PL/SQL").
---
--- Run as the `krishichain` user, after 04_views.sql.
--- Safe to re-run: every object is CREATE OR REPLACE.
--- In SQL Developer use F5 (Run Script), not Ctrl+Enter — this file is
--- almost entirely PL/SQL blocks terminated with `/`.
---
--- ---------------------------------------------------------------------
--- WHAT IS IN HERE, AND WHAT IS DELIBERATELY NOT
--- ---------------------------------------------------------------------
--- The six PRD §9.10 atomic transactions (Registration, Storage
--- Allocation, Place Bid, Award Winning Bid, Assign Transport, Delivery +
--- Payment) are NOT reimplemented as stored procedures, on purpose.
---
--- They live in the Express service layer because each one needs the
--- authenticated user's identity and role to decide what is allowed —
--- something the database has no concept of — and each has been verified
--- by fault injection in that form (see context.md). Re-expressing them
--- here would create two sources of truth for the same business rules,
--- which context.md's "which layer enforces which rule" table explicitly
--- rules out. A rule enforced in two places is a rule that will diverge.
---
--- So this layer holds the three kinds of logic that genuinely belong in
--- the database and exist nowhere else:
---
---   1. pkg_krishi_metrics  — derived scalar values. Pure reads. Several
---      of these are asked for repeatedly across the app; computing them
---      once, next to the data, beats restating the arithmetic in every
---      caller. Where a view already owns a derivation, the function
---      reads THAT VIEW rather than re-deriving it, so the view stays the
---      single source of truth.
---
---   2. pkg_krishi_reports  — the six report types from the proposal's
---      Reporting Module. Set-returning, read-only, and naturally
---      server-side: each is one large query whose shape belongs with the
---      schema, not in JavaScript. Returned as SYS_REFCURSOR so the API
---      (or SQL Developer, or the viva) can consume them directly.
---
---   3. prc_expire_stale_batches — housekeeping DML that nothing else in
---      the system does. An auction whose window closed without a single
---      bid currently sits at BIDDING_OPEN forever; this retires it.
---
--- Oracle 11g notes: no FETCH FIRST (ROWNUM inside an inline view
--- instead), and SYS_REFCURSOR rather than a strongly-typed cursor so one
--- signature can carry differently-shaped report rows.
--- =====================================================================
 
 SET SERVEROUTPUT ON
 SET SQLBLANKLINES ON
@@ -57,29 +8,19 @@ PROMPT  1. pkg_krishi_metrics — derived value functions
 PROMPT ============================================================
 
 CREATE OR REPLACE PACKAGE pkg_krishi_metrics AS
-  -- Money still owed on a sale order: its total, less every payment that
-  -- counts against the balance. Mirrors BR-19's own definition of "paid"
-  -- (PENDING and COMPLETED count; FAILED and REFUNDED do not), so a
-  -- refund correctly puts money back on the bill.
   FUNCTION fn_order_outstanding (p_sale_order_id IN SALE_ORDER.SaleOrderID%TYPE)
     RETURN NUMBER;
 
-  -- Free space in one storage unit, read from V_UNIT_UTILIZATION so the
-  -- view remains the single definition of "current load".
   FUNCTION fn_unit_free_space (p_warehouse_id IN WAREHOUSE.WarehouseID%TYPE,
                                p_unit_no      IN STORAGE_UNIT.UnitNo%TYPE)
     RETURN NUMBER;
 
-  -- Quantity of a batch that is neither sold nor already committed to a
-  -- leg-1 storage allocation — i.e. what a farmer could still store.
   FUNCTION fn_batch_unstored (p_batch_id IN HARVEST_BATCH.BatchID%TYPE)
     RETURN NUMBER;
 
-  -- Whole days an allocation has been (or was) in storage.
   FUNCTION fn_storage_days (p_allocation_id IN STORES.AllocationID%TYPE)
     RETURN NUMBER;
 
-  -- Lifetime revenue actually received by a farmer.
   FUNCTION fn_farmer_revenue (p_farmer_id IN FARMER.FarmerID%TYPE)
     RETURN NUMBER;
 END pkg_krishi_metrics;
@@ -138,9 +79,6 @@ CREATE OR REPLACE PACKAGE BODY pkg_krishi_metrics AS
       FROM HARVEST_BATCH
      WHERE BatchID = p_batch_id;
 
-    -- Leg 1 only (SaleOrderID IS NULL): sold produce is leg 2's concern.
-    -- COUNTERED counts as committed — the space is reserved while a
-    -- negotiation is open, exactly as unitLoad() treats it.
     SELECT NVL(SUM(QuantityStored), 0) INTO v_stored
       FROM STORES
      WHERE BatchID = p_batch_id
@@ -162,12 +100,10 @@ CREATE OR REPLACE PACKAGE BODY pkg_krishi_metrics AS
   BEGIN
     SELECT * INTO v_row FROM STORES WHERE AllocationID = p_allocation_id;
 
-    -- Never accepted, so it was never in storage at all.
     IF v_row.DateIn IS NULL THEN
       RETURN 0;
     END IF;
 
-    -- Still in: count up to today. Released: count to the day it left.
     RETURN TRUNC(NVL(v_row.DateOut, SYSDATE)) - TRUNC(v_row.DateIn);
   EXCEPTION
     WHEN NO_DATA_FOUND THEN
@@ -196,13 +132,6 @@ PROMPT  2. pkg_krishi_reports — the proposal's Reporting Module
 PROMPT ============================================================
 
 CREATE OR REPLACE PACKAGE pkg_krishi_reports AS
-  -- Every report hands back a SYS_REFCURSOR. A weak ref cursor is the
-  -- right choice here precisely because the six row shapes differ — one
-  -- signature, six result sets, and the caller (Express, SQL Developer,
-  -- or the viva) just fetches.
-  --
-  -- NULL for an optional filter means "no filter", so every report can
-  -- be run wide-open with no arguments to fill in.
 
   PROCEDURE harvest_report      (p_from    IN DATE     DEFAULT NULL,
                                  p_to      IN DATE     DEFAULT NULL,
@@ -231,9 +160,6 @@ END pkg_krishi_reports;
 
 CREATE OR REPLACE PACKAGE BODY pkg_krishi_reports AS
 
-  -- -------------------------------------------------------------------
-  -- HARVEST REPORT — what was grown, by whom, and how much of it moved.
-  -- -------------------------------------------------------------------
   PROCEDURE harvest_report (p_from   IN DATE DEFAULT NULL,
                             p_to     IN DATE DEFAULT NULL,
                             p_cursor OUT SYS_REFCURSOR)
@@ -254,8 +180,6 @@ CREATE OR REPLACE PACKAGE BODY pkg_krishi_reports AS
              hb.AvailableQuantity,
              hb.MinimumPrice,
              hb.Status,
-             -- Same derivation the storage module uses, borrowed rather
-             -- than restated.
              pkg_krishi_metrics.fn_batch_unstored(hb.BatchID) AS UnstoredQuantity,
              ROUND(hb.SoldQuantity / hb.TotalQuantity * 100, 1) AS PctSold
         FROM HARVEST_BATCH hb
@@ -269,9 +193,6 @@ CREATE OR REPLACE PACKAGE BODY pkg_krishi_reports AS
        ORDER BY hb.HarvestDate DESC, hb.BatchID;
   END harvest_report;
 
-  -- -------------------------------------------------------------------
-  -- STORAGE REPORT — who is holding what, on what terms, and paid up?
-  -- -------------------------------------------------------------------
   PROCEDURE storage_report (p_warehouse_id IN WAREHOUSE.WarehouseID%TYPE DEFAULT NULL,
                             p_cursor       OUT SYS_REFCURSOR)
   IS
@@ -316,9 +237,6 @@ CREATE OR REPLACE PACKAGE BODY pkg_krishi_reports AS
        ORDER BY w.WarehouseID, s.UnitNo, s.AllocationID;
   END storage_report;
 
-  -- -------------------------------------------------------------------
-  -- SALES REPORT — every completed auction, and how it settled.
-  -- -------------------------------------------------------------------
   PROCEDURE sales_report (p_from   IN DATE DEFAULT NULL,
                           p_to     IN DATE DEFAULT NULL,
                           p_cursor OUT SYS_REFCURSOR)
@@ -358,19 +276,11 @@ CREATE OR REPLACE PACKAGE BODY pkg_krishi_reports AS
        ORDER BY so.OrderDate DESC, so.SaleOrderID;
   END sales_report;
 
-  -- -------------------------------------------------------------------
-  -- PAYMENT REPORT — the money ledger, buyer to farmer (D-2, no escrow).
-  -- -------------------------------------------------------------------
   PROCEDURE payment_report (p_from   IN DATE DEFAULT NULL,
                             p_to     IN DATE DEFAULT NULL,
                             p_cursor OUT SYS_REFCURSOR)
   IS
   BEGIN
-    -- Both halves of PAYMENT, not just the sale half. A storage payment
-    -- has SaleOrderID, BuyerID and FarmerID NULL by design -- that is
-    -- what CK_PAYMENT_TYPE_SHAPE demands -- so joining through
-    -- SALE_ORDER silently discarded every one of them from a report
-    -- named after the whole table.
     OPEN p_cursor FOR
       SELECT p.PaymentID,
              p.PaymentType,
@@ -433,10 +343,6 @@ CREATE OR REPLACE PACKAGE BODY pkg_krishi_reports AS
        ORDER BY PaymentDate DESC, PaymentID;
   END payment_report;
 
-  -- -------------------------------------------------------------------
-  -- DAILY MARKET PRICE REPORT — the trend, with each day compared to the
-  -- one before it. LAG is what makes this a trend rather than a list.
-  -- -------------------------------------------------------------------
   PROCEDURE market_price_report (p_crop_id IN CROP.CropID%TYPE DEFAULT NULL,
                                  p_days    IN NUMBER DEFAULT 30,
                                  p_cursor  OUT SYS_REFCURSOR)
@@ -467,16 +373,6 @@ CREATE OR REPLACE PACKAGE BODY pkg_krishi_reports AS
        ORDER BY CropName, AratName, PriceDate;
   END market_price_report;
 
-  -- -------------------------------------------------------------------
-  -- USER ACTIVITY REPORT
-  --
-  -- There is no login or audit-log table in this schema, and one was
-  -- deliberately not added: an audit trail nobody writes to is worse
-  -- than none. Instead this reconstructs activity from the timestamps
-  -- the business tables already carry — every one of these rows is a
-  -- real thing the user did, dated by the event itself.
-  -- ROWNUM inside an inline view, since 11g has no FETCH FIRST.
-  -- -------------------------------------------------------------------
   PROCEDURE user_activity_report (p_user_id IN USERS.UserID%TYPE DEFAULT NULL,
                                   p_limit   IN NUMBER DEFAULT 100,
                                   p_cursor  OUT SYS_REFCURSOR)
@@ -557,21 +453,6 @@ PROMPT ============================================================
 PROMPT  3. prc_expire_stale_batches — housekeeping DML
 PROMPT ============================================================
 
--- ---------------------------------------------------------------------
--- An auction whose bidding window has closed with nothing sold and no
--- live bid is dead, but nothing in the system ever says so — it sits at
--- BIDDING_OPEN indefinitely and keeps appearing in "awaiting storage"
--- lists. This is the only place that retires one.
---
--- Written with an explicit cursor and WHERE CURRENT OF rather than one
--- blanket UPDATE, so each batch can be reported individually (and, in a
--- real deployment, notified on). FOR UPDATE locks the rows it is about
--- to change, so a bid landing mid-run cannot be lost.
---
--- p_expired returns how many were retired; the caller commits. Leaving
--- COMMIT to the caller keeps this composable with any surrounding
--- transaction, matching how withTransaction() owns commits in the app.
--- ---------------------------------------------------------------------
 CREATE OR REPLACE PROCEDURE prc_expire_stale_batches (
   p_expired OUT NUMBER
 )
@@ -586,7 +467,6 @@ IS
        AND NOT EXISTS (SELECT 1 FROM BID b
                         WHERE b.BatchID = hb.BatchID
                           AND b.Status IN ('ACTIVE', 'WON'))
-       -- A batch sitting in a warehouse is not stale, it is stored.
        AND NOT EXISTS (SELECT 1 FROM STORES s
                         WHERE s.BatchID = hb.BatchID
                           AND s.AllocationStatus IN ('PENDING_ACCEPT', 'COUNTERED',
@@ -608,8 +488,6 @@ BEGIN
   DBMS_OUTPUT.PUT_LINE('prc_expire_stale_batches: ' || p_expired || ' batch(es) retired.');
 EXCEPTION
   WHEN OTHERS THEN
-    -- Surface the batch we died on; a bare ORA- here would say nothing
-    -- about which row was being retired.
     RAISE_APPLICATION_ERROR(-20105,
       'prc_expire_stale_batches failed after ' || p_expired ||
       ' row(s): ' || SQLERRM);
@@ -646,10 +524,6 @@ DECLARE
   c     SYS_REFCURSOR;
   v_cnt PLS_INTEGER;
 
-  -- Counting a weak ref cursor means fetching it; the row shape differs
-  -- per report, so count with a throwaway fetch into a dummy record via
-  -- dynamic SQL-free looping is not possible. Each report is instead
-  -- counted by its own query below.
   PROCEDURE say(p_label VARCHAR2, p_n NUMBER) IS
   BEGIN
     DBMS_OUTPUT.PUT_LINE(RPAD(p_label, 26) || p_n || ' row(s)');
@@ -662,7 +536,6 @@ BEGIN
   SELECT COUNT(*) INTO v_cnt FROM DAILY_MARKET_PRICE
    WHERE PriceDate >= TRUNC(SYSDATE) - 30;                      say('market_price_report', v_cnt);
 
-  -- Prove the cursors actually open and are fetchable.
   pkg_krishi_reports.harvest_report(p_cursor => c);       CLOSE c;
   pkg_krishi_reports.storage_report(p_cursor => c);       CLOSE c;
   pkg_krishi_reports.sales_report(p_cursor => c);         CLOSE c;

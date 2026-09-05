@@ -6,9 +6,6 @@ const { port } = require('./config/env');
 
 async function start() {
   try {
-    // Thick-mode init and pool creation happen here, once, before the
-    // server accepts a single request. Doing it lazily on first request
-    // risks initOracleClient() racing itself under concurrent load.
     await db.initialize();
     console.log('Oracle pool ready (Thick mode).');
   } catch (err) {
@@ -17,7 +14,6 @@ async function start() {
   }
 
   const server = app.listen(port, () => {
-    // Not 8080 — XE's bundled APEX already holds that port.
     console.log(`KrishiChain API listening on http://localhost:${port}`);
     console.log(`Health check: http://localhost:${port}/api/health`);
   });

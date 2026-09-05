@@ -1,36 +1,4 @@
--- =====================================================================
--- KrishiChain | 01_create_tables.sql
--- Phase 2, Day 2 — 26 tables (24 core + 2 P2), matching the approved
--- Phase1/ER_BLUEPRINT.md and PRD v3 sections 7-9.
---
--- Run as the `krishichain` application user (never SYS/SYSTEM).
--- Run 02_sequences_triggers.sql immediately after this file — no table
--- here has a working surrogate key until that script runs.
---
--- Naming: PK_ / FK_ / UQ_ / CK_ / IX_ prefixes throughout, per PRD 9.9.
--- Text columns that may hold Bengali use VARCHAR2(n CHAR) explicitly.
---
--- Two schema notes carried over from this phase's design decisions —
--- see context.md "Schema deltas" if these don't match your diagram 1:1:
---   1. SALE_ORDER.PaymentTerms is a NEW column (ADVANCE / ON_DELIVERY)
---      added to implement "payment can be flexible, depends on both
---      parties" — BR-20 is no longer a blanket rule, it is conditional
---      on this flag (enforced in 02_sequences_triggers.sql).
---   2. USERS./Age/ is NOT a stored or virtual column. Oracle 11g virtual
---      columns reject non-deterministic expressions (SYSDATE), so Age
---      is computed in a view instead (Phase 4, 04_views.sql).
--- =====================================================================
 
--- =====================================================================
--- SECTION 0 - USER-DEFINED TYPES
---
--- t_address is an abstract data type: the six address fields are one
--- thing, not six, and the type carries member functions so the object
--- knows how to format itself. USERS.Address below is a column of it.
---
--- Attribute access from SQL needs a table alias: u.Address.District is
--- legal, Address.District is not.
--- =====================================================================
 
 CREATE OR REPLACE TYPE t_address AS OBJECT (
   HouseNo     VARCHAR2(30  CHAR),
@@ -47,11 +15,7 @@ CREATE OR REPLACE TYPE t_address AS OBJECT (
 
 CREATE OR REPLACE TYPE BODY t_address AS
 
-  -- NVL2 is a SQL function and is not available inside PL/SQL
-  -- (PLS-00201), so the optional parts are handled with CASE.
 
-  -- The whole address on one line. LTRIM removes the separator left
-  -- behind when the optional leading parts are NULL.
   MEMBER FUNCTION full_text RETURN VARCHAR2 IS
   BEGIN
     RETURN LTRIM(
@@ -64,8 +28,6 @@ CREATE OR REPLACE TYPE BODY t_address AS
       ', ');
   END full_text;
 
-  -- Upazila and district only, for list screens where the full address
-  -- would not fit.
   MEMBER FUNCTION short_text RETURN VARCHAR2 IS
   BEGIN
     RETURN CASE WHEN Upazila IS NOT NULL THEN Upazila || ', ' END || District;
@@ -75,9 +37,6 @@ END;
 /
 
 
--- =====================================================================
--- SECTION 1 — IDENTITY AND SPECIALIZATION
--- =====================================================================
 
 CREATE TABLE USERS (
   UserID           NUMBER(10)          NOT NULL,
@@ -95,14 +54,11 @@ CREATE TABLE USERS (
   CONSTRAINT PK_USERS PRIMARY KEY (UserID),
   CONSTRAINT UQ_USERS_EMAIL UNIQUE (Email),
   CONSTRAINT CK_USERS_GENDER CHECK (Gender IN ('M','F','O')),
-  -- District was NOT NULL as a column; as an object attribute that
-  -- has to be expressed as a table-level CHECK instead.
   CONSTRAINT CK_USERS_DISTRICT CHECK ("ADDRESS"."DISTRICT" IS NOT NULL),
   CONSTRAINT CK_USERS_STATUS CHECK (Status IN ('ACTIVE','BLOCKED','INACTIVE')),
   CONSTRAINT CK_USERS_ROLE CHECK (Role IN ('FARMER','BUYER','ADMIN','STORAGE_MANAGER','TRANSPORT_PERSONNEL'))
 );
 
--- Multivalued attribute {PhoneNo}
 CREATE TABLE USER_PHONE (
   UserID   NUMBER(10)        NOT NULL,
   PhoneNo  VARCHAR2(20 CHAR) NOT NULL,
@@ -112,9 +68,6 @@ CREATE TABLE USER_PHONE (
   CONSTRAINT UQ_USER_PHONE_NO UNIQUE (PhoneNo)
 );
 
--- ISA subclasses: PK is also FK -> USERS (shared-PK specialization, D-3).
--- No sequence/trigger — the app inserts FarmerID/BuyerID/etc. equal to
--- the UserID just generated for the parent USERS row, in one transaction.
 
 CREATE TABLE FARMER (
   FarmerID         NUMBER(10)         NOT NULL,
@@ -173,9 +126,6 @@ CREATE TABLE TRANSPORT_PERSONNEL (
   CONSTRAINT CK_PERSONNEL_EXPERIENCE CHECK (ExperienceYears >= 0)
 );
 
--- =====================================================================
--- SECTION 2 — PRODUCTION AND MARKET LISTING
--- =====================================================================
 
 CREATE TABLE CROP_CATEGORY (
   CategoryID    NUMBER(10)          NOT NULL,
@@ -216,7 +166,6 @@ CREATE TABLE FARM (
   CONSTRAINT CK_FARM_STATUS CHECK (Status IN ('ACTIVE','INACTIVE'))
 );
 
--- Recursive relationship: supervises (ParentAratID -> AratID)
 CREATE TABLE VIRTUAL_ARAT (
   AratID        NUMBER(10)          NOT NULL,
   AratName      VARCHAR2(100 CHAR)  NOT NULL,
@@ -230,7 +179,6 @@ CREATE TABLE VIRTUAL_ARAT (
   CONSTRAINT CK_ARAT_NOT_OWN_PARENT CHECK (ParentAratID <> AratID)
 );
 
--- AUCTION entity removed (D-4) — bidding-window attributes live here.
 CREATE TABLE HARVEST_BATCH (
   BatchID             NUMBER(10)          NOT NULL,
   FarmID              NUMBER(10)          NOT NULL,
@@ -247,11 +195,6 @@ CREATE TABLE HARVEST_BATCH (
   BiddingStartTime    TIMESTAMP,
   BiddingEndTime      TIMESTAMP,
   Status              VARCHAR2(20 CHAR)   DEFAULT 'CREATED' NOT NULL,
-  -- Farmer-set floor on any single bid's RequestedQuantity, added with
-  -- the feedback-batch migration (07_bid_storage_transport_notifications.sql).
-  -- Enforced here by CK_BATCH_MINBIDQTY (same-table, so a plain CHECK
-  -- suffices) and against BID.RequestedQuantity by trg_bid_min_qty in
-  -- 02_sequences_triggers.sql (cross-table, needs a trigger).
   MinimumBidQuantity  NUMBER(12,3)        NOT NULL,
   CONSTRAINT PK_HARVEST_BATCH PRIMARY KEY (BatchID),
   CONSTRAINT FK_BATCH_FARM FOREIGN KEY (FarmID) REFERENCES FARM (FarmID) ON DELETE CASCADE,
@@ -269,16 +212,7 @@ CREATE TABLE HARVEST_BATCH (
   CONSTRAINT CK_BATCH_MINBIDQTY CHECK (MinimumBidQuantity > 0 AND MinimumBidQuantity <= TotalQuantity)
 );
 
--- =====================================================================
--- SECTION 3 — STORAGE
--- =====================================================================
 
--- StorageFeePerKgRate added post-Phase-5 (database/06_storage_workflow.sql)
--- — not on the original ER diagram, same class of delta as
--- SALE_ORDER.PaymentTerms. Bangladesh cold storage charges a flat
--- per-kg, per-season fee at intake (BDT ~7-8/kg for potato, 2024-25),
--- not a daily/monthly rent — this is that rate, set by the warehouse's
--- own manager.
 CREATE TABLE WAREHOUSE (
   WarehouseID          NUMBER(10)          NOT NULL,
   WarehouseName        VARCHAR2(100 CHAR)  NOT NULL,
@@ -293,9 +227,6 @@ CREATE TABLE WAREHOUSE (
   CONSTRAINT CK_WAREHOUSE_FEE_RATE CHECK (StorageFeePerKgRate IS NULL OR StorageFeePerKgRate > 0)
 );
 
--- Weak entity #1: identified by WAREHOUSE. UnitNo (partial key) is
--- assigned per-warehouse by trg_storage_unit_no in 02_sequences_triggers.sql
--- (NOT a global sequence — it must restart at 1 for every warehouse).
 CREATE TABLE STORAGE_UNIT (
   WarehouseID  NUMBER(10)        NOT NULL,
   UnitNo       NUMBER(5)         NOT NULL,
@@ -308,31 +239,6 @@ CREATE TABLE STORAGE_UNIT (
   CONSTRAINT CK_UNIT_STATUS CHECK (Status IN ('EMPTY','PARTIAL','FULL','MAINTENANCE'))
 );
 
--- Ternary #1: HARVEST_BATCH x STORAGE_UNIT x STORAGE_MANAGER
---
--- CONSENT WORKFLOW AND TWO-LEG STORAGE, added post-Phase-5
--- (database/06_storage_workflow.sql) — not on the original ER diagram.
--- A batch can sit in storage twice over its life, same table, same
--- ternary, just a second row when it applies:
---   LEG 1 (pre-sale)  — the farmer's local storage. Customer = FARMER.
---                        BatchID set, SaleOrderID NULL.
---   LEG 2 (post-sale) — the buyer's local storage, once bought and
---                        moving toward them. Customer = BUYER (the
---                        winning bidder). BatchID AND SaleOrderID set.
--- Exactly one of RequestedByFarmerID/RequestedByBuyerID is set
--- (CK_STORES_CUSTOMER) — that is who must consent, both to accept the
--- manager's proposal and to release from it.
---
--- DateIn is nullable: a PENDING_ACCEPT row is a proposal only — the
--- batch is not physically in storage, and the clock has not started,
--- until the customer accepts. AllocationStatus flows:
---   PENDING_ACCEPT -> ACTIVE -> PENDING_RELEASE -> COMPLETED
---                  \-> REJECTED           (customer declined)
---                  \-> CANCELLED          (manager withdrew, unaccepted)
--- Release itself forks on MinimumReleaseDate (DateIn + MinimumStorageDays,
--- the manager's committed term): once fulfilled, either party releases
--- directly; before it, the OTHER party must explicitly approve — see
--- server/src/services/storage.service.js.
 CREATE TABLE STORES (
   AllocationID            NUMBER(10)        NOT NULL,
   BatchID                 NUMBER(10)        NOT NULL,
@@ -351,13 +257,6 @@ CREATE TABLE STORES (
   StorageFeePerKgSnapshot NUMBER(10,2),
   StorageFee              NUMBER(12,2) GENERATED ALWAYS AS (QuantityStored * StorageFeePerKgSnapshot) VIRTUAL,
   ReleaseRequestedBy      VARCHAR2(10),
-  -- Negotiation, added with the feedback-batch migration. ProposedBy
-  -- records who created the row (a manager proposing, or a customer
-  -- requesting via storage.service.js requestAllocation()) -- the OTHER
-  -- side must respond (assertIsResponder()). A single counter-offer round
-  -- is allowed: CounterRatePerKg/CounteredBy are set when either side
-  -- counters, and only the ORIGINAL proposer may then Accept/Reject the
-  -- counter (respondToCounter()) -- no re-countering.
   ProposedBy              VARCHAR2(10)      NOT NULL,
   CounterRatePerKg        NUMBER(10,2),
   CounteredBy             VARCHAR2(10),
@@ -367,9 +266,6 @@ CREATE TABLE STORES (
   CONSTRAINT FK_STORES_MANAGER FOREIGN KEY (ManagerID) REFERENCES STORAGE_MANAGER (ManagerID),
   CONSTRAINT FK_STORES_REQ_FARMER FOREIGN KEY (RequestedByFarmerID) REFERENCES FARMER (FarmerID),
   CONSTRAINT FK_STORES_REQ_BUYER FOREIGN KEY (RequestedByBuyerID) REFERENCES BUYER (BuyerID),
-  -- FK_STORES_SALE_ORDER is NOT declared here: SALE_ORDER (Section 4)
-  -- does not exist yet at this point in the script. Added via ALTER
-  -- TABLE right after SALE_ORDER is created, below.
   CONSTRAINT UQ_STORES_ALLOCATION UNIQUE (BatchID, WarehouseID, UnitNo, DateIn),
   CONSTRAINT CK_STORES_QTY CHECK (QuantityStored > 0),
   CONSTRAINT CK_STORES_DATES CHECK (DateOut IS NULL OR DateOut >= DateIn),
@@ -385,11 +281,7 @@ CREATE TABLE STORES (
   CONSTRAINT CK_STORES_COUNTEREDBY CHECK (CounteredBy IS NULL OR CounteredBy IN ('MANAGER','CUSTOMER'))
 );
 
--- =====================================================================
--- SECTION 4 — BIDDING, SALE AND PAYMENT
--- =====================================================================
 
--- Recursive relationship: outbids (PreviousBidID -> BidID)
 CREATE TABLE BID (
   BidID              NUMBER(10)        NOT NULL,
   BatchID            NUMBER(10)        NOT NULL,
@@ -409,9 +301,6 @@ CREATE TABLE BID (
   CONSTRAINT CK_BID_NOT_OWN_PREVIOUS CHECK (PreviousBidID <> BidID)
 );
 
--- Aggregation result: (BUYER-places-BID-on-HARVEST_BATCH) -> creates -> SALE_ORDER
--- PaymentTerms is this phase's addition for the "payment can be flexible"
--- decision — see header note and context.md.
 CREATE TABLE SALE_ORDER (
   SaleOrderID         NUMBER(10)        NOT NULL,
   BidID               NUMBER(10)        NOT NULL,
@@ -421,13 +310,6 @@ CREATE TABLE SALE_ORDER (
   OrderDate           DATE              DEFAULT SYSDATE NOT NULL,
   Status              VARCHAR2(15 CHAR) DEFAULT 'CONFIRMED' NOT NULL,
   PaymentTerms        VARCHAR2(15 CHAR) DEFAULT 'ON_DELIVERY' NOT NULL,
-  -- Added with the feedback-batch migration: a transport request is not
-  -- claimable (transport.service.js listOpenRequests()/claim()) until the
-  -- buyer has made an explicit choice here. 'VIA_STORAGE' is set
-  -- automatically -- never by direct user action -- the moment a leg-2
-  -- STORES allocation for this order reaches ACTIVE (storage.service.js
-  -- finalizeAcceptance()). 'DIRECT' is set explicitly by the buyer via
-  -- POST /buyer/orders/:saleOrderId/delivery-preference.
   DeliveryPreference  VARCHAR2(15 CHAR) DEFAULT 'PENDING' NOT NULL,
   CONSTRAINT PK_SALE_ORDER PRIMARY KEY (SaleOrderID),
   CONSTRAINT FK_ORDER_BID FOREIGN KEY (BidID) REFERENCES BID (BidID) ON DELETE CASCADE,
@@ -439,30 +321,9 @@ CREATE TABLE SALE_ORDER (
   CONSTRAINT CK_ORDER_DELIVERY_PREF CHECK (DeliveryPreference IN ('PENDING','DIRECT','VIA_STORAGE'))
 );
 
--- Deferred from STORES's own CREATE TABLE in Section 3 -- SALE_ORDER
--- did not exist yet at that point. SaleOrderID on STORES is set only
--- for leg-2 (post-sale, buyer's local storage) allocations.
 ALTER TABLE STORES ADD CONSTRAINT FK_STORES_SALE_ORDER
   FOREIGN KEY (SaleOrderID) REFERENCES SALE_ORDER (SaleOrderID);
 
--- PAYMENT covers both kinds of money in the system, told apart by the
--- PaymentType discriminator:
---
---   SALE     buyer -> farmer for a sale order. Direct, no ARAT
---            commission and no escrow (D-2), so both parties appear.
---   STORAGE  the fee owed for a STORES allocation.
---
--- The STORAGE branch is the AGGREGATION made concrete: the fee is not
--- owed for a batch, or a unit, or to a manager, but for the allocation
--- -- the three-way fact as a whole. Hence AllocationID and nothing
--- else; the payer (farmer for leg 1, buyer for leg 2) is derivable
--- through STORES.
---
--- Kept as ONE table with a discriminator rather than separate subclass
--- tables, unlike the USERS specialization: the USERS subtypes each
--- carry several attributes of their own and earn a table, whereas these
--- two differ by one or two columns. CK_PAYMENT_TYPE_SHAPE below is what
--- stops the nullable columns being filled in nonsensically.
 CREATE TABLE PAYMENT (
   PaymentID             NUMBER(10)        NOT NULL,
   PaymentType           VARCHAR2(10 CHAR) DEFAULT 'SALE' NOT NULL,
@@ -486,10 +347,6 @@ CREATE TABLE PAYMENT (
   CONSTRAINT CK_PAYMENT_AMOUNT CHECK (Amount > 0),
   CONSTRAINT CK_PAYMENT_TYPE CHECK (PaymentType IN ('SALE','STORAGE')),
   CONSTRAINT CK_PAYMENT_STATUS CHECK (PaymentStatus IN ('PENDING','COMPLETED','FAILED','REFUNDED')),
-  -- The discriminator alone would allow a nonsense row. This is what
-  -- actually enforces each subtype's shape: a SALE payment settles a
-  -- sale order between a buyer and a farmer, a STORAGE payment settles
-  -- a STORES allocation and involves neither.
   CONSTRAINT CK_PAYMENT_TYPE_SHAPE CHECK (
     (PaymentType = 'SALE'
        AND SaleOrderID  IS NOT NULL
@@ -504,9 +361,6 @@ CREATE TABLE PAYMENT (
        AND FarmerID     IS NULL))
 );
 
--- =====================================================================
--- SECTION 5 — LOGISTICS
--- =====================================================================
 
 CREATE TABLE VEHICLE (
   VehicleID    NUMBER(10)        NOT NULL,
@@ -534,10 +388,6 @@ CREATE TABLE TRANSPORT_REQUEST (
   CONSTRAINT CK_TRANSPORT_STATUS CHECK (DeliveryStatus IN ('PENDING','ASSIGNED','PICKED_UP','IN_TRANSIT','DELIVERED','FAILED'))
 );
 
--- Ternary #2: TRANSPORT_REQUEST x VEHICLE x TRANSPORT_PERSONNEL
--- A request belongs to one transport person, who may use several of
--- their own vehicles. trg_assigned_one_personnel enforces the first
--- half of that; UQ_ASSIGNED_VEHICLE the second.
 CREATE TABLE ASSIGNED_TO (
   AssignmentID      NUMBER(10)        NOT NULL,
   TransportID       NUMBER(10)        NOT NULL,
@@ -553,9 +403,6 @@ CREATE TABLE ASSIGNED_TO (
   CONSTRAINT CK_ASSIGNED_STATUS CHECK (AssignmentStatus IN ('ACTIVE','COMPLETED','CANCELLED'))
 );
 
--- =====================================================================
--- SECTION 6 — PRICE REFERENCE
--- =====================================================================
 
 CREATE TABLE DAILY_MARKET_PRICE (
   CropID      NUMBER(10)    NOT NULL,
@@ -582,17 +429,12 @@ CREATE TABLE PHYSICAL_BAZAR (
   CONSTRAINT UQ_BAZAR_NAME_DISTRICT UNIQUE (BazarName, District)
 );
 
--- Weak entity #2: identified by PHYSICAL_BAZAR.
 CREATE TABLE BAZAR_DAILY_RECORD (
   BazarID            NUMBER(10)    NOT NULL,
   RecordDate         DATE          NOT NULL,
   CropID             NUMBER(10)    NOT NULL,
   TransactionVolume  NUMBER(12,3)  DEFAULT 0 NOT NULL,
   Revenue            NUMBER(14,2)  DEFAULT 0 NOT NULL,
-  -- CropID belongs in the key: a bazar trades several crops on the same
-  -- day, and without it the second crop of the day is a PK violation.
-  -- The weak-entity reading is unchanged -- the partial key is
-  -- (RecordDate, CropID), still identified by the owning bazar.
   CONSTRAINT PK_BAZAR_DAILY_RECORD PRIMARY KEY (BazarID, RecordDate, CropID),
   CONSTRAINT FK_BDR_BAZAR FOREIGN KEY (BazarID)
     REFERENCES PHYSICAL_BAZAR (BazarID) ON DELETE CASCADE,
@@ -601,9 +443,6 @@ CREATE TABLE BAZAR_DAILY_RECORD (
   CONSTRAINT CK_BDR_REVENUE CHECK (Revenue >= 0)
 );
 
--- =====================================================================
--- SECTION 7 — FEEDBACK (P2 — create and seed, no UI in Update-1)
--- =====================================================================
 
 CREATE TABLE REVIEW (
   ReviewID    NUMBER(10)   NOT NULL,
@@ -631,18 +470,6 @@ CREATE TABLE COMPLAINT (
   CONSTRAINT CK_COMPLAINT_STATUS CHECK (Status IN ('OPEN','IN_REVIEW','RESOLVED','REJECTED'))
 );
 
--- =====================================================================
--- SECTION 8 — NOTIFICATIONS
---
--- Added with the feedback-batch migration. In-app only (no email/SMS,
--- per PRD §11.3). UserID is a generic FK straight to USERS rather than a
--- role-specific one -- the only table in this schema shaped that way,
--- because a notification's recipient can be any of the five roles and
--- USERS is the total/disjoint superclass every one of them resolves to.
--- Writes are best-effort from the service layer (see
--- server/src/services/notification.service.js) so a bug here can never
--- roll back one of the six PRD §9.10 transactions it is reporting on.
--- =====================================================================
 
 CREATE TABLE NOTIFICATION (
   NotificationID     NUMBER(10)         NOT NULL,
@@ -659,6 +486,3 @@ CREATE TABLE NOTIFICATION (
   CONSTRAINT CK_NOTIFICATION_READ CHECK (IsRead IN ('Y','N'))
 );
 
--- =====================================================================
--- End of 01_create_tables.sql - proceed to 02_business_rules.sql
--- =====================================================================

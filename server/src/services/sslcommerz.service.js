@@ -27,13 +27,6 @@ async function post(path, fields) {
   return response.json();
 }
 
-/**
- * Reserves the amount as a PENDING payment, then asks SSLCommerz for a
- * hosted checkout page. Reserving first means BR-19 already counts this
- * attempt, so a buyer cannot open two checkout pages and pay twice.
- */
-// "Already settled" is misleading when the balance is actually held by a
-// checkout someone walked away from, which is the common case in a demo.
 async function nothingLeftToPay(connection, column, id, noun) {
   const pending = await connection.execute(
     `SELECT COUNT(*) AS Pending FROM PAYMENT
@@ -47,12 +40,6 @@ async function nothingLeftToPay(connection, column, id, noun) {
     : `This ${noun} is already settled.`;
 }
 
-/**
- * A buyer may settle less than the whole balance -- part now, the rest on
- * delivery. Whatever they ask for is checked here, not in the browser,
- * and it is what gets charged: the gateway is told this figure and the
- * reservation is written for it, so the two can never disagree.
- */
 function amountToCharge(requested, outstanding, noun) {
   if (requested === undefined || requested === null || requested === '') return outstanding;
 
@@ -145,11 +132,6 @@ async function beginCheckout(buyerId, saleOrderId, requestedAmount) {
   });
 }
 
-/**
- * Storage fees settle through the same gateway. They hang off an
- * allocation rather than a sale order, so PAYMENT carries AllocationID
- * and the SALE columns stay null -- CK_PAYMENT_TYPE_SHAPE enforces that.
- */
 async function beginStorageCheckout(customerType, customerId, allocationId, requestedAmount) {
   requireGateway();
 
@@ -234,12 +216,6 @@ async function markFailed(tranId) {
   );
 }
 
-/**
- * The browser is redirected here by SSLCommerz, so the POST body cannot
- * be trusted on its own -- anyone can forge it. The amount and status
- * are re-read from the gateway's validation API before the payment is
- * marked COMPLETED.
- */
 async function completeCheckout(body) {
   const tranId = body.tran_id;
   const valId = body.val_id;
@@ -251,8 +227,6 @@ async function completeCheckout(body) {
     `&store_id=${encodeURIComponent(sslcommerz.storeId)}` +
     `&store_passwd=${encodeURIComponent(sslcommerz.storePassword)}&format=json`;
 
-  // The validator answers with an empty body often enough that parsing it
-  // as JSON unconditionally turns a declined payment into a 500.
   let validation = null;
   try {
     const response = await fetch(url);
@@ -282,22 +256,15 @@ async function completeCheckout(body) {
     const payment = pending.rows[0];
     const where = targetFromRef(tranId);
 
-    // A repeated callback must not double-settle. The reference is
-    // UNIQUE, so this row is the whole transaction.
     if (payment.PAYMENTSTATUS === 'COMPLETED') {
       return { settled: true, ...where, alreadySettled: true };
     }
 
-    // Only a live reservation may be settled. A row already released as
-    // abandoned means this checkout expired and its balance may since
-    // have been reserved by another attempt; settling it now would
-    // record the money twice.
     if (payment.PAYMENTSTATUS !== 'PENDING') {
       console.error(`[sslcommerz] ${tranId} came back ${payment.PAYMENTSTATUS}, not PENDING`);
       return { settled: false, ...where, reason: 'expired' };
     }
 
-    // The gateway is authoritative on what was actually charged.
     if (Number(validation.amount) !== Number(payment.AMOUNT)) {
       await connection.execute(
         `UPDATE PAYMENT SET PaymentStatus = 'FAILED' WHERE PaymentID = :id`,
@@ -342,11 +309,6 @@ async function abandonCheckout(body, outcome) {
   return { settled: false, ...targetFromRef(tranId), reason: outcome };
 }
 
-// The reference says what was paid and by whom, so the browser can be
-// sent to the right page even when no row could be read back:
-//   SSLCZ-4-1788163857107     buyer, sale order 4
-//   SSLCZ-SB12-1788163857107  buyer, storage allocation 12
-//   SSLCZ-SF12-1788163857107  farmer, storage allocation 12
 function targetFromRef(tranId) {
   const part = String(tranId || '').split('-')[1] || '';
   const storageMatch = part.match(/^S([FB])(\d+)$/);

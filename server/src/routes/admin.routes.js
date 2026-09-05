@@ -36,11 +36,6 @@ router.get('/prices', async (req, res, next) => {
   }
 });
 
-/**
- * Staff accounts are created here rather than claimed from the public
- * sign-up form, since an admin or a storage manager holds authority over
- * other people's records.
- */
 router.post('/users', async (req, res, next) => {
   try {
     const { userId, role } = await authService.register(req.body, { allowStaffRoles: true });
@@ -58,11 +53,6 @@ router.post('/prices', async (req, res, next) => {
   }
 });
 
-/**
- * The Reporting Module. Every report is a PL/SQL procedure in
- * pkg_krishi_reports returning a ref cursor — this route only names one
- * and passes the filters through.
- */
 router.get('/reports', async (_req, res, next) => {
   try {
     res.json({ reports: admin.listReports() });

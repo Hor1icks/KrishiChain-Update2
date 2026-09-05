@@ -1,30 +1,3 @@
--- =====================================================================
--- KrishiChain | 05_advanced_queries.sql
--- Phase 4, Day 4 — the five advanced queries (PRD §10 offers 7, picks 5).
---
--- READ-ONLY. Safe to run any time. Run after 03_insert_data.sql and
--- 04_views.sql:
---   ./db.sh database/06_advanced_queries.sql
--- In SQL Developer: open, connect as krishichain, press F5 (Run Script).
---
--- WHICH FIVE, AND WHY
--- The Definition of Done (PRD §16) is "5 advanced queries returning
--- non-empty, explainable results". Each query below was run against the
--- seed data and returns rows. The two candidates NOT chosen:
---
---   Q3 (warehouse utilization) -- dropped. It is already the standing
---      view V_UNIT_UTILIZATION, which does the same work plus alert
---      banding; repeating it here adds nothing to defend in the viva.
---   Q7 (delivered but unpaid) -- dropped. It returns ZERO rows against
---      the seed: every DELIVERED order is fully paid, and the one
---      unpaid order is unpaid precisely because BR-20 blocks it while
---      undelivered. An empty result set is the exact demo failure the
---      PRD warns about, so it is out.
---
--- ORACLE 11g NOTE: no FETCH FIRST n ROWS anywhere. Row limiting is done
--- with ROWNUM inside an inline view, and top-n-per-group with RANK()
--- filtered in an outer query -- which is the more defensible form anyway.
--- =====================================================================
 
 SET LINESIZE 200
 SET PAGESIZE 60
@@ -76,9 +49,6 @@ JOIN   CROP c           ON c.CropID   = hb.CropID
 JOIN   VIRTUAL_ARAT va  ON va.AratID  = hb.AratID
 JOIN   FARM f           ON f.FarmID   = hb.FarmID
 JOIN   USERS fu         ON fu.UserID  = f.FarmerID
--- The batch's own ARAT on the day the order was placed. 03_insert_data.sql
--- seeds a price series for every (crop, arat) pair a batch actually uses,
--- so no sale silently drops out of this join.
 JOIN   DAILY_MARKET_PRICE dmp
        ON  dmp.CropID    = c.CropID
        AND dmp.AratID    = va.AratID
@@ -164,9 +134,6 @@ FROM   HARVEST_BATCH hb
 JOIN   CROP c   ON c.CropID  = hb.CropID
 LEFT   JOIN BID b ON b.BatchID = hb.BatchID
 GROUP  BY c.CropName
--- "Above average" = more bids than the mean number of bids a bid-on
--- batch receives. The inner GROUP BY only sees batches that HAVE bids,
--- so unbid batches do not drag the average toward zero.
 HAVING COUNT(b.BidID) > (
          SELECT AVG(cnt)
          FROM  (SELECT COUNT(*) AS cnt FROM BID GROUP BY BatchID)

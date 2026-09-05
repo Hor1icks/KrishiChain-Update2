@@ -8,12 +8,8 @@ const param = require('../utils/params');
 
 const router = express.Router();
 
-// Every route below is farmer-only. Applied once here rather than
-// per-route, so a new endpoint cannot be added unguarded by accident.
 router.use(authenticate, requireRole('FARMER'));
 
-// The farmer ID is always taken from the verified token, never from the
-// URL or body — that is what makes the ownership checks meaningful.
 const me = (req) => req.user.userId;
 
 router.get('/dashboard', async (req, res, next) => {
@@ -72,7 +68,6 @@ router.get('/batches/:batchId/bids', async (req, res, next) => {
   }
 });
 
-// The demo centrepiece — PRD §9.10 transaction #4.
 router.post('/bids/:bidId/award', async (req, res, next) => {
   try {
     res.status(201).json(await farmer.awardBid(me(req), param.id(req.params.bidId, 'bidId'), req.body));
@@ -105,9 +100,6 @@ router.get('/storage/payments', async (req, res, next) => {
   }
 });
 
-// ---------------------------------------------------------------------
-// Storage consent (leg 1 — this farmer's own local storage)
-// ---------------------------------------------------------------------
 
 router.get('/storage/proposals', async (req, res, next) => {
   try {
@@ -132,8 +124,6 @@ router.post('/storage/proposals/:allocationId/respond', async (req, res, next) =
   }
 });
 
-// Ask a manager for space, rather than waiting to be offered it. The
-// customer picks the warehouse and unit from /reference/warehouses.
 router.post('/storage/requests', async (req, res, next) => {
   try {
     res.status(201).json(await farmer.requestStorageAllocation(me(req), req.body));
@@ -142,8 +132,6 @@ router.post('/storage/requests', async (req, res, next) => {
   }
 });
 
-// Settle a manager's counter-offer against this customer's own request.
-// ACCEPT or REJECT only — one negotiation round, no re-counter.
 router.post('/storage/:allocationId/counter/respond', async (req, res, next) => {
   try {
     res.json(

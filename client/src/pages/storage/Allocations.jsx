@@ -569,11 +569,13 @@ export default function Allocations() {
             : 'Nothing live — every proposal has been released or rejected.'}
         </p>
       ) : (
+        <div className="scroll-x">
         <table>
           <thead>
             <tr>
               <th>#</th>
-              <th>Leg</th>
+              <th className="num">Leg</th>
+              <th>Order</th>
               <th>Batch</th>
               <th>Crop</th>
               <th>Customer</th>
@@ -608,7 +610,8 @@ export default function Allocations() {
               return (
                 <tr key={a.allocationId}>
                   <td>{a.allocationId}</td>
-                  <td>{a.saleOrderId ? `2 · SO#${a.saleOrderId}` : '1'}</td>
+                  <td className="num">{a.saleOrderId ? 2 : 1}</td>
+                  <td>{a.saleOrderId ? `#${a.saleOrderId}` : '—'}</td>
                   <td>#{a.batchId}</td>
                   <td>{a.cropName}</td>
                   <td>
@@ -697,6 +700,7 @@ export default function Allocations() {
             })}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );

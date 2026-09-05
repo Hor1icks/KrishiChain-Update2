@@ -8,10 +8,8 @@ const param = require('../utils/params');
 
 const router = express.Router();
 
-// Buyer-only, applied once so a new endpoint cannot land unguarded.
 router.use(authenticate, requireRole('BUYER'));
 
-// Always from the verified token, never from the URL or body.
 const me = (req) => req.user.userId;
 
 router.get('/dashboard', async (req, res, next) => {
@@ -38,7 +36,6 @@ router.get('/batches/:batchId', async (req, res, next) => {
   }
 });
 
-// PRD §9.10 transaction #3.
 router.post('/bids', async (req, res, next) => {
   try {
     res.status(201).json(await buyer.placeBid(me(req), req.body));
@@ -55,9 +52,6 @@ router.get('/bids', async (req, res, next) => {
   }
 });
 
-// ---------------------------------------------------------------------
-// Storage consent (leg 2 — this buyer's local storage, post-sale)
-// ---------------------------------------------------------------------
 
 router.get('/orders', async (req, res, next) => {
   try {
@@ -75,7 +69,6 @@ router.get('/payments', async (req, res, next) => {
   }
 });
 
-/** Hands back a hosted checkout URL for the buyer's browser to follow. */
 router.post('/orders/:saleOrderId/pay/online', async (req, res, next) => {
   try {
     res.json(
@@ -86,12 +79,6 @@ router.post('/orders/:saleOrderId/pay/online', async (req, res, next) => {
   }
 });
 
-/**
- * "Drive it straight to me." One of the two ways an order's transport
- * request becomes claimable by a driver; the other is accepting a leg-2
- * storage allocation. Until one of them happens the trip has no
- * destination and is not offered to anyone.
- */
 router.post('/orders/:saleOrderId/delivery-preference', async (req, res, next) => {
   try {
     res.json(await buyer.setDeliveryDirect(me(req), param.id(req.params.saleOrderId, 'saleOrderId')));
@@ -139,8 +126,6 @@ router.post('/storage/proposals/:allocationId/respond', async (req, res, next) =
   }
 });
 
-// Ask a manager for space, rather than waiting to be offered it. The
-// customer picks the warehouse and unit from /reference/warehouses.
 router.post('/storage/requests', async (req, res, next) => {
   try {
     res.status(201).json(await buyer.requestStorageAllocation(me(req), req.body));
@@ -149,8 +134,6 @@ router.post('/storage/requests', async (req, res, next) => {
   }
 });
 
-// Settle a manager's counter-offer against this customer's own request.
-// ACCEPT or REJECT only — one negotiation round, no re-counter.
 router.post('/storage/:allocationId/counter/respond', async (req, res, next) => {
   try {
     res.json(

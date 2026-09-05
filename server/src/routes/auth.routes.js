@@ -6,7 +6,6 @@ const { authenticate } = require('../middleware/authenticate');
 
 const router = express.Router();
 
-/** Lets the register page build its role dropdown from one source of truth. */
 router.get('/roles', (_req, res) => {
   res.json({ roles: authService.SELF_SERVICE_ROLES });
 });

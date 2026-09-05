@@ -1,25 +1,3 @@
--- =====================================================================
--- KrishiChain | 99_inspect_data.sql
--- READ-ONLY. Safe to run any time, as often as you like.
---
--- There is not a single INSERT, UPDATE or DELETE in this file -- it only
--- SELECTs. Use this to look at the seeded data instead of re-running
--- 03_insert_data.sql, which WIPES every table before re-seeding.
---
--- HOW TO RUN IT IN SQL DEVELOPER
---   1. File > Open, pick this file
---   2. Check the connection dropdown (top right) says krishichain
---   3. Press F5  ("Run Script") -- NOT Ctrl+Enter
---        F5         runs the whole file, prints into "Script Output"
---        Ctrl+Enter runs only the statement your cursor is in, and
---                   shows it in a proper grid -- nicer for one query
---
--- HOW TO RUN IT IN SQL*PLUS
---   ./db.sh database/99_inspect_data.sql
---
--- The COLUMN ... FORMAT lines below only control text width in
--- SQL*Plus / SQL Developer's Script Output. They do nothing to the data.
--- =====================================================================
 
 SET LINESIZE 200
 SET PAGESIZE 60

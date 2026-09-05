@@ -98,7 +98,6 @@ export default function Reports() {
 
   useEffect(() => {
     run();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [name]);
 
   const spec = REPORTS[name];

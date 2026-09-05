@@ -7,8 +7,6 @@ const param = require('../utils/params');
 
 const router = express.Router();
 
-// Transport personnel only, applied once so a new endpoint cannot be
-// added unguarded — same pattern as farmer.routes.js.
 router.use(authenticate, requireRole('TRANSPORT_PERSONNEL'));
 
 const me = (req) => req.user.userId;
@@ -21,7 +19,6 @@ router.get('/summary', async (req, res, next) => {
   }
 });
 
-/** Unclaimed trips — the job board. */
 router.get('/requests', async (_req, res, next) => {
   try {
     res.json(await transport.listOpenRequests());
@@ -46,7 +43,6 @@ router.get('/assignments', async (req, res, next) => {
   }
 });
 
-/** PRD §9.10 transaction #5. */
 router.post('/assignments', async (req, res, next) => {
   try {
     res.status(201).json(await transport.claim(me(req), req.body));
@@ -63,7 +59,6 @@ router.post('/assignments/:transportId/advance', async (req, res, next) => {
   }
 });
 
-/** PRD §9.10 transaction #6 — the last of the six. */
 router.post('/assignments/:transportId/deliver', async (req, res, next) => {
   try {
     res.json(await transport.complete(me(req), param.id(req.params.transportId, 'transportId'), req.body));

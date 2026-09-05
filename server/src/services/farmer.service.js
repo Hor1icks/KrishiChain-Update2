@@ -1,25 +1,5 @@
 'use strict';
 
-/**
- * Farmer module services.
- *
- * TWO THINGS EVERY FUNCTION HERE DOES
- *
- * 1. Ownership. The database has no concept of "the logged-in user", so
- *    BR-02/BR-03 ("a farmer may only touch their own farms and batches")
- *    cannot be a constraint — it has to be checked here, on every call,
- *    against req.user.userId. Never trust an ID that arrived in a URL.
- *
- * 2. The cross-table business rules with no DB backstop: BR-09
- *    (MinimumPrice >= Crop.BasePrice) and BR-11 (bid >= minimum and >
- *    current highest). Until now the seed satisfied these by hand; this
- *    is where they become enforced for real.
- *
- * SQL column aliases are double-quoted ("farmId", not FarmID) so Oracle
- * preserves the case and rows arrive as ready-to-serve camelCase JSON.
- * Unquoted identifiers come back SHOUTING, which would need a mapping
- * layer for no benefit.
- */
 
 const oracledb = require('oracledb');
 const { query, withTransaction } = require('../config/db');
@@ -27,9 +7,6 @@ const ApiError = require('../utils/ApiError');
 const storage = require('./storage.service');
 const { releaseAbandoned } = require('./checkoutReservations');
 
-// ---------------------------------------------------------------------
-// Ownership guards
-// ---------------------------------------------------------------------
 
 async function assertOwnsFarm(connection, farmerId, farmId) {
   const result = await connection.execute(
@@ -37,8 +14,6 @@ async function assertOwnsFarm(connection, farmerId, farmId) {
     { farmId, farmerId }
   );
   if (!result.rows.length) {
-    // Deliberately 404, not 403: telling a farmer "that farm exists but
-    // is not yours" leaks the existence of other farmers' rows.
     throw ApiError.notFound('No such farm.');
   }
 }
@@ -54,9 +29,6 @@ async function assertOwnsBatch(connection, farmerId, batchId) {
   if (!result.rows.length) throw ApiError.notFound('No such batch.');
 }
 
-// ---------------------------------------------------------------------
-// Dashboard
-// ---------------------------------------------------------------------
 
 async function getDashboard(farmerId) {
   const earnings = await query(
@@ -76,8 +48,6 @@ async function getDashboard(farmerId) {
     { farmerId }
   );
 
-  // Status breakdown drives the dashboard's "what needs my attention"
-  // panel — e.g. how many auctions are open right now.
   const byStatus = await query(
     `SELECT hb.Status AS "status", COUNT(*) AS "count"
        FROM HARVEST_BATCH hb
@@ -118,9 +88,6 @@ async function getDashboard(farmerId) {
   };
 }
 
-// ---------------------------------------------------------------------
-// Farms
-// ---------------------------------------------------------------------
 
 async function listFarms(farmerId) {
   const result = await query(
@@ -171,9 +138,6 @@ async function createFarm(farmerId, payload) {
   });
 }
 
-// ---------------------------------------------------------------------
-// Batches
-// ---------------------------------------------------------------------
 
 async function listBatches(farmerId) {
   const result = await query(
@@ -241,11 +205,6 @@ async function getBatch(farmerId, batchId) {
   return result.rows[0];
 }
 
-/**
- * BR-09 lives here: MinimumPrice must be at least the crop's BasePrice.
- * It is cross-table, so it cannot be a CHECK constraint — this function
- * is the only thing standing between a bad listing and the database.
- */
 async function createBatch(farmerId, payload) {
   const required = [
     'farmId', 'cropId', 'aratId', 'harvestDate', 'totalQuantity', 'minimumPrice',
@@ -288,7 +247,6 @@ async function createBatch(farmerId, payload) {
     );
     if (!crop.rows.length) throw ApiError.badRequest('No such crop.');
 
-    // BR-09.
     const { CROPNAME: cropName, BASEPRICE: basePrice } = crop.rows[0];
     if (minimumPrice < basePrice) {
       throw ApiError.businessRule(
@@ -324,8 +282,6 @@ async function createBatch(farmerId, payload) {
         minimumPrice,
         biddingStartTime: start,
         biddingEndTime: end,
-        // A batch with no bidding window is just CREATED; one with a
-        // window is LISTED and becomes BIDDING_OPEN when it starts.
         status: start ? 'LISTED' : 'CREATED',
         minimumBidQuantity,
         batchId: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
@@ -336,13 +292,8 @@ async function createBatch(farmerId, payload) {
   });
 }
 
-// ---------------------------------------------------------------------
-// Bids on my batch
-// ---------------------------------------------------------------------
 
 async function listBidsForBatch(farmerId, batchId) {
-  // Ownership first — otherwise this leaks every buyer's bidding
-  // position on batches the caller does not own.
   const owns = await query(
     `SELECT hb.BatchID
        FROM HARVEST_BATCH hb
@@ -374,26 +325,6 @@ async function listBidsForBatch(farmerId, batchId) {
   return result.rows;
 }
 
-/**
- * AWARD WINNING BID — transaction #4 of the six in PRD §9.10, and the
- * one the PRD calls "the demo centrepiece".
- *
- * Five writes, all or nothing:
- *   1. the winning BID            -> WON
- *   2. every other ACTIVE bid     -> OUTBID   (housekeeping, see below)
- *   3. HARVEST_BATCH              -> SOLD, SoldQuantity increased
- *   4. INSERT SALE_ORDER                      (the aggregation)
- *   5. INSERT TRANSPORT_REQUEST
- *
- * Step 2 is not in the PRD's four-statement list but belongs in the same
- * transaction: once a batch is awarded, leaving rival bids ACTIVE would
- * misreport the auction state on every screen that filters by status.
- *
- * The batch row is locked with SELECT ... FOR UPDATE before anything is
- * written. Two farmers cannot award the same batch, but the same farmer
- * with two browser tabs can — the lock makes the second attempt wait and
- * then fail the already-SOLD check rather than double-selling the crop.
- */
 async function awardBid(farmerId, bidId, payload = {}) {
   const paymentTerms = (payload.paymentTerms || 'ON_DELIVERY').toUpperCase();
   if (!['ADVANCE', 'ON_DELIVERY'].includes(paymentTerms)) {
@@ -401,11 +332,6 @@ async function awardBid(farmerId, bidId, payload = {}) {
   }
 
   return withTransaction(async (connection) => {
-    // Which batch this bid belongs to, so it can be locked first. Every
-    // value the award decision rests on is read *after* the lock: two
-    // farmers awarding different bids on one batch at the same moment
-    // would otherwise both pass their guards against the state they saw
-    // before either lock was taken, and oversell the batch.
     const owner = await connection.execute(
       `SELECT b.BatchID FROM BID b WHERE b.BidID = :bidId`,
       { bidId }
@@ -436,7 +362,6 @@ async function awardBid(farmerId, bidId, payload = {}) {
       throw ApiError.notFound('No such bid.');
     }
 
-    // --- Guards -----------------------------------------------------
     if (bid.BIDSTATUS !== 'ACTIVE') {
       throw ApiError.businessRule(
         `That bid is ${bid.BIDSTATUS}, not ACTIVE — only a standing bid can be awarded.`
@@ -450,17 +375,12 @@ async function awardBid(farmerId, bidId, payload = {}) {
         `The bid asks for ${bid.REQUESTEDQUANTITY} kg but only ${bid.AVAILABLEQUANTITY} kg remain available.`
       );
     }
-    // BR-11's floor half, re-checked at award time: a bid could in
-    // principle predate a change to the batch's minimum price.
     if (bid.BIDPRICEPERKG < bid.MINIMUMPRICE) {
       throw ApiError.businessRule(
         `BR-11: bid price ${bid.BIDPRICEPERKG} is below the batch minimum ${bid.MINIMUMPRICE}.`
       );
     }
 
-    // --- 1. Winning bid --------------------------------------------
-    // Guarded on ACTIVE and checked, so the transition is the thing that
-    // decides the race rather than the read above it.
     const won = await connection.execute(
       `UPDATE BID SET Status = 'WON' WHERE BidID = :bidId AND Status = 'ACTIVE'`,
       { bidId }
@@ -469,30 +389,12 @@ async function awardBid(farmerId, bidId, payload = {}) {
       throw ApiError.businessRule('That bid was awarded or withdrawn a moment ago.');
     }
 
-    // --- 2. Everyone else loses ------------------------------------
     const outbid = await connection.execute(
       `UPDATE BID SET Status = 'OUTBID'
         WHERE BatchID = :batchId AND BidID <> :bidId AND Status = 'ACTIVE'`,
       { batchId: bid.BATCHID, bidId }
     );
 
-    // --- 3. Batch: raise SoldQuantity, close it out ONLY if that was
-    //        everything -------------------------------------------
-    // A bid's RequestedQuantity can be less than the batch's
-    // TotalQuantity (BID.RequestedQuantity is independent of it) — the
-    // schema's separate TotalQuantity/ReservedQuantity/SoldQuantity
-    // columns exist specifically so a batch can be sold off in more than
-    // one award. Marking the whole batch SOLD after any award, before
-    // checking whether stock remains, stranded the leftover: it can no
-    // longer be bid on (BiddingState maps SOLD to CLOSED, so it drops out
-    // of the buyer's listings) and no longer be awarded (the farmer UI
-    // hides "Accept" once the batch reads SOLD) — a decent chunk of
-    // produce with nowhere to go. Caught 2026-08-06 via batch 16
-    // (3000 kg total, a 2201 kg bid awarded, 799 kg silently stranded).
-    // AvailableQuantity itself is a virtual column and is never written;
-    // only SoldQuantity is, and the CASE below reads it in the same
-    // expression that sets it, which Oracle evaluates against the
-    // pre-update row value.
     await connection.execute(
       `UPDATE HARVEST_BATCH
           SET SoldQuantity = SoldQuantity + :qty,
@@ -512,8 +414,6 @@ async function awardBid(farmerId, bidId, payload = {}) {
     const stillAvailable = remaining.rows[0].AVAILABLEQUANTITY;
     const batchFullySold = remaining.rows[0].STATUS === 'SOLD';
 
-    // --- 4. SALE_ORDER (the aggregation) ---------------------------
-    // TotalAmount is virtual — never inserted.
     const orderResult = await connection.execute(
       `INSERT INTO SALE_ORDER (SaleOrderID, BidID, AcceptedQuantity, AcceptedPricePerKg, PaymentTerms)
        VALUES ((SELECT NVL(MAX(SaleOrderID), 0) + 1 FROM SALE_ORDER), :bidId, :qty, :price, :paymentTerms)
@@ -528,7 +428,6 @@ async function awardBid(farmerId, bidId, payload = {}) {
     );
     const saleOrderId = orderResult.outBinds.saleOrderId[0];
 
-    // --- 5. TRANSPORT_REQUEST --------------------------------------
     const buyerAddress = await connection.execute(
       `SELECT NVL(byr.BusinessName, u.FirstName || ' ' || u.LastName) AS Recipient,
               u.Address.Village AS Village, u.Address.Upazila AS Upazila,
@@ -563,32 +462,13 @@ async function awardBid(farmerId, bidId, payload = {}) {
       totalAmount: Number((bid.REQUESTEDQUANTITY * bid.BIDPRICEPERKG).toFixed(2)),
       paymentTerms,
       bidsOutbid: outbid.rowsAffected || 0,
-      // Lets the UI say "799 kg still open for bidding" instead of
-      // implying the batch is done when it is not.
       remainingQuantity: stillAvailable,
       batchFullySold,
     };
   });
 }
 
-// ---------------------------------------------------------------------
-// Storage consent — leg 1 (this farmer's own local storage)
-//
-// These are thin wrappers around storage.service.js's shared workflow,
-// fixed to customerType 'FARMER'. The actual ownership check (this
-// proposal's RequestedByFarmerID really is this farmer) lives in
-// storage.service.js's assertIsCustomer(), not duplicated here.
-// ---------------------------------------------------------------------
 
-/**
- * Everything sitting in this farmer's court. Two shapes land here and
- * `awaiting` tells the UI which:
- *   PROPOSAL — a manager offered space, the farmer accepts/rejects/counters
- *   COUNTER  — the farmer asked, the manager countered the rate, and it
- *              is back with the farmer to settle (accept or reject only)
- * The farmer's own outstanding requests are absent: those are waiting on
- * a manager, and already show in listMyStorage().
- */
 async function listStorageProposals(farmerId) {
   const result = await query(
     `SELECT s.AllocationID   AS "allocationId",
@@ -647,7 +527,6 @@ function payStorageFee(farmerId, allocationId, payload) {
   return storage.payFee('FARMER', farmerId, allocationId, payload);
 }
 
-/** All this farmer's storage allocations, any status, for a history view. */
 async function listMyStorage(farmerId) {
   await releaseAbandoned();
   const result = await query(
@@ -675,13 +554,7 @@ async function listMyStorage(farmerId) {
   return result.rows;
 }
 
-// ---------------------------------------------------------------------
-// Sales and money in. Both read-only: a farmer never writes a SALE_ORDER
-// (awardBid does that) and never writes a PAYMENT (the buyer pays, or the
-// driver records cash on delivery — transport.service.js transaction #6).
-// ---------------------------------------------------------------------
 
-/** Every order that came out of this farmer's batches. */
 async function listOrders(farmerId) {
   const result = await query(
     `SELECT so.SaleOrderID AS "saleOrderId",
@@ -715,7 +588,6 @@ async function listOrders(farmerId) {
   return result.rows;
 }
 
-/** Money actually received, newest first. */
 async function listPayments(farmerId) {
   const result = await query(
     `SELECT p.PaymentID   AS "paymentId",
@@ -743,9 +615,6 @@ async function listPayments(farmerId) {
   return result.rows;
 }
 
-/** Storage fees this farmer has paid, newest first — PAYMENT.FarmerID is
- *  NULL for STORAGE rows (CK_PAYMENT_TYPE_SHAPE), so ownership comes from
- *  STORES.RequestedByFarmerID instead. */
 async function listStoragePayments(farmerId) {
   const result = await query(
     `SELECT p.PaymentID   AS "paymentId",

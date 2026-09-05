@@ -1,6 +1,3 @@
--- Puts transport request 4 back to PENDING with no vehicles, and leaves
--- only two small vehicles available, so no single one covers the load.
--- Undo with: ./db.sh database/03_insert_data.sql
 
 DELETE FROM ASSIGNED_TO WHERE TransportID = 4;
 UPDATE TRANSPORT_REQUEST SET DeliveryStatus = 'PENDING' WHERE TransportID = 4;

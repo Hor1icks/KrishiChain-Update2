@@ -1,25 +1,5 @@
 'use strict';
 
-/**
- * Buyer module services.
- *
- * THE AUCTION MODEL
- * At most ONE bid per batch is ACTIVE at any moment — the standing
- * highest. Every earlier bid is OUTBID, and each new bid points at the
- * one it displaced via PreviousBidID. That chain is the recursive
- * relationship from PRD §7, and it is what the seed data already shows:
- *
- *   34.50 (OUTBID) <- 35.25 (OUTBID) <- 36.00 (ACTIVE)
- *
- * Keeping only one ACTIVE bid per batch also satisfies BR-14 ("one
- * ACTIVE bid per buyer per batch") for free: if only one bid on the whole
- * batch is ACTIVE, no buyer can hold two.
- *
- * BR-05 / acceptance case T-05 ("a farmer must not bid on their own
- * batch") needs no check here. FARMER and BUYER are disjoint subclasses
- * of USERS — one person cannot hold both roles, so a farmer has no buyer
- * identity to bid with. The specialization enforces it structurally.
- */
 
 const oracledb = require('oracledb');
 const storage = require('./storage.service');
@@ -27,9 +7,6 @@ const { releaseAbandoned } = require('./checkoutReservations');
 const { query, withTransaction } = require('../config/db');
 const ApiError = require('../utils/ApiError');
 
-// ---------------------------------------------------------------------
-// Dashboard
-// ---------------------------------------------------------------------
 
 async function getDashboard(buyerId) {
   const bidStats = await query(
@@ -43,10 +20,6 @@ async function getDashboard(buyerId) {
     { buyerId }
   );
 
-  // The paid total is a SEPARATE query, not a scalar subquery alongside
-  // the aggregates. Oracle requires every item in an aggregated select
-  // list with no GROUP BY to itself be an aggregate; a scalar subquery is
-  // not one, and mixing them raises ORA-00937.
   const orders = await query(
     `SELECT COUNT(*)                    AS "orderCount",
             NVL(SUM(so.TotalAmount), 0) AS "totalCommitted"
@@ -64,8 +37,6 @@ async function getDashboard(buyerId) {
     { buyerId }
   );
 
-  // Auctions this buyer is currently leading, and ones they have lost —
-  // the two things a bidder actually wants to know on landing.
   const leading = await query(
     `SELECT b.BidID          AS "bidId",
             b.BatchID        AS "batchId",
@@ -91,18 +62,7 @@ async function getDashboard(buyerId) {
   };
 }
 
-// ---------------------------------------------------------------------
-// Browse listings
-// ---------------------------------------------------------------------
 
-/**
- * The marketplace. Only batches whose bidding window is genuinely open
- * are offered — a listing the buyer cannot act on is noise.
- *
- * "myBidStatus" is a correlated subquery rather than a join so that a
- * batch still appears exactly once whether this buyer has bid on it or
- * not.
- */
 async function browseBatches(buyerId, filters = {}) {
   const binds = { buyerId };
   let where = `bs.BiddingState = 'OPEN NOW'`;
@@ -190,9 +150,6 @@ async function getBatch(buyerId, batchId) {
 
   if (!result.rows.length) throw ApiError.notFound('No such batch.');
 
-  // The bid history is public to bidders — an auction where you cannot
-  // see the competition is not an auction. Buyer names are shown; the
-  // seed's own bid chains are the demo for this.
   const history = await query(
     `SELECT b.BidID            AS "bidId",
             b.BidPricePerKg    AS "bidPricePerKg",
@@ -212,27 +169,7 @@ async function getBatch(buyerId, batchId) {
   return { ...result.rows[0], bidHistory: history.rows };
 }
 
-// ---------------------------------------------------------------------
-// Place bid
-// ---------------------------------------------------------------------
 
-/**
- * PLACE BID — transaction #3 of the six in PRD §9.10.
- *
- * Three writes, all or nothing:
- *   1. every standing ACTIVE bid on the batch -> OUTBID
- *   2. INSERT the new BID as ACTIVE, PreviousBidID = the one it displaced
- *   3. promote the batch LISTED -> BIDDING_OPEN if this is its first bid
- *
- * Step 3 is not in the PRD's list, but a batch created through the farmer
- * module starts LISTED; without this it would still read LISTED after
- * receiving bids, and every status-filtered screen would be wrong.
- *
- * The batch row is locked FOR UPDATE before the current highest is read.
- * Without that lock two buyers bidding at the same instant could both
- * read the same "current highest", both pass BR-11, and both insert —
- * leaving two ACTIVE bids and a broken chain.
- */
 async function placeBid(buyerId, payload) {
   const batchId = Number(payload.batchId);
   const bidPricePerKg = Number(payload.bidPricePerKg);
@@ -245,7 +182,6 @@ async function placeBid(buyerId, payload) {
   }
 
   return withTransaction(async (connection) => {
-    // --- Lock the batch, then read its current state -----------------
     const batchResult = await connection.execute(
       `SELECT hb.BatchID, hb.Status, hb.MinimumPrice, hb.AvailableQuantity,
               hb.MinimumBidQuantity, hb.BiddingStartTime, hb.BiddingEndTime,
@@ -262,7 +198,6 @@ async function placeBid(buyerId, payload) {
     if (!batchResult.rows.length) throw ApiError.notFound('No such batch.');
     const batch = batchResult.rows[0];
 
-    // --- Guards -----------------------------------------------------
     if (['SOLD', 'DELIVERED', 'EXPIRED'].includes(batch.STATUS)) {
       throw ApiError.businessRule(`This batch is ${batch.STATUS} and no longer accepts bids.`);
     }
@@ -277,22 +212,18 @@ async function placeBid(buyerId, payload) {
         `Only ${batch.AVAILABLEQUANTITY} kg are available; you asked for ${requestedQuantity} kg.`
       );
     }
-    // Farmer-set floor (trg_bid_min_qty is the DB backstop) — checked
-    // here first for a clean error message ahead of the trigger.
     if (requestedQuantity < batch.MINIMUMBIDQUANTITY) {
       throw ApiError.businessRule(
         `This batch requires a minimum bid of ${batch.MINIMUMBIDQUANTITY} kg; you asked for ${requestedQuantity} kg.`
       );
     }
 
-    // --- BR-11, first half: at or above the farmer's floor -----------
     if (bidPricePerKg < batch.MINIMUMPRICE) {
       throw ApiError.businessRule(
         `BR-11: your bid of ${bidPricePerKg} is below the minimum price of ${batch.MINIMUMPRICE} per kg.`
       );
     }
 
-    // --- BR-11, second half: strictly above the standing bid ---------
     const standing = await connection.execute(
       `SELECT BidID, BuyerID, BidPricePerKg
          FROM BID
@@ -308,9 +239,6 @@ async function placeBid(buyerId, payload) {
       );
     }
     if (previousBid && previousBid.BUYERID === buyerId) {
-      // Allowed — this is the buyer raising their own bid. Their old bid
-      // becomes OUTBID in step 1 below, so BR-14 still holds: they never
-      // end up with two ACTIVE bids on the same batch.
     }
 
     await connection.execute(
@@ -318,13 +246,11 @@ async function placeBid(buyerId, payload) {
       { batchId, qty: requestedQuantity }
     );
 
-    // --- 1. Displace the standing bid --------------------------------
     await connection.execute(
       `UPDATE BID SET Status = 'OUTBID' WHERE BatchID = :batchId AND Status = 'ACTIVE'`,
       { batchId }
     );
 
-    // --- 2. The new standing bid -------------------------------------
     const inserted = await connection.execute(
       `INSERT INTO BID (BidID, BatchID, BuyerID, BidPricePerKg, RequestedQuantity, Status, PreviousBidID)
        VALUES ((SELECT NVL(MAX(BidID), 0) + 1 FROM BID), :batchId, :buyerId, :price, :qty, 'ACTIVE', :previousBidId)
@@ -339,7 +265,6 @@ async function placeBid(buyerId, payload) {
       }
     );
 
-    // --- 3. First bid opens the auction ------------------------------
     if (batch.STATUS === 'LISTED') {
       await connection.execute(
         `UPDATE HARVEST_BATCH SET Status = 'BIDDING_OPEN' WHERE BatchID = :batchId`,
@@ -360,19 +285,7 @@ async function placeBid(buyerId, payload) {
   });
 }
 
-// ---------------------------------------------------------------------
-// My bids
-// ---------------------------------------------------------------------
 
-/**
- * A buyer who gets outbid and rebids on the same batch ends up owning
- * multiple BID rows there (each earlier one flips OUTBID, see placeBid()
- * step 1) — without this, My Bids showed every one of them as a separate
- * line. ROW_NUMBER, partitioned by BatchID and ordered by BidTime DESC,
- * collapses that to the buyer's latest bid per batch; "bidCount" (a plain
- * COUNT over the same partition) lets the UI show a small "rebid 2x"
- * indicator without needing the full history.
- */
 async function listMyBids(buyerId) {
   const result = await query(
     `SELECT * FROM (
@@ -413,18 +326,6 @@ async function listMyBids(buyerId) {
   return result.rows;
 }
 
-// ---------------------------------------------------------------------
-// Storage consent — leg 2 (this buyer's local storage, post-sale)
-//
-// A manager proposes leg-2 storage against one of this buyer's sale
-// orders (storage.service.js's listSaleOrdersAwaitingStorage() is how
-// they find it); the buyer's only lever here is accept/reject, same
-// shape as leg 1's farmer side. There is no separate "request a
-// warehouse" step for the buyer — a rejected proposal just leaves the
-// sale order open for a different manager to propose against, which
-// keeps this symmetric with leg 1 rather than adding a second kind of
-// request flow.
-// ---------------------------------------------------------------------
 
 async function listStorageProposals(buyerId) {
   const result = await query(
@@ -518,11 +419,7 @@ async function listMyStorage(buyerId) {
   return result.rows;
 }
 
-// ---------------------------------------------------------------------
-// Orders, money out, and reviews
-// ---------------------------------------------------------------------
 
-/** Everything this buyer has won, with its delivery and payment state. */
 async function listOrders(buyerId) {
   await releaseAbandoned();
   const result = await query(
@@ -563,17 +460,6 @@ async function listOrders(buyerId) {
   return result.rows;
 }
 
-/**
- * "Drive it straight to me" — the buyer's half of the delivery gate.
- *
- * A transport request is raised the moment a bid is awarded, but it is
- * not offered to drivers until the destination is settled. This is one
- * of the two ways that happens; the other is accepting a leg-2 storage
- * allocation, which storage.service.js finalizeAcceptance() handles.
- * Only legal while the choice is still open, and only when no leg-2
- * allocation is already in flight — otherwise the two routes could
- * contradict each other about where the load is going.
- */
 async function setDeliveryDirect(buyerId, saleOrderId) {
   return withTransaction(async (connection) => {
     const order = await connection.execute(
@@ -622,8 +508,6 @@ async function setDeliveryDirect(buyerId, saleOrderId) {
       `UPDATE SALE_ORDER SET DeliveryPreference = 'DIRECT' WHERE SaleOrderID = :saleOrderId`,
       { saleOrderId }
     );
-    // SUBSTR at the SQL level — DeliveryLocation is VARCHAR2(200) and a
-    // long address should not fail the whole choice with ORA-12899.
     await connection.execute(
       `UPDATE TRANSPORT_REQUEST SET DeliveryLocation = SUBSTR(:destination, 1, 200)
         WHERE SaleOrderID = :saleOrderId AND DeliveryStatus = 'PENDING'`,
@@ -660,16 +544,6 @@ async function listPayments(buyerId) {
   return result.rows;
 }
 
-/**
- * Pay a farmer directly (D-2 — no ARAT commission, no escrow).
- *
- * BR-19 (never more than the order total) and BR-20 (nothing before
- * DELIVERED unless the terms are ADVANCE) are enforced by
- * trg_payment_biz_rules, which raises ORA-20001 / ORA-20002. Those reach
- * the client as HTTP 422 with the trigger's own wording — errorHandler.js
- * already maps them, so this deliberately does not re-check either rule
- * and risk the two copies drifting apart.
- */
 async function payOrder(buyerId, saleOrderId, payload) {
   const amount = Number(payload.amount);
   if (!(amount > 0)) throw ApiError.badRequest('Amount must be greater than zero.');
@@ -721,8 +595,6 @@ async function payOrder(buyerId, saleOrderId, payload) {
     );
     const paid = paidResult.rows[0].PAID;
 
-    // Fully paid AND already delivered means there is nothing left to
-    // wait for. A fully-paid ADVANCE order still in transit stays put.
     const deliveredResult = await connection.execute(
       `SELECT DeliveryStatus FROM TRANSPORT_REQUEST WHERE SaleOrderID = :saleOrderId`,
       { saleOrderId }
@@ -772,11 +644,6 @@ async function listReviews(buyerId) {
   return result.rows;
 }
 
-/**
- * Leave a review. UQ_REVIEW_ORDER makes it one per order at the database
- * level; the ownership check is what stops a buyer reviewing someone
- * else's purchase.
- */
 async function createReview(buyerId, payload) {
   const saleOrderId = Number(payload.saleOrderId);
   const rating = Number(payload.rating);
@@ -798,8 +665,6 @@ async function createReview(buyerId, payload) {
     }
 
     try {
-      // NOT :comment — COMMENT is an Oracle reserved word, and using it as
-      // a bind name fails with ORA-01745 before the statement even runs.
       const inserted = await connection.execute(
         `INSERT INTO REVIEW (ReviewID, SaleOrderID, Rating, ReviewComment)
          VALUES ((SELECT NVL(MAX(ReviewID), 0) + 1 FROM REVIEW), :saleOrderId, :rating, :reviewComment)
